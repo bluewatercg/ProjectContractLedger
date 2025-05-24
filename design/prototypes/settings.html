@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户合同管理系统 - 系统设置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex">
+        <!-- 侧边栏 -->
+        <aside class="w-64 bg-blue-800 text-white p-4 hidden md:block">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold">合同管理系统</h1>
+                <p class="text-sm text-blue-200">单用户版</p>
+            </div>
+            <nav>
+                <ul class="space-y-2">
+                    <li><a href="dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-700"><i class="fas fa-tachometer-alt mr-3"></i><span>仪表盘</span></a></li>
+                    <li><a href="customers.html" class="flex items-center p-2 rounded hover:bg-blue-700"><i class="fas fa-users mr-3"></i><span>客户管理</span></a></li>
+                    <li><a href="contracts.html" class="flex items-center p-2 rounded hover:bg-blue-700"><i class="fas fa-file-contract mr-3"></i><span>合同管理</span></a></li>
+                    <li><a href="invoices.html" class="flex items-center p-2 rounded hover:bg-blue-700"><i class="fas fa-file-invoice mr-3"></i><span>开票管理</span></a></li>
+                    <li><a href="payments.html" class="flex items-center p-2 rounded hover:bg-blue-700"><i class="fas fa-money-bill-wave mr-3"></i><span>到款管理</span></a></li>
+                    <li><a href="notifications.html" class="flex items-center p-2 rounded hover:bg-blue-700"><i class="fas fa-bell mr-3"></i><span>提醒中心</span></a></li>
+                    <li><a href="settings.html" class="flex items-center p-2 rounded bg-blue-700"><i class="fas fa-cog mr-3"></i><span>系统设置</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航 -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between p-4">
+                    <div class="flex items-center md:hidden">
+                        <button class="text-gray-500 focus:outline-none">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="relative">
+                            <button class="flex items-center text-gray-500 focus:outline-none">
+                                <i class="fas fa-bell mr-1"></i>
+                                <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        <div class="ml-4 relative">
+                            <div class="flex items-center">
+                                <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                <span class="ml-2 text-gray-700">John Doe</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">系统设置</h1>
+                    <p class="text-gray-600">管理系统基础信息和配置</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden p-6">
+                    <form>
+                        <!-- 基础信息配置 -->
+                        <section class="mb-8">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">基础信息配置</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="company-name" class="block text-sm font-medium text-gray-700 mb-1">公司名称</label>
+                                    <input type="text" id="company-name" name="company-name" value="我的公司示例" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <p class="text-xs text-gray-500 mt-1">用于合同模板或系统标识。</p>
+                                </div>
+                                <div>
+                                    <label for="system-currency" class="block text-sm font-medium text-gray-700 mb-1">系统货币</label>
+                                    <select id="system-currency" name="system-currency" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="CNY" selected>人民币 (CNY)</option>
+                                        <option value="USD">美元 (USD)</option>
+                                        <option value="EUR">欧元 (EUR)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="date-format" class="block text-sm font-medium text-gray-700 mb-1">日期格式</label>
+                                    <select id="date-format" name="date-format" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="YYYY-MM-DD" selected>YYYY-MM-DD</option>
+                                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 提醒规则配置 -->
+                        <section class="mb-8">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">提醒规则配置</h2>
+                            <div class="space-y-6">
+                                <fieldset>
+                                    <legend class="text-md font-medium text-gray-700 mb-2">合同到期提醒</legend>
+                                    <div class="flex items-center space-x-4">
+                                        <input type="checkbox" id="contract-expiry-reminder" name="contract-expiry-reminder" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" checked>
+                                        <label for="contract-expiry-reminder" class="text-sm text-gray-700">启用合同到期提醒</label>
+                                        <input type="number" id="contract-expiry-days" name="contract-expiry-days" value="30" class="w-20 border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="contract-expiry-days" class="text-sm text-gray-700">天前提醒</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset>
+                                    <legend class="text-md font-medium text-gray-700 mb-2">付款日期提醒</legend>
+                                    <div class="flex items-center space-x-4">
+                                        <input type="checkbox" id="payment-due-reminder" name="payment-due-reminder" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" checked>
+                                        <label for="payment-due-reminder" class="text-sm text-gray-700">启用付款日期提醒</label>
+                                        <input type="number" id="payment-due-days" name="payment-due-days" value="7" class="w-20 border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="payment-due-days" class="text-sm text-gray-700">天前提醒</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset>
+                                    <legend class="text-md font-medium text-gray-700 mb-2">履约节点提醒</legend>
+                                    <div class="flex items-center space-x-4">
+                                        <input type="checkbox" id="milestone-reminder" name="milestone-reminder" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                        <label for="milestone-reminder" class="text-sm text-gray-700">启用履约节点提醒</label>
+                                        <input type="number" id="milestone-days" name="milestone-days" value="3" class="w-20 border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <label for="milestone-days" class="text-sm text-gray-700">天前提醒</label>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </section>
+
+                        <!-- 操作按钮 -->
+                        <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end">
+                            <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md mr-3">取消</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md">保存设置</button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // 简单的侧边栏切换
+        const menuButton = document.querySelector('.md\:hidden button');
+        const sidebar = document.querySelector('aside');
+        if (menuButton && sidebar) {
+            menuButton.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户合同管理系统 - 合同详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex">
+        <!-- 侧边栏 -->
+        <aside class="w-64 bg-blue-800 text-white p-4 hidden md:block">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold">合同管理系统</h1>
+                <p class="text-sm text-blue-200">单用户版</p>
+            </div>
+            
+            <nav>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="customers.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-users mr-3"></i>
+                            <span>客户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="contracts.html" class="flex items-center p-2 rounded bg-blue-700">
+                            <i class="fas fa-file-contract mr-3"></i>
+                            <span>合同管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="invoices.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-file-invoice mr-3"></i>
+                            <span>开票管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="payments.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-money-bill-wave mr-3"></i>
+                            <span>到款管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="notifications.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-bell mr-3"></i>
+                            <span>提醒中心</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航 -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between p-4">
+                    <div class="flex items-center md:hidden">
+                        <button class="text-gray-500 focus:outline-none">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="relative">
+                            <button class="flex items-center text-gray-500 focus:outline-none">
+                                <i class="fas fa-bell mr-1"></i>
+                                <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        <div class="ml-4 relative">
+                            <div class="flex items-center">
+                                <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                <!-- 图片来源: Unsplash -->
+                                <span class="ml-2 text-gray-700">John Doe</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <div>
+                        <div class="flex items-center">
+                            <a href="contracts.html" class="text-blue-600 hover:text-blue-800 mr-2">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-800">合同详情</h1>
+                        </div>
+                        <p class="text-gray-600">合同编号: HT-2023-0015</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <a href="contract-edit.html" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-edit mr-2"></i>
+                            <span>编辑合同</span>
+                        </a>
+                        <div class="relative inline-block text-left">
+                            <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg flex items-center">
+                                <i class="fas fa-ellipsis-v mr-2"></i>
+                                <span>更多操作</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 合同状态标签 -->
+                <div class="mb-6">
+                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">履行中</span>
+                </div>
+
+                <!-- 合同信息卡片 -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                    <div class="p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">基本信息</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">合同名称</p>
+                                <p class="text-gray-800">技术服务合同</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">客户名称</p>
+                                <p class="text-gray-800">
+                                    <a href="customer-detail.html" class="text-blue-600 hover:text-blue-800">上海科技有限公司</a>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">合同金额</p>
+                                <p class="text-gray-800">¥120,000</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">签订日期</p>
+                                <p class="text-gray-800">2023-01-20</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">生效日期</p>
+                                <p class="text-gray-800">2023-01-20</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">到期日期</p>
+                                <p class="text-gray-800">2023-06-15</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">合同条款</h2>
+                        <div class="prose max-w-none">
+                            <p>本合同为技术服务合同，由上海科技有限公司（以下简称"甲方"）与我方（以下简称"乙方"）签订。</p>
+                            <p>乙方同意为甲方提供以下技术服务：</p>
+                            <ol>
+                                <li>系统维护与支持服务</li>
+                                <li>技术咨询与问题解决</li>
+                                <li>定期系统优化与升级</li>
+                                <li>紧急故障响应与处理</li>
+                            </ol>
+                            <p>服务期限为2023年1月20日至2023年6月15日，合同总金额为人民币120,000元。</p>
+                            <p>付款方式：</p>
+                            <ul>
+                                <li>合同签订后7个工作日内支付50%，即人民币60,000元</li>
+                                <li>服务期满前支付剩余50%，即人民币60,000元</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">合同附件</h2>
+                        <ul class="divide-y divide-gray-200">
+                            <li class="py-3 flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                                    <span class="text-gray-800">技术服务合同扫描件.pdf</span>
+                                </div>
+                                <div>
+                                    <button class="text-blue-600 hover:text-blue-800 mr-3">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                            </li>
+                            <li class="py-3 flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-word text-blue-500 mr-3"></i>
+                                    <span class="text-gray-800">服务内容清单.docx</span>
+                                </div>
+                                <div>
+                                    <button class="text-blue-600 hover:text-blue-800 mr-3">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 履约节点 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">履约节点</h2>
+                        <button class="text-blue-600 hover:text-blue-800 flex items-center">
+                            <i class="fas fa-plus mr-1"></i>
+                            <span>添加节点</span>
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">节点名称</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">计划日期</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">实际日期</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">合同签订</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-01-20</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-01-20</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">已完成</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">按计划完成签订</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-indigo-600 hover:text-indigo-900">编辑</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">首付款</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-01-27</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-02-05</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">已逾期</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">客户付款延迟</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-indigo-600 hover:text-indigo-900">编辑</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">中期检查</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-03-20</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-03-18</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">已完成</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">提前完成检查</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-indigo-600 hover:text-indigo-900">编辑</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">尾款支付</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-06-10</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">未开始</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-indigo-600 hover:text-indigo-900">编辑</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 开票记录 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">开票记录</h2>
+                        <a href="invoice-create.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                            <i class="fas fa-plus mr-1"></i>
+                            <span>记录开票</span>
+                        </a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发票号码</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">开票金额</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">已到款金额</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">开票日期</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发票类型</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            <a href="#">FP-2023-0010</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥60,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <div class="flex items-center">
+                                                <span>¥60,000</span>
+                                                <div class="ml-2 w-16 bg-gray-200 rounded-full h-2.5">
+                                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 100%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-01-25</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">增值税专用发票</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">已签收</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-3" id="toggle-payment-1">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                            <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="payment-create.html" class="text-green-600 hover:text-green-900">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <!-- 嵌套的到款记录 -->
+                                    <tr class="bg-gray-50" id="payment-details-1">
+                                        <td colspan="7" class="px-6 py-4">
+                                            <div class="border-l-4 border-blue-500 pl-4">
+                                                <h4 class="text-sm font-medium text-gray-700 mb-2">到款记录</h4>
+                                                <table class="min-w-full divide-y divide-gray-200">
+                                                    <thead class="bg-gray-100">
+                                                        <tr>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款编号</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款金额</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款日期</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">付款方式</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="bg-white divide-y divide-gray-200">
+                                                        <tr>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-blue-600">
+                                                                <a href="#">DK-2023-0008</a>
+                                                            </td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">¥60,000</td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">2023-01-28</td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">银行转账</td>
+                                                            <td class="px-4 py-2 whitespace-nowrap">
+                                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">已确认</span>
+                                                            </td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                                                <a href="#" class="text-blue-600 hover:text-blue-900">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <!-- 第二张发票 -->
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            <a href="#">FP-2023-0015</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥60,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <div class="flex items-center">
+                                                <span>¥30,000</span>
+                                                <div class="ml-2 w-16 bg-gray-200 rounded-full h-2.5">
+                                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 50%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-06-10</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">增值税专用发票</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">已开票</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-3" id="toggle-payment-2">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                            <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="payment-create.html" class="text-green-600 hover:text-green-900">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <!-- 嵌套的到款记录 -->
+                                    <tr class="bg-gray-50" id="payment-details-2">
+                                        <td colspan="7" class="px-6 py-4">
+                                            <div class="border-l-4 border-blue-500 pl-4">
+                                                <h4 class="text-sm font-medium text-gray-700 mb-2">到款记录</h4>
+                                                <table class="min-w-full divide-y divide-gray-200">
+                                                    <thead class="bg-gray-100">
+                                                        <tr>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款编号</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款金额</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款日期</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">付款方式</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                                            <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="bg-white divide-y divide-gray-200">
+                                                        <tr>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-blue-600">
+                                                                <a href="#">DK-2023-0012</a>
+                                                            </td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">¥30,000</td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">2023-06-15</td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">银行转账</td>
+                                                            <td class="px-4 py-2 whitespace-nowrap">
+                                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">已确认</span>
+                                                            </td>
+                                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                                                <a href="#" class="text-blue-600 hover:text-blue-900">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 合同回款汇总 -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">回款汇总</h2>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-600 mb-1">合同总金额</p>
+                                <p class="text-2xl font-bold text-blue-800">¥120,000</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-sm text-green-600 mb-1">已到款金额</p>
+                                <p class="text-2xl font-bold text-green-800">¥90,000</p>
+                                <div class="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-green-600 h-2.5 rounded-full" style="width: 75%"></div>
+                                </div>
+                                <p class="text-xs text-green-600 mt-1">已收款 75%</p>
+                            </div>
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <p class="text-sm text-yellow-600 mb-1">未到款金额</p>
+                                <p class="text-2xl font-bold text-yellow-800">¥30,000</p>
+                                <p class="text-xs text-yellow-600 mt-1">剩余 25% 待收款</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <script>
+                    // 控制到款记录的显示/隐藏
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // 初始隐藏所有到款详情
+                        document.getElementById('payment-details-1').style.display = 'none';
+                        document.getElementById('payment-details-2').style.display = 'none';
+                        
+                        // 切换显示/隐藏第一个发票的到款记录
+                        document.getElementById('toggle-payment-1').addEventListener('click', function() {
+                            const details = document.getElementById('payment-details-1');
+                            const icon = this.querySelector('i');
+                            if (details.style.display === 'none') {
+                                details.style.display = 'table-row';
+                                icon.classList.remove('fa-chevron-down');
+                                icon.classList.add('fa-chevron-up');
+                            } else {
+                                details.style.display = 'none';
+                                icon.classList.remove('fa-chevron-up');
+                                icon.classList.add('fa-chevron-down');
+                            }
+                        });
+                        
+                        // 切换显示/隐藏第二个发票的到款记录
+                        document.getElementById('toggle-payment-2').addEventListener('click', function() {
+                            const details = document.getElementById('payment-details-2');
+                            const icon = this.querySelector('i');
+                            if (details.style.display === 'none') {
+                                details.style.display = 'table-row';
+                                icon.classList.remove('fa-chevron-down');
+                                icon.classList.add('fa-chevron-up');
+                            } else {
+                                details.style.display = 'none';
+                                icon.classList.remove('fa-chevron-up');
+                                icon.classList.add('fa-chevron-down');
+                            }
+                        });
+                    });
+                </script>
+
+                <!-- 到款记录 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">到款记录</h2>
+                        <a href="payment-create.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                            <i class="fas fa-plus-circle mr-1"></i>
+                            <span>添加到款</span>
+                        </a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款编号</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">关联发票</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款金额</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款日期</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到款方式</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            <a href="payment-detail.html">DK-2023-0007</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <a href="invoice-detail.html" class="text-blue-600 hover:text-blue-800">FP-2023-0010</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥50,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-01-25</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">银行转账</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">已确认</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <a href="payment-detail.html" class="text-blue-600 hover:text-blue-900 mr-3">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="#" class="text-gray-600 hover:text-gray-900">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
