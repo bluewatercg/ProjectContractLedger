@@ -10,7 +10,7 @@ info:
     email: support@example.com
 
 servers:
-  - url: http://localhost:8080/api/v1
+  - url: http://127.0.0.1:8080/api/v1
     description: 开发服务器
   - url: https://api.procontractledger.com/v1
     description: 生产服务器
@@ -144,11 +144,13 @@ components:
         is_active:
           type: boolean
           description: 用户账户是否激活。
+          nullable: true # 根据控制器实际返回，is_active可能为null
         created_at:
           type: string
           format: date-time
           description: 用户创建时间戳。
           readOnly: true
+          nullable: true # 根据控制器实际返回，created_at可能为null
       required:
         - id
         - username
@@ -238,6 +240,105 @@ components:
       required:
         - name
 
+    CustomerCreateRequest:
+      type: object
+      description: 创建新客户的请求体。
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: 客户名称。
+          example: "新客户公司"
+        contact_person:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 客户的主要联系人。
+          example: "张三"
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: 联系电话。
+          example: "13800138000"
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          nullable: true
+          description: 联系电子邮箱地址。
+          example: "contact@newcustomer.com"
+        address:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: 客户的实际地址。
+          example: "北京市朝阳区某某大厦"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于客户的附加备注。
+          example: "重要战略客户"
+      required:
+        - name
+
+    CustomerUpdateRequest:
+      type: object
+      description: 更新客户信息的请求体。所有字段都是可选的，只提供需要更新的字段。
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: 客户名称。
+          example: "更新后的客户公司"
+        contact_person:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 客户的主要联系人。
+          example: "李四"
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: 联系电话。
+          example: "13912345678"
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          nullable: true
+          description: 联系电子邮箱地址。
+          example: "updated@customer.com"
+        address:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: 客户的实际地址。
+          example: "上海市浦东新区某某园区"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于客户的附加备注。
+          example: "已完成年度续约"
+      required:
+        - name # 控制器中要求name必填
+
+    CustomerResponse:
+      type: object
+      description: 客户信息响应体。
+      allOf:
+        - $ref: '#/components/schemas/CustomerBase'
+      properties:
+        customer_id:
+          readOnly: true
+        created_at:
+          readOnly: true
+        updated_at:
+          readOnly: true
+
     InvoiceInfoBase:
       type: object
       description: 客户的发票处理信息。对应 `invoice_infos` 表。
@@ -293,6 +394,110 @@ components:
         - customer_id
         - company_name
 
+    InvoiceInfoCreateRequest:
+      type: object
+      description: 创建客户开票信息的请求体。
+      properties:
+        company_name:
+          type: string
+          maxLength: 100
+          description: 用于开票的公司名称。
+          example: "开票公司A"
+        tax_number:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 税号。
+          example: "91310000XXXXXXXX"
+        bank_name:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: 用于付款的开户银行名称。
+          example: "中国银行"
+        bank_account:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 银行账号。
+          example: "6222XXXXXXXXXXXX"
+        address:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: 用于开票的公司地址。
+          example: "上海市徐汇区某某路"
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: 用于开票的公司电话。
+          example: "021-12345678"
+        is_default:
+          type: boolean
+          default: false
+          description: 是否为客户的默认发票信息。
+          example: true
+      required:
+        - company_name
+
+    InvoiceInfoUpdateRequest:
+      type: object
+      description: 更新客户开票信息的请求体。所有字段都是可选的，只提供需要更新的字段。
+      properties:
+        company_name:
+          type: string
+          maxLength: 100
+          description: 用于开票的公司名称。
+          example: "更新后的开票公司B"
+        tax_number:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 税号。
+          example: "91310000YYYYYYYY"
+        bank_name:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: 用于付款的开户银行名称。
+          example: "建设银行"
+        bank_account:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 银行账号。
+          example: "6227XXXXXXXXXXXX"
+        address:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: 用于开票的公司地址。
+          example: "上海市静安区某某路"
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: 用于开票的公司电话。
+          example: "021-87654321"
+        is_default:
+          type: boolean
+          description: 是否为客户的默认发票信息。
+          example: false
+      required:
+        - company_name # 控制器中要求company_name必填
+
+    InvoiceInfoResponse:
+      type: object
+      description: 客户开票信息响应体。
+      allOf:
+        - $ref: '#/components/schemas/InvoiceInfoBase'
+      properties:
+        id:
+          readOnly: true
+        created_at:
+          readOnly: true
+
     ContractBase:
       type: object
       description: 基础合同信息。对应 `contracts` 表。
@@ -320,11 +525,11 @@ components:
           description: 合同总金额。
         start_date:
           type: string
-          format: date-time # 根据表结构使用date-time，也可能仅为date
+          format: date # 根据表结构使用date-time，也可能仅为date
           description: 合同开始日期。
         end_date:
           type: string
-          format: date-time # 根据表结构使用date-time，也可能仅为date
+          format: date # 根据表结构使用date-time，也可能仅为date
           description: 合同结束日期。
         status:
           type: string
@@ -355,6 +560,161 @@ components:
         - end_date
         - status
 
+    ContractCreateRequest:
+      type: object
+      description: 创建新合同的请求体。
+      properties:
+        customer_id:
+          type: integer
+          format: int32
+          description: 关联客户的标识符。
+          example: 1
+        contract_number:
+          type: string
+          maxLength: 50
+          description: 唯一标识合同的编号。
+          example: "CONTRACT-2023-001"
+        name:
+          type: string
+          maxLength: 200
+          description: 合同的名称或标题。
+          example: "软件开发服务合同"
+        amount:
+          type: string
+          format: decimal
+          description: 合同总金额。
+          example: "10000.00"
+        start_date:
+          type: string
+          format: date
+          description: 合同开始日期。
+          example: "2023-01-01"
+        end_date:
+          type: string
+          format: date
+          description: 合同结束日期。
+          example: "2023-12-31"
+        status:
+          type: string
+          maxLength: 20
+          description: 合同当前状态 (例如：草稿, 履行中, 已完成, 已逾期)。
+          enum: ["草稿", "履行中", "已完成", "已逾期"]
+          example: "履行中"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于合同的附加备注。
+          example: "包含年度维护服务"
+      required:
+        - customer_id
+        - contract_number
+        - name
+        - amount
+        - start_date
+        - end_date
+        - status
+
+    ContractUpdateRequest:
+      type: object
+      description: 更新合同信息的请求体。所有字段都是可选的，只提供需要更新的字段。
+      properties:
+        customer_id:
+          type: integer
+          format: int32
+          description: 关联客户的标识符。
+          example: 1
+        contract_number:
+          type: string
+          maxLength: 50
+          description: 唯一标识合同的编号。
+          example: "CONTRACT-2023-001-REV"
+        name:
+          type: string
+          maxLength: 200
+          description: 合同的名称或标题。
+          example: "软件开发服务合同 (修订版)"
+        amount:
+          type: string
+          format: decimal
+          description: 合同总金额。
+          example: "12000.00"
+        start_date:
+          type: string
+          format: date
+          description: 合同开始日期。
+          example: "2023-01-01"
+        end_date:
+          type: string
+          format: date
+          description: 合同结束日期。
+          example: "2024-12-31"
+        status:
+          type: string
+          maxLength: 20
+          description: 合同当前状态 (例如：草稿, 履行中, 已完成, 已逾期)。
+          enum: ["草稿", "履行中", "已完成", "已逾期"]
+          example: "已完成"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于合同的附加备注。
+          example: "已完成年度维护服务，并续签两年"
+      required:
+        - customer_id # 控制器中要求customer_id必填
+        - contract_number # 控制器中要求contract_number必填
+        - name # 控制器中要求name必填
+        - amount # 控制器中要求amount必填
+        - start_date # 控制器中要求start_date必填
+        - end_date # 控制器中要求end_date必填
+        - status # 控制器中要求status必填
+
+    ContractResponse:
+      type: object
+      description: 合同信息响应体。
+      allOf:
+        - $ref: '#/components/schemas/ContractBase'
+      properties:
+        contract_id:
+          readOnly: true
+        created_at:
+          readOnly: true
+        updated_at:
+          readOnly: true
+        customer_name:
+          type: string
+          description: 关联客户的名称。
+          readOnly: true
+        invoices:
+          type: array
+          description: 关联的发票列表。
+          items:
+            type: object
+            properties:
+              invoice_id:
+                type: integer
+                format: int32
+              invoice_number:
+                type: string
+              amount:
+                type: string
+                format: decimal
+              issue_date:
+                type: string
+                format: date
+              due_date:
+                type: string
+                format: date
+              status:
+                type: string
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+
     InvoiceBase:
       type: object
       description: 基础发票信息。对应 `invoices` 表。
@@ -382,11 +742,11 @@ components:
           description: 发票金额。
         issue_date:
           type: string
-          format: date-time # 根据表结构使用date-time
+          format: date # 根据表结构使用date-time
           description: 发票开具日期。
         due_date:
           type: string
-          format: date-time # 根据表结构使用date-time
+          format: date # 根据表结构使用date-time
           description: 发票付款到期日。
         status:
           type: string
@@ -411,6 +771,172 @@ components:
         - issue_date
         - due_date
         - status
+
+    InvoiceCreateRequest:
+      type: object
+      description: 创建新发票的请求体。
+      properties:
+        contract_id:
+          type: integer
+          format: int32
+          description: 关联合同的标识符。
+          example: 1
+        invoice_info_id:
+          type: integer
+          format: int32
+          description: 使用的客户发票信息的标识符。
+          example: 1
+        invoice_number:
+          type: string
+          maxLength: 50
+          description: 发票的唯一编号。
+          example: "INV-2023-001"
+        amount:
+          type: string
+          format: decimal
+          description: 发票金额。
+          example: "5000.00"
+        issue_date:
+          type: string
+          format: date
+          description: 发票开具日期。
+          example: "2023-03-15"
+        due_date:
+          type: string
+          format: date
+          description: 发票付款到期日。
+          example: "2023-04-15"
+        status:
+          type: string
+          maxLength: 20
+          description: 发票当前状态 (例如：待开票, 已开票, 已收款)。
+          enum: ["待开票", "已开票", "已收款"]
+          example: "已开票"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于发票的附加备注。
+          example: "第一期款项"
+      required:
+        - contract_id
+        - invoice_info_id
+        - invoice_number
+        - amount
+        - issue_date
+        - due_date
+        - status
+
+    InvoiceUpdateRequest:
+      type: object
+      description: 更新发票信息的请求体。所有字段都是可选的，只提供需要更新的字段。
+      properties:
+        invoice_info_id:
+          type: integer
+          format: int32
+          description: 使用的客户发票信息的标识符。
+          example: 2
+        invoice_number:
+          type: string
+          maxLength: 50
+          description: 发票的唯一编号。
+          example: "INV-2023-001-REV"
+        amount:
+          type: string
+          format: decimal
+          description: 发票金额。
+          example: "5500.00"
+        issue_date:
+          type: string
+          format: date
+          description: 发票开具日期。
+          example: "2023-03-20"
+        due_date:
+          type: string
+          format: date
+          description: 发票付款到期日。
+          example: "2023-04-20"
+        status:
+          type: string
+          maxLength: 20
+          description: 发票当前状态 (例如：待开票, 已开票, 已收款)。
+          enum: ["待开票", "已开票", "已收款"]
+          example: "已收款"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于发票的附加备注。
+          example: "已完成第一期款项，并调整金额"
+
+    InvoiceResponse:
+      type: object
+      description: 发票信息响应体。
+      allOf:
+        - $ref: '#/components/schemas/InvoiceBase'
+      properties:
+        invoice_id:
+          readOnly: true
+        created_at:
+          readOnly: true
+        contract_name:
+          type: string
+          description: 关联合同的名称。
+          readOnly: true
+        customer_name:
+          type: string
+          description: 关联客户的名称。
+          readOnly: true
+        company_name:
+          type: string
+          description: 关联开票公司的名称。
+          readOnly: true
+        tax_number:
+          type: string
+          description: 关联开票公司的税号。
+          readOnly: true
+        bank_name:
+          type: string
+          description: 关联开票公司的开户银行名称。
+          readOnly: true
+        bank_account:
+          type: string
+          description: 关联开票公司的银行账号。
+          readOnly: true
+        address:
+          type: string
+          description: 关联开票公司的地址。
+          readOnly: true
+        phone:
+          type: string
+          description: 关联开票公司的电话。
+          readOnly: true
+        payments:
+          type: array
+          description: 关联的付款记录列表。
+          items:
+            type: object
+            properties:
+              payment_id:
+                type: integer
+                format: int32
+              amount:
+                type: string
+                format: decimal
+              payment_date:
+                type: string
+                format: date
+              payment_method:
+                type: string
+              reference_number:
+                type: string
+                nullable: true
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
 
     PaymentBase:
       type: object
@@ -457,6 +983,126 @@ components:
         - amount
         - payment_date
         - payment_method
+
+    PaymentCreateRequest:
+      type: object
+      description: 创建新付款记录的请求体。
+      properties:
+        invoice_id:
+          type: integer
+          format: int32
+          description: 关联发票的标识符。
+          example: 1
+        amount:
+          type: string
+          format: decimal
+          description: 付款金额。
+          example: "2500.00"
+        payment_date:
+          type: string
+          format: date
+          description: 付款日期。
+          example: "2023-04-01"
+        payment_method:
+          type: string
+          maxLength: 50
+          description: 付款方式 (例如：银行转账, 支付宝)。
+          example: "银行转账"
+        reference_number:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 付款参考号 (例如：交易ID)。
+          example: "BANK-TXN-12345"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于付款的附加备注。
+          example: "第一期款项已到账"
+      required:
+        - invoice_id
+        - amount
+        - payment_date
+        - payment_method
+
+    PaymentUpdateRequest:
+      type: object
+      description: 更新付款记录的请求体。所有字段都是可选的，只提供需要更新的字段。
+      properties:
+        amount:
+          type: string
+          format: decimal
+          description: 付款金额。
+          example: "2600.00"
+        payment_date:
+          type: string
+          format: date
+          description: 付款日期。
+          example: "2023-04-05"
+        payment_method:
+          type: string
+          maxLength: 50
+          description: 付款方式 (例如：银行转账, 支付宝)。
+          example: "支付宝"
+        reference_number:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 付款参考号 (例如：交易ID)。
+          example: "ALIPAY-TXN-67890"
+        notes:
+          type: string
+          format: text
+          nullable: true
+          description: 关于付款的附加备注。
+          example: "金额调整，已收到尾款"
+
+    PaymentResponse:
+      type: object
+      description: 付款记录响应体。
+      allOf:
+        - $ref: '#/components/schemas/PaymentBase'
+      properties:
+        payment_id:
+          readOnly: true
+        created_at:
+          readOnly: true
+        invoice_number:
+          type: string
+          description: 关联发票的编号。
+          readOnly: true
+        invoice_amount:
+          type: string
+          format: decimal
+          description: 关联发票的金额。
+          readOnly: true
+        invoice_status:
+          type: string
+          description: 关联发票的状态。
+          readOnly: true
+        contract_id:
+          type: integer
+          format: int32
+          description: 关联合同的ID。
+          readOnly: true
+        contract_number:
+          type: string
+          description: 关联合同的编号。
+          readOnly: true
+        contract_name:
+          type: string
+          description: 关联合同的名称。
+          readOnly: true
+        customer_id:
+          type: integer
+          format: int32
+          description: 关联客户的ID。
+          readOnly: true
+        customer_name:
+          type: string
+          description: 关联客户的名称。
+          readOnly: true
 
     ContractAttachmentBase:
       type: object
@@ -512,824 +1158,100 @@ components:
         - file_name
         - file_path
 
-    CommunicationBase:
+    Pagination:
       type: object
-      description: 客户沟通记录。对应 `communications` 表。
+      description: 分页信息。
       properties:
-        communication_id:
+        total:
           type: integer
-          readOnly: true
-          description: 沟通记录ID。
-        customer_id:
+          description: 总记录数。
+        page:
           type: integer
-          description: 客户ID。
-        type:
-          type: string
-          maxLength: 50
-          description: 沟通类型。
-        content:
-          type: string
-          format: text
-          description: 沟通内容。
-        contact_time:
-          type: string
-          format: date-time
-          description: 沟通时间。
-        contact_person:
-          type: string
-          maxLength: 50
-          description: 联系人。
-        notes:
-          type: string
-          format: text
-          nullable: true
-          description: 备注。
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-          description: 创建时间。
+          description: 当前页码。
+        pageSize:
+          type: integer
+          description: 每页记录数。
       required:
-        - customer_id
-        - type
-        - content
-        - contact_time
-        - contact_person
-
-    ReminderBase:
-      type: object
-      description: 合同提醒。对应 `reminders` 表。
-      properties:
-        reminder_id:
-          type: integer
-          readOnly: true
-          description: 提醒ID。
-        contract_id:
-          type: integer
-          description: 合同ID。
-        type:
-          type: string
-          maxLength: 50
-          description: 提醒类型。
-        content:
-          type: string
-          format: text
-          description: 提醒内容。
-        remind_time:
-          type: string
-          format: date-time
-          description: 提醒时间。
-        status:
-          type: string
-          maxLength: 20
-          default: "pending"
-          enum: ["pending", "completed"]
-          description: 状态：pending-待处理, completed-已完成。
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-          description: 创建时间。
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-          description: 更新时间。
-      required:
-        - contract_id
-        - type
-        - content
-        - remind_time
-
-
-    # Schemas from queries.sql
-    CustomerWithContractCount:
-      allOf:
-        - $ref: '#/components/schemas/CustomerBase'
-        - type: object
-          description: 包含客户基础信息及其合同数量。
-          properties:
-            contract_count:
-              type: integer
-              format: int32
-              description: 与此客户关联的合同数量。
-              example: 2
-          required:
-            - contract_count
-
-    CustomerWithContractDetail: # Represents a single row from the customer detail query
-      allOf:
-        - $ref: '#/components/schemas/CustomerBase' # 所有 Customer 表的字段
-        - type: object
-          description: 包含客户基础信息及其关联的单个合同的简要信息。查询结果中，每个合同会作为一条记录返回。
-          properties:
-            contract_no: # 在查询中从 contract_number 重命名
-              type: string
-              maxLength: 50
-              nullable: true
-              description: 来自 `contracts` 表的合同编号。
-              example: "CT2024001"
-            contract_name:
-              type: string
-              maxLength: 200
-              nullable: true
-              description: 来自 `contracts` 表的合同名称。
-              example: "年度服务合同"
-            contract_status:
-              type: string
-              maxLength: 20
-              nullable: true
-              description: 来自 `contracts` 表的合同状态。
-              example: "履行中"
-      # CustomerBase 之外没有额外的必填字段，因为合同字段可能因 LEFT JOIN 而为 null
-
-    ContractWithCustomerAndPaymentInfo:
-      allOf:
-        - $ref: '#/components/schemas/ContractBase' # 所有 Contract 表的字段
-        - type: object
-          description: 包含合同基础信息、关联客户名称、联系人以及该合同的总已付金额。
-          properties:
-            customer_name:
-              type: string
-              maxLength: 100
-              description: 与合同关联的客户名称。来自 `customers.name`。
-              example: "客户A"
-            contact_person:
-              type: string
-              maxLength: 50
-              nullable: true
-              description: 客户的主要联系人。来自 `customers.contact_person`。
-              example: "联系人张三"
-            total_paid_amount:
-              type: string # 十进制数使用字符串
-              format: decimal
-              description: 此合同下所有发票的已付款总额。计算得出的总和。
-              example: "25000.00"
-          required:
-            - customer_name # 由于 JOIN，customer_name 总是存在
-            - total_paid_amount # COALESCE 确保此字段存在
-
-    ContractDetailWithInvoicesAndPayments: # Represents a single row from the contract detail query
-      allOf:
-        - $ref: '#/components/schemas/ContractBase'
-        - type: object
-          description: 包含合同基础信息、客户名称以及关联的单个发票和付款信息。查询结果中，每个付款或无付款的发票会作为一条记录返回。
-          properties:
-            customer_name:
-              type: string
-              maxLength: 100
-              description: 与合同关联的客户名称。来自 `customers.name`。
-              example: "客户A"
-            invoice_no: # 在查询中从 invoice_number 重命名
-              type: string
-              maxLength: 50
-              nullable: true
-              description: 与合同关联的发票编号。来自 `invoices.invoice_number`。
-              example: "INV001"
-            invoice_amount:
-              type: string # 十进制数使用字符串
-              format: decimal
-              nullable: true
-              description: 关联发票的金额。来自 `invoices.amount`。
-              example: "25000.00"
-            invoice_status:
-              type: string
-              maxLength: 20
-              nullable: true
-              description: 关联发票的状态。来自 `invoices.status`。
-              example: "已收款"
-            payment_amount:
-              type: string # 十进制数使用字符串
-              format: decimal
-              nullable: true
-              description: 为发票支付的金额。来自 `payments.amount`。
-              example: "10000.00"
-            payment_date:
-              type: string
-              format: date-time
-              nullable: true
-              description: 付款日期。来自 `payments.payment_date`。
-              example: "2024-02-01T00:00:00Z"
-          required:
-            - customer_name # 由于 JOIN，customer_name 总是存在
-
-    InvoiceWithDetails:
-      allOf:
-        - $ref: '#/components/schemas/InvoiceBase'
-        - type: object
-          description: 包含发票基础信息及其关联的合同号、合同名称、客户名称、发票抬头公司名称和税号。
-          properties:
-            contract_no: # 在查询中从 contract_number 重命名
-              type: string
-              maxLength: 50
-              description: 与发票关联的合同编号。来自 `contracts.contract_number`。
-              example: "CT2024001"
-            contract_name:
-              type: string
-              maxLength: 200
-              description: 与发票关联的合同名称。来自 `contracts.name`。
-              example: "年度服务合同"
-            customer_name:
-              type: string
-              maxLength: 100
-              description: 此发票的客户名称。来自 `customers.name`。
-              example: "客户A"
-            invoice_title: # 对应 invoice_infos.company_name
-              type: string
-              maxLength: 100
-              nullable: true
-              description: 用作发票抬头的公司名称。来自 `invoice_infos.company_name`。
-              example: "客户A有限公司"
-            tax_number:
-              type: string
-              maxLength: 50
-              nullable: true
-              description: 来自发票信息的税号。来自 `invoice_infos.tax_number`。
-              example: "TAX12345678"
-          required: # 来自 JOIN 表且在其原始表中非空的字段
-            - contract_no
-            - contract_name
-            - customer_name
-
-    PaymentWithDetails:
-      allOf:
-        - $ref: '#/components/schemas/PaymentBase'
-        - type: object
-          description: 包含付款基础信息及其关联的发票号、合同号、合同名称和客户名称。
-          properties:
-            invoice_no: # 在查询中从 invoice_number 重命名
-              type: string
-              maxLength: 50
-              description: 此付款对应的发票编号。来自 `invoices.invoice_number`。
-              example: "INV001"
-            contract_no: # 在查询中从 contract_number 重命名
-              type: string
-              maxLength: 50
-              description: 与此付款发票相关的合同编号。来自 `contracts.contract_number`。
-              example: "CT2024001"
-            contract_name:
-              type: string
-              maxLength: 200
-              description: 与此付款相关的合同名称。来自 `contracts.name`。
-              example: "年度服务合同"
-            customer_name:
-              type: string
-              maxLength: 100
-              description: 与此付款相关的客户名称。来自 `customers.name`。
-              example: "客户A"
-          required: # 来自 JOIN 表且在其原始表中非空的字段
-            - invoice_no
-            - contract_no
-            - contract_name
-            - customer_name
-
-    ContractAmountStatistics:
-      type: object
-      description: 基于状态的合同金额统计信息。
-      properties:
-        contract_count:
-          type: integer
-          format: int64 # SUM 和 COUNT 可能很大
-          description: 符合条件的合同总数。
-          example: 5
-        total_amount:
-          type: string # 十进制数使用字符串
-          format: decimal
-          description: 所有符合条件合同的金额总和。
-          example: "250000.00"
-        avg_amount:
-          type: string # 十进制数使用字符串
-          format: decimal
-          description: 符合条件合同的平均金额。
-          example: "50000.00"
-      required:
-        - contract_count
-        - total_amount
-        - avg_amount
-
-    ContractPaymentCollection:
-      type: object
-      description: 单个合同的收款情况统计信息。
-      properties:
-        contract_id:
-          type: integer
-          format: int32
-          description: 合同的唯一标识符。
-          example: 101
-        contract_name:
-          type: string
-          maxLength: 200
-          description: 合同名称。来自 `contracts.name`。
-          example: "年度服务合同"
-        contract_amount:
-          type: string # 十进制数使用字符串
-          format: decimal
-          description: 合同总金额。
-          example: "50000.00"
-        paid_amount:
-          type: string # 十进制数使用字符串
-          format: decimal
-          description: 此合同的已付金额。
-          example: "25000.00"
-        remaining_amount:
-          type: string # 十进制数使用字符串
-          format: decimal
-          description: 此合同的待付金额。
-          example: "25000.00"
-      required:
-        - contract_id
-        - contract_name
-        - contract_amount
-        - paid_amount
-        - remaining_amount
+        - total
+        - page
+        - pageSize
 
     ErrorResponse:
       type: object
-      description: 错误响应体。
+      description: 通用错误响应。
       properties:
-        code:
-          type: integer
-          format: int32
-          description: 错误代码。
         message:
           type: string
-          description: 人类可读的错误消息。
-        details:
-          type: string
-          nullable: true
-          description: 可选的关于错误的附加详细信息。
+          description: 错误消息。
+        error:
+          type: object
+          description: 详细错误信息 (仅在开发环境显示)。
       required:
-        - code
         - message
 
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: 用于认证的 JWT Bearer 令牌。
-
 security:
-  - BearerAuth: [] # 全局应用于所有操作，除非被覆盖
+  - BearerAuth: []
 
 paths:
   /auth/login:
     post:
+      summary: 用户登录
       tags:
         - Authentication
-      summary: 用户登录
-      description: 使用用户名（或电子邮箱）和密码进行身份验证，成功后返回访问令牌。
-      operationId: loginUser
       requestBody:
-        description: 用户登录凭据。
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
       responses:
-        '200':
-          description: 登录成功，返回访问令牌。
+        200:
+          description: 登录成功，返回JWT令牌
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
-              example:
-                access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-                token_type: "bearer"
-        '400':
-          description: 请求无效（例如，缺少字段）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: 400
-                message: "请求体中缺少 'username' 或 'password' 字段。"
-        '401':
-          description: 认证失败（用户名或密码错误）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: 401
-                message: "用户名或密码无效。"
-        '500':
-          description: 服务器内部错误。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      security: [] # 此端点用于获取令牌，本身不需要令牌认证
-
-  /customers:
-    get:
-      tags:
-        - Customers
-      summary: 列出所有客户及其合同数量
-      description: |-
-        检索所有客户的列表。每个客户对象都包含其关联合同的数量。
-        此操作使用从 `customers` 到 `contracts` 的 `LEFT JOIN` 并按客户分组。
-      operationId: listCustomers
-      responses:
-        '200':
-          description: 包含客户及其合同数量的列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CustomerWithContractCount'
-              example:
-                - customer_id: 1
-                  name: "客户A"
-                  contact_person: "联系人张三"
-                  phone: "13800138000"
-                  email: "zhangsan@example.com"
-                  address: "客户地址A"
-                  notes: "一些备注信息"
-                  created_at: "2024-01-15T10:00:00Z"
-                  updated_at: "2024-01-15T10:00:00Z"
-                  contract_count: 2
-                - customer_id: 2
-                  name: "客户B"
-                  contact_person: "联系人李四"
-                  phone: "13900139000"
-                  email: "lisi@example.com"
-                  address: "客户地址B"
-                  notes: null
-                  created_at: "2024-02-01T11:00:00Z"
-                  updated_at: "2024-02-01T11:00:00Z"
-                  contract_count: 0
-        '500':
+        400:
+          description: 缺少用户名或密码
+        401:
+          description: 用户名或密码不正确 / 账户已被禁用
+        500:
           description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /customers/{customer_id}:
+  /auth/validate:
     get:
+      summary: 验证JWT令牌
       tags:
-        - Customers
-      summary: 获取客户详情及其关联合同信息
-      description: |-
-        检索特定客户的详细信息。
-        响应是一个数组，其中每个元素代表与客户关联的一个合同。
-        如果客户没有合同，则数组包含一个元素，合同字段为空。
-        此操作使用从 `customers` 到 `contracts` 的 `LEFT JOIN`。
-      operationId: getCustomerById
-      parameters:
-        - name: customer_id
-          in: path
-          required: true
-          description: 要检索的客户的ID。
-          schema:
-            type: integer
-            format: int32
+        - Authentication
+      security:
+        - BearerAuth: []
       responses:
-        '200':
-          description: 客户的详细信息，每个关联合同作为数组中的一项。
+        200:
+          description: 令牌有效，返回用户信息
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CustomerWithContractDetail'
-              examples:
-                twoContracts:
-                  summary: 拥有两个合同的客户
-                  value:
-                    - customer_id: 1
-                      name: "客户A"
-                      contact_person: "联系人张三"
-                      phone: "13800138000"
-                      email: "zhangsan@example.com"
-                      address: "客户地址A"
-                      notes: "一些备注信息"
-                      created_at: "2024-01-15T10:00:00Z"
-                      updated_at: "2024-01-15T10:00:00Z"
-                      contract_no: "CT2024001"
-                      contract_name: "年度服务合同"
-                      contract_status: "履行中"
-                    - customer_id: 1
-                      name: "客户A"
-                      contact_person: "联系人张三"
-                      phone: "13800138000"
-                      email: "zhangsan@example.com"
-                      address: "客户地址A"
-                      notes: "一些备注信息"
-                      created_at: "2024-01-15T10:00:00Z"
-                      updated_at: "2024-01-15T10:00:00Z"
-                      contract_no: "CT2024002"
-                      contract_name: "项目开发合同"
-                      contract_status: "已完成"
-                noContracts:
-                  summary: 没有合同的客户
-                  value:
-                    - customer_id: 2
-                      name: "客户B"
-                      contact_person: "联系人李四"
-                      phone: "13900139000"
-                      email: "lisi@example.com"
-                      address: "客户地址B"
-                      notes: null
-                      created_at: "2024-02-01T11:00:00Z"
-                      updated_at: "2024-02-01T11:00:00Z"
-                      contract_no: null
-                      contract_name: null
-                      contract_status: null
-        '404':
-          description: 未找到客户
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserResponse'
+        401:
+          description: 未提供认证令牌 / 无效的令牌或令牌已过期 / 无效的用户或账户已禁用
+        500:
           description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /contracts:
-    get:
-      tags:
-        - Contracts
-      summary: 列出所有合同及其客户和付款信息
-      description: |-
-        检索所有合同的列表，包括关联的客户名称、联系人以及每个合同的总已付金额。
-        此操作将 `contracts` 与 `customers` 连接，并通过 `invoices` 从 `payments` 聚合付款数据。
-      operationId: listContracts
-      responses:
-        '200':
-          description: 包含详细信息的合同列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ContractWithCustomerAndPaymentInfo'
-              example:
-                - contract_id: 101
-                  customer_id: 1
-                  contract_number: "CT2024001"
-                  name: "年度服务合同"
-                  amount: "50000.00"
-                  start_date: "2024-01-01T00:00:00Z"
-                  end_date: "2024-12-31T00:00:00Z"
-                  status: "履行中"
-                  notes: "合同备注"
-                  created_at: "2024-01-10T09:00:00Z"
-                  updated_at: "2024-01-10T09:00:00Z"
-                  customer_name: "客户A"
-                  contact_person: "联系人张三"
-                  total_paid_amount: "25000.00"
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /contracts/{contract_id}:
-    get:
-      tags:
-        - Contracts
-      summary: 获取合同详情及其发票和付款信息
-      description: |-
-        检索特定合同的详细信息，包括客户名称以及关联的发票和付款详情。
-        响应是一个数组，其中每个项目代表发票的一笔付款，或没有付款的发票。
-        此操作连接 `contracts`、`customers`、`invoices` 和 `payments`。
-      operationId: getContractById
-      parameters:
-        - name: contract_id
-          in: path
-          required: true
-          description: 要检索的合同的ID。
-          schema:
-            type: integer
-            format: int32
-      responses:
-        '200':
-          description: 合同的详细信息。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ContractDetailWithInvoicesAndPayments'
-              example:
-                - contract_id: 101
-                  customer_id: 1
-                  contract_number: "CT2024001"
-                  name: "年度服务合同"
-                  amount: "50000.00"
-                  start_date: "2024-01-01T00:00:00Z"
-                  end_date: "2024-12-31T00:00:00Z"
-                  status: "履行中"
-                  customer_name: "客户A"
-                  invoice_no: "INV001"
-                  invoice_amount: "25000.00"
-                  invoice_status: "已收款"
-                  payment_amount: "10000.00"
-                  payment_date: "2024-02-01T00:00:00Z"
-                - contract_id: 101 # 同一合同，同一发票的不同付款
-                  customer_id: 1
-                  contract_number: "CT2024001"
-                  name: "年度服务合同"
-                  amount: "50000.00"
-                  start_date: "2024-01-01T00:00:00Z"
-                  end_date: "2024-12-31T00:00:00Z"
-                  status: "履行中"
-                  customer_name: "客户A"
-                  invoice_no: "INV001"
-                  invoice_amount: "25000.00"
-                  invoice_status: "已收款"
-                  payment_amount: "15000.00"
-                  payment_date: "2024-03-01T00:00:00Z"
-        '404':
-          description: 未找到合同
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /invoices:
-    get:
-      tags:
-        - Invoices
-      summary: 列出所有发票及其详细信息
-      description: |-
-        检索所有发票的列表，包括关联的合同号、合同名称、客户名称、发票抬头（公司名称）和税号。
-        此操作连接 `invoices` 与 `contracts`、`customers` 和 `invoice_infos`。
-      operationId: listInvoices
-      responses:
-        '200':
-          description: 包含详细信息的发票列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InvoiceWithDetails'
-              example:
-                - invoice_id: 201
-                  contract_id: 101
-                  invoice_info_id: 301
-                  invoice_number: "INV001"
-                  amount: "25000.00"
-                  issue_date: "2024-01-20T00:00:00Z"
-                  due_date: "2024-02-20T00:00:00Z"
-                  status: "已收款"
-                  notes: "发票备注"
-                  created_at: "2024-01-18T11:00:00Z"
-                  contract_no: "CT2024001"
-                  contract_name: "年度服务合同"
-                  customer_name: "客户A"
-                  invoice_title: "客户A有限公司"
-                  tax_number: "TAX12345678"
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /payments:
-    get:
-      tags:
-        - Payments
-      summary: 列出所有付款记录及其详细信息
-      description: |-
-        检索所有付款记录的列表，包括关联的发票号、合同号、合同名称和客户名称。
-        此操作连接 `payments` 与 `invoices`、`contracts` 和 `customers`。
-      operationId: listPayments
-      responses:
-        '200':
-          description: 包含详细信息的付款记录列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PaymentWithDetails'
-              example:
-                - payment_id: 501
-                  invoice_id: 201
-                  amount: "10000.00"
-                  payment_date: "2024-02-01T00:00:00Z"
-                  payment_method: "银行转账"
-                  reference_number: "REF123"
-                  notes: "付款备注"
-                  created_at: "2024-02-01T14:00:00Z"
-                  invoice_no: "INV001"
-                  contract_no: "CT2024001"
-                  contract_name: "年度服务合同"
-                  customer_name: "客户A"
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /statistics/contracts/amount:
-    get:
-      tags:
-        - Statistics
-      summary: 获取合同金额统计信息
-      description: |-
-        检索合同的统计信息，包括数量、总金额和平均金额，可选择按状态筛选。
-        底层的SQL查询默认为 'active' 状态。此API端点允许通过查询参数指定状态。
-      operationId: getContractAmountStatistics
-      parameters:
-        - name: status
-          in: query
-          required: false
-          description: 按状态筛选合同 (例如：'active', '履行中')。如果未提供，则默认为 'active'。
-          schema:
-            type: string
-            default: "active" # 依据原始查询逻辑的默认值
-            enum: ["草稿", "履行中", "已完成", "已逾期", "active"] # 'active' 来自 query.sql，其他来自合同状态枚举
-      responses:
-        '200':
-          description: 合同金额统计信息。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ContractAmountStatistics'
-              example:
-                contract_count: 5
-                total_amount: "250000.00"
-                avg_amount: "50000.00"
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /statistics/contracts/payment-collection:
-    get:
-      tags:
-        - Statistics
-      summary: 按合同获取收款情况统计信息
-      description: |-
-        检索每个合同的收款情况统计信息，包括合同金额、已付金额和待付金额。
-        此操作连接 `contracts` 与 `invoices` 和 `payments` 并按合同分组。
-      operationId: getContractPaymentCollectionStatistics
-      responses:
-        '200':
-          description: 每个合同的收款情况统计列表。
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ContractPaymentCollection'
-              example:
-                - contract_id: 101
-                  contract_name: "年度服务合同"
-                  contract_amount: "50000.00"
-                  paid_amount: "25000.00"
-                  remaining_amount: "25000.00"
-                - contract_id: 102
-                  contract_name: "项目开发合同"
-                  contract_amount: "120000.00"
-                  paid_amount: "120000.00"
-                  remaining_amount: "0.00"
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /users:
     post:
+      summary: 创建新用户
       tags:
         - Users
-      summary: 创建新用户
-      description: 创建一个新的用户账户。需要管理员权限。
-      operationId: createUser
       requestBody:
-        description: 用户创建请求体。
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserCreateRequest'
       responses:
-        '201':
-          description: 用户创建成功。
+        201:
+          description: 用户创建成功
           content:
             application/json:
               schema:
@@ -1341,146 +1263,76 @@ paths:
                   userId:
                     type: integer
                     format: int32
-                    example: 1
                   username:
                     type: string
-                    example: "newuser"
                   email:
                     type: string
-                    example: "newuser@example.com"
-        '400':
-          description: 请求无效（例如，缺少必填字段）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: 未授权（缺少或无效的认证令牌）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: 用户名或邮箱已存在。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 服务器内部错误。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: 缺少用户名、邮箱或密码
+        409:
+          description: 用户名或邮箱已存在
+        500:
+          description: 服务器内部错误
     get:
+      summary: 获取所有用户
       tags:
         - Users
-      summary: 获取所有用户列表
-      description: 检索所有用户账户的列表。需要管理员权限。
-      operationId: getAllUsers
       responses:
-        '200':
-          description: 成功获取用户列表。
+        200:
+          description: 成功获取用户列表
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/UserResponse'
-              example:
-                - id: 1
-                  username: "admin_user"
-                  email: "admin@example.com"
-                  is_active: true
-                  created_at: "2024-01-01T10:00:00Z"
-                - id: 2
-                  username: "test_user"
-                  email: "test@example.com"
-                  is_active: true
-                  created_at: "2024-01-02T11:00:00Z"
-        '401':
-          description: 未授权（缺少或无效的认证令牌）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 服务器内部错误。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+        500:
+          description: 服务器内部错误
   /users/{id}:
     get:
+      summary: 根据ID获取用户
       tags:
         - Users
-      summary: 根据ID获取用户详情
-      description: 根据用户ID检索单个用户账户的详细信息。需要管理员权限。
-      operationId: getUserById
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: 要检索的用户ID。
+        - in: path
+          name: id
           schema:
             type: integer
             format: int32
+          required: true
+          description: 用户ID
       responses:
-        '200':
-          description: 成功获取用户详情。
+        200:
+          description: 成功获取用户信息
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
-              example:
-                id: 1
-                username: "admin_user"
-                email: "admin@example.com"
-                is_active: true
-                created_at: "2024-01-01T10:00:00Z"
-        '401':
-          description: 未授权（缺少或无效的认证令牌）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: 用户未找到。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 服务器内部错误。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: 用户未找到
+        500:
+          description: 服务器内部错误
     put:
+      summary: 更新用户信息
       tags:
         - Users
-      summary: 更新用户信息
-      description: 根据用户ID更新现有用户账户的信息。需要管理员权限。
-      operationId: updateUser
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: 要更新的用户ID。
+        - in: path
+          name: id
           schema:
             type: integer
             format: int32
+          required: true
+          description: 用户ID
       requestBody:
-        description: 用户更新请求体。
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserUpdateRequest'
       responses:
-        '200':
-          description: 用户更新成功。
+        200:
+          description: 用户更新成功
           content:
             application/json:
               schema:
@@ -1489,47 +1341,27 @@ paths:
                   message:
                     type: string
                     example: "用户更新成功"
-        '400':
-          description: 请求无效（例如，没有提供要更新的字段）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: 未授权（缺少或无效的认证令牌）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: 用户未找到。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 服务器内部错误。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: 没有提供要更新的字段
+        404:
+          description: 用户未找到或没有更改
+        500:
+          description: 服务器内部错误
     delete:
+      summary: 删除用户
       tags:
         - Users
-      summary: 删除用户
-      description: 根据用户ID删除用户账户。需要管理员权限。
-      operationId: deleteUser
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: 要删除的用户ID。
+        - in: path
+          name: id
           schema:
             type: integer
             format: int32
+          required: true
+          description: 用户ID
       responses:
-        '200':
-          description: 用户删除成功。
+        200:
+          description: 用户删除成功
           content:
             application/json:
               schema:
@@ -1538,21 +1370,928 @@ paths:
                   message:
                     type: string
                     example: "用户删除成功"
-        '401':
-          description: 未授权（缺少或无效的认证令牌）。
+        404:
+          description: 用户未找到
+        500:
+          description: 服务器内部错误
+  /customers:
+    get:
+      summary: 获取所有客户
+      tags:
+        - Customers
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: 客户名称模糊搜索
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          description: 页码，默认为1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+          description: 每页数量，默认为10
+      responses:
+        200:
+          description: 成功获取客户列表
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: 用户未找到。
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CustomerResponse'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+        400:
+          description: 无效的偏移量
+        500:
+          description: 服务器内部错误
+    post:
+      summary: 创建客户
+      tags:
+        - Customers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreateRequest'
+      responses:
+        201:
+          description: 客户创建成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 服务器内部错误。
+                $ref: '#/components/schemas/CustomerResponse'
+        400:
+          description: 客户名称为必填项
+        500:
+          description: 服务器内部错误
+  /customers/{customerId}:
+    get:
+      summary: 获取单个客户
+      tags:
+        - Customers
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+      responses:
+        200:
+          description: 成功获取客户信息
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/CustomerResponse'
+        404:
+          description: 客户不存在
+        500:
+          description: 服务器内部错误
+    put:
+      summary: 更新客户
+      tags:
+        - Customers
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdateRequest'
+      responses:
+        200:
+          description: 客户更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        400:
+          description: 客户名称为必填项
+        404:
+          description: 客户不存在
+        500:
+          description: 服务器内部错误
+    delete:
+      summary: 删除客户
+      tags:
+        - Customers
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+      responses:
+        200:
+          description: 客户删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "客户删除成功"
+        400:
+          description: 无法删除客户，存在关联的合同
+        404:
+          description: 客户不存在
+        500:
+          description: 服务器内部错误
+  /customers/{customerId}/invoice-infos:
+    get:
+      summary: 获取客户的开票信息列表
+      tags:
+        - InvoiceInfos
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+      responses:
+        200:
+          description: 成功获取客户开票信息列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceInfoResponse'
+        404:
+          description: 客户不存在
+        500:
+          description: 服务器内部错误
+    post:
+      summary: 创建客户开票信息
+      tags:
+        - InvoiceInfos
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceInfoCreateRequest'
+      responses:
+        201:
+          description: 开票信息创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceInfoResponse'
+        400:
+          description: 公司名称为必填项
+        404:
+          description: 客户不存在
+        500:
+          description: 服务器内部错误
+  /customers/{customerId}/invoice-infos/{infoId}:
+    put:
+      summary: 更新客户开票信息
+      tags:
+        - InvoiceInfos
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+        - in: path
+          name: infoId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 开票信息ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceInfoUpdateRequest'
+      responses:
+        200:
+          description: 开票信息更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceInfoResponse'
+        400:
+          description: 公司名称为必填项
+        404:
+          description: 开票信息不存在或不属于该客户
+        500:
+          description: 服务器内部错误
+    delete:
+      summary: 删除客户开票信息
+      tags:
+        - InvoiceInfos
+      parameters:
+        - in: path
+          name: customerId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 客户ID
+        - in: path
+          name: infoId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 开票信息ID
+      responses:
+        200:
+          description: 开票信息删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "开票信息删除成功"
+        400:
+          description: 无法删除开票信息，存在关联的发票
+        404:
+          description: 开票信息不存在或不属于该客户
+        500:
+          description: 服务器内部错误
+  /contracts:
+    get:
+      summary: 获取所有合同
+      tags:
+        - Contracts
+      parameters:
+        - in: query
+          name: customer_id
+          schema:
+            type: integer
+            format: int32
+          description: 合同ID
+        - in: query
+          name: contract_number
+          schema:
+            type: string
+          description: 合同编号模糊搜索
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: 合同名称模糊搜索
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: ["草稿", "履行中", "已完成", "已逾期"]
+          description: 合同状态
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+          description: 合同开始日期 (YYYY-MM-DD)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+          description: 合同结束日期 (YYYY-MM-DD)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          description: 页码，默认为1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+          description: 每页数量，默认为10
+      responses:
+        200:
+          description: 成功获取合同列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContractResponse'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+        500:
+          description: 服务器内部错误
+    post:
+      summary: 创建合同
+      tags:
+        - Contracts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractCreateRequest'
+      responses:
+        201:
+          description: 合同创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResponse'
+        400:
+          description: 缺少必要的合同信息 / 合同编号已存在
+        404:
+          description: 客户不存在
+        500:
+          description: 服务器内部错误
+  /contracts/{contractId}:
+    get:
+      summary: 获取单个合同
+      tags:
+        - Contracts
+      parameters:
+        - in: path
+          name: contractId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 合同ID
+      responses:
+        200:
+          description: 成功获取合同信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResponse'
+        404:
+          description: 合同不存在
+        500:
+          description: 服务器内部错误
+    put:
+      summary: 更新合同
+      tags:
+        - Contracts
+      parameters:
+        - in: path
+          name: contractId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 合同ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractUpdateRequest'
+      responses:
+        200:
+          description: 合同更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResponse'
+        400:
+          description: 缺少必要的合同信息 / 合同编号已存在
+        404:
+          description: 合同不存在 / 客户不存在
+        500:
+          description: 服务器内部错误
+    delete:
+      summary: 删除合同
+      tags:
+        - Contracts
+      parameters:
+        - in: path
+          name: contractId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 合同ID
+      responses:
+        200:
+          description: 合同删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "合同删除成功"
+        400:
+          description: 无法删除合同，存在关联的发票
+        404:
+          description: 合同不存在
+        500:
+          description: 服务器内部错误
+  /invoices:
+    get:
+      summary: 获取所有发票
+      tags:
+        - Invoices
+      parameters:
+        - in: query
+          name: contract_id
+          schema:
+            type: integer
+            format: int32
+          description: 合同ID
+        - in: query
+          name: invoice_number
+          schema:
+            type: string
+          description: 发票编号模糊搜索
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: ["待开票", "已开票", "已收款"]
+          description: 发票状态
+        - in: query
+          name: issue_date
+          schema:
+            type: string
+            format: date
+          description: 发票开具日期 (YYYY-MM-DD)
+        - in: query
+          name: due_date
+          schema:
+            type: string
+            format: date
+          description: 发票付款到期日 (YYYY-MM-DD)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          description: 页码，默认为1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+          description: 每页数量，默认为10
+      responses:
+        200:
+          description: 成功获取发票列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceResponse'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+        500:
+          description: 获取发票列表失败
+    post:
+      summary: 创建发票
+      tags:
+        - Invoices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceCreateRequest'
+      responses:
+        201:
+          description: 发票创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "发票创建成功"
+                  invoice_id:
+                    type: integer
+                    format: int32
+        400:
+          description: 缺少必要的发票信息
+        404:
+          description: 关联的合同不存在 / 关联的发票信息不存在
+        409:
+          description: 发票号码已存在
+        500:
+          description: 创建发票失败
+  /invoices/{invoiceId}:
+    get:
+      summary: 获取单个发票
+      tags:
+        - Invoices
+      parameters:
+        - in: path
+          name: invoiceId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 发票ID
+      responses:
+        200:
+          description: 成功获取发票信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        404:
+          description: 发票不存在
+        500:
+          description: 获取发票详情失败
+    put:
+      summary: 更新发票
+      tags:
+        - Invoices
+      parameters:
+        - in: path
+          name: invoiceId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 发票ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceUpdateRequest'
+      responses:
+        200:
+          description: 发票更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "发票更新成功"
+        400:
+          description: 没有要更新的字段
+        404:
+          description: 发票不存在
+        409:
+          description: 发票号码已被其他发票使用
+        500:
+          description: 更新发票失败
+    delete:
+      summary: 删除发票
+      tags:
+        - Invoices
+      parameters:
+        - in: path
+          name: invoiceId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 发票ID
+      responses:
+        200:
+          description: 发票删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "发票删除成功"
+        404:
+          description: 发票不存在
+        409:
+          description: 无法删除发票，存在关联的付款记录
+        500:
+          description: 删除发票失败
+  /payments:
+    get:
+      summary: 获取所有付款记录
+      tags:
+        - Payments
+      parameters:
+        - in: query
+          name: invoice_id
+          schema:
+            type: integer
+            format: int32
+          description: 发票ID
+        - in: query
+          name: payment_method
+          schema:
+            type: string
+          description: 付款方式模糊搜索
+        - in: query
+          name: payment_date_from
+          schema:
+            type: string
+            format: date
+          description: 付款日期从 (YYYY-MM-DD)
+        - in: query
+          name: payment_date_to
+          schema:
+            type: string
+            format: date
+          description: 付款日期到 (YYYY-MM-DD)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          description: 页码，默认为1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+          description: 每页数量，默认为10
+      responses:
+        200:
+          description: 成功获取付款记录列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentResponse'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+        500:
+          description: 获取付款记录列表失败
+    post:
+      summary: 创建付款记录
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        201:
+          description: 付款记录创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "付款记录创建成功"
+                  payment_id:
+                    type: integer
+                    format: int32
+        400:
+          description: 缺少必要的付款信息
+        404:
+          description: 关联的发票不存在
+        500:
+          description: 创建付款记录失败
+  /payments/{paymentId}:
+    get:
+      summary: 获取单个付款记录
+      tags:
+        - Payments
+      parameters:
+        - in: path
+          name: paymentId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 付款ID
+      responses:
+        200:
+          description: 成功获取付款记录信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        404:
+          description: 付款记录不存在
+        500:
+          description: 获取付款记录详情失败
+    put:
+      summary: 更新付款记录
+      tags:
+        - Payments
+      parameters:
+        - in: path
+          name: paymentId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 付款ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentUpdateRequest'
+      responses:
+        200:
+          description: 付款记录更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "付款记录更新成功"
+        400:
+          description: 付款记录未做任何更改
+        404:
+          description: 付款记录不存在
+        500:
+          description: 更新付款记录失败
+    delete:
+      summary: 删除付款记录
+      tags:
+        - Payments
+      parameters:
+        - in: path
+          name: paymentId
+          schema:
+            type: integer
+            format: int32
+          required: true
+          description: 付款ID
+      responses:
+        200:
+          description: 付款记录删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "付款记录删除成功"
+        404:
+          description: 付款记录不存在
+        500:
+          description: 删除付款记录失败
+  /statistics/contract-amounts:
+    get:
+      summary: 获取合同金额统计信息
+      tags:
+        - Statistics
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: ["草稿", "履行中", "已完成", "已逾期", "active"]
+            default: "active"
+          description: 合同状态 (默认为 'active'，表示履行中和已逾期)
+      responses:
+        200:
+          description: 成功获取合同金额统计信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contract_count:
+                    type: integer
+                    description: 合同数量
+                  total_amount:
+                    type: string
+                    format: decimal
+                    description: 合同总金额
+                  avg_amount:
+                    type: string
+                    format: decimal
+                    description: 平均合同金额
+        500:
+          description: 获取合同金额统计信息失败
+  /statistics/contract-payment-collection:
+    get:
+      summary: 获取合同收款情况统计信息
+      tags:
+        - Statistics
+      responses:
+        200:
+          description: 成功获取合同收款情况统计信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    contract_id:
+                      type: integer
+                      format: int32
+                      description: 合同ID
+                    contract_name:
+                      type: string
+                      description: 合同名称
+                    contract_amount:
+                      type: string
+                      format: decimal
+                      description: 合同总金额
+                    paid_amount:
+                      type: string
+                      format: decimal
+                      description: 已收款金额
+                    remaining_amount:
+                      type: string
+                      format: decimal
+                      description: 剩余未收款金额
+        500:
+          description: 获取合同收款情况统计信息失败

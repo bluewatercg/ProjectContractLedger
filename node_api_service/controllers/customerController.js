@@ -82,21 +82,6 @@ async function getAllCustomers(req, res) {
   }
 }
 
-// 辅助函数：将查询中的占位符替换为参数值
-function formatSQL(query, params) {
-  let formatted = query;
-  let paramIndex = 0;
-
-  // 替换所有的 ? 占位符
-  formatted = formatted.replace(/\?/g, () => {
-    if (paramIndex >= params.length) return '?'; // 防止参数不足
-    const param = params[paramIndex++];
-    // 如果参数是字符串，添加单引号；如果是数字，直接返回
-    return typeof param === 'string' ? `'${param.replace(/'/g, "''")}'` : param;
-  });
-
-  return formatted;
-}
 
 /**
  * 获取单个客户

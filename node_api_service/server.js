@@ -10,6 +10,6 @@ const PORT = process.env.PORT || 8080;
 
 // 启动服务器
 app.listen(PORT, () => {
-  console.log(`服务器已启动，运行在 http://localhost:${PORT}/api/v1`);
-  console.log(`API文档地址: http://localhost:${PORT}/api-docs`);
+  console.log(`服务器已启动，运行在 http://127.0.0.1:${PORT}/api/v1`);
+  console.log(`API文档地址: http://127.0.0.1:${PORT}/api-docs`);
 });
