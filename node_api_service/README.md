@@ -99,6 +99,13 @@ npm start
 
 服务器将在http://localhost:8080/api/v1运行
 
+## 最新更新与修复
+
+- **SQL 查询参数问题修复**: 修复了 `controllers/customerController.js` (getAllCustomers), `controllers/contractController.js` (getAllContracts), `controllers/invoiceController.js` (getAllInvoices), 和 `controllers/paymentController.js` (getAllPayments) 函数中，由于 `LIMIT` 和 `OFFSET` 参数传递不当导致的 `Incorrect arguments to mysqld_stmt_execute` 错误。现在这些参数直接拼接到 SQL 字符串中。
+- **统计数据类型错误修复**: 修复了 `controllers/statisticsController.js` 中 `getContractAmountStatistics` 和 `getContractPaymentCollectionStatistics` 函数，由于数据库返回的金额字段为字符串类型，导致 `TypeError: .toFixed is not a function` 的问题。现在已在调用 `toFixed` 前将相关字段转换为浮点数。
+- **数据库连接方法统一**: 修复了 `controllers/statisticsController.js` 中 `db.query` 方法不存在的问题，统一使用 `pool.execute` 进行数据库操作。
+- **开发环境热部署**: 确认项目已配置 `nodemon` 作为开发依赖，支持代码更改后服务自动重启。开发者可以通过 `npm run dev` 命令启动服务以利用此功能。
+
 ## API文档
 
 API设计遵循`backend_service/api_spec.yaml`中定义的OpenAPI规范。
