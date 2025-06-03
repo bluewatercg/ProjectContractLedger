@@ -5,8 +5,8 @@
 require('dotenv').config();
 const app = require('./app');
 
-// 获取端口配置，默认为3000
-const PORT = process.env.PORT || 3000;
+// 获取端口配置，默认为8080
+const PORT = process.env.PORT || 8080;
 
 // 启动服务器
 app.listen(PORT, () => {

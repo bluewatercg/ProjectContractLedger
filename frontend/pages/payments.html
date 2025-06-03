@@ -15,24 +15,196 @@
   <div class="flex h-screen">
     <!-- 侧边栏 -->
     <div id="sidebar" class="w-64 bg-blue-800 text-white p-6 hidden md:block">
-      <!-- 侧边栏内容由sidebar.js渲染 -->
+      <div class="flex items-center mb-8">
+        <h1 class="text-xl font-bold">合同管理系统</h1>
+      </div>
+      
+      <nav class="space-y-2">
+        <a href="dashboard.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-tachometer-alt mr-3"></i>
+          仪表盘
+        </a>
+        <a href="customers.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-users mr-3"></i>
+          客户管理
+        </a>
+        <a href="contracts.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-file-contract mr-3"></i>
+          合同管理
+        </a>
+        <a href="invoices.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-file-invoice mr-3"></i>
+          发票管理
+        </a>
+        <a href="payments.html" class="flex items-center px-4 py-2 text-white bg-blue-700 rounded-lg">
+          <i class="fas fa-credit-card mr-3"></i>
+          付款管理
+        </a>
+        <a href="notifications.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-bell mr-3"></i>
+          提醒中心
+        </a>
+        <a href="settings.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-cog mr-3"></i>
+          系统设置
+        </a>
+      </nav>
     </div>
     
     <!-- 主内容区 -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- 顶部导航栏 -->
-      <div id="navbar" class="bg-white shadow-sm">
-        <!-- 导航栏内容由navbar.js渲染 -->
+      <div id="navbar" class="bg-white shadow-sm px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <button id="sidebarToggle" class="md:hidden mr-4">
+              <i class="fas fa-bars"></i>
+            </button>
+            <h2 class="text-xl font-semibold text-gray-800">付款管理</h2>
+          </div>
+          
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <button id="userMenu" class="flex items-center text-gray-700 hover:text-gray-900">
+                <i class="fas fa-user-circle text-2xl mr-2"></i>
+                <span>管理员</span>
+                <i class="fas fa-chevron-down ml-2"></i>
+              </button>
+              <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden">
+                <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">个人设置</a>
+                <a href="#" id="logoutBtn" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">退出登录</a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- 主内容 -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
         <div id="app">
-          <!-- 页面内容由payments.js渲染 -->
-          <div class="flex items-center justify-center h-full">
-            <div class="text-center">
-              <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-              <p class="mt-4 text-gray-600">加载中...</p>
+          <!-- 页面头部 -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-bold text-gray-900">付款管理</h1>
+                <p class="text-gray-600">管理您的付款记录</p>
+              </div>
+              <button id="addPaymentBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                记录付款
+              </button>
+            </div>
+          </div>
+          
+          <!-- 统计卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                  <i class="fas fa-credit-card text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">总付款数</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="totalPayments">89</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                  <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">已确认</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="confirmedPayments">76</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                  <i class="fas fa-clock text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">待确认</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="pendingPayments">13</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                  <i class="fas fa-dollar-sign text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">总金额</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="totalAmount">¥2,580,000</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 搜索和筛选 -->
+          <div class="bg-white rounded-lg shadow mb-6 p-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+              <div class="flex-1 max-w-md">
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="搜索付款编号、客户或发票..."
+                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                  <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+              </div>
+              <div class="flex space-x-2">
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">全部状态</option>
+                  <option value="pending">待确认</option>
+                  <option value="confirmed">已确认</option>
+                  <option value="failed">失败</option>
+                </select>
+                <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <i class="fas fa-sync-alt mr-2"></i>
+                  刷新
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 付款列表 -->
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">付款列表</h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">付款信息</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">客户</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金额</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">付款方式</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">付款日期</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- 付款数据将在这里动态加载 -->
+                  <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      加载中...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -40,7 +212,202 @@
     </div>
   </div>
 
-  <!-- 应用脚本 -->
-  <script type="module" src="../assets/js/app.js"></script>
+  <!-- 付款管理脚本 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 检查登录状态
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // 用户菜单切换
+      const userMenu = document.getElementById('userMenu');
+      const userDropdown = document.getElementById('userDropdown');
+      
+      userMenu.addEventListener('click', function() {
+        userDropdown.classList.toggle('hidden');
+      });
+      
+      // 点击其他地方关闭下拉菜单
+      document.addEventListener('click', function(e) {
+        if (!userMenu.contains(e.target)) {
+          userDropdown.classList.add('hidden');
+        }
+      });
+      
+      // 退出登录
+      const logoutBtn = document.getElementById('logoutBtn');
+      logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        localStorage.removeItem('auth_token');
+        window.location.href = 'login.html';
+      });
+      
+      // 添加付款按钮
+      const addPaymentBtn = document.getElementById('addPaymentBtn');
+      addPaymentBtn.addEventListener('click', function() {
+        alert('记录付款功能开发中...');
+      });
+      
+      // 刷新按钮
+      const refreshBtn = document.getElementById('refreshBtn');
+      refreshBtn.addEventListener('click', function() {
+        loadPayments();
+      });
+      
+      // 加载付款数据
+      loadPayments();
+    });
+    
+    // 加载付款数据
+    async function loadPayments() {
+      const token = localStorage.getItem('auth_token');
+      const tableBody = document.getElementById('paymentTableBody');
+      
+      try {
+        // 显示加载状态
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+              <i class="fas fa-spinner fa-spin mr-2"></i>
+              加载中...
+            </td>
+          </tr>
+        `;
+        
+        // 调用API获取付款数据
+        const response = await fetch('http://127.0.0.1:8080/api/v1/payments', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          displayPayments(data.data || []);
+        } else {
+          throw new Error('获取付款数据失败');
+        }
+      } catch (error) {
+        console.error('加载付款数据失败:', error);
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              加载失败，请稍后重试
+            </td>
+          </tr>
+        `;
+      }
+    }
+    
+    // 显示付款数据
+    function displayPayments(payments) {
+      const tableBody = document.getElementById('paymentTableBody');
+      
+      if (payments.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+              <i class="fas fa-inbox mr-2"></i>
+              暂无付款数据
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tableBody.innerHTML = payments.map(payment => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div>
+              <div class="text-sm font-medium text-gray-900">${payment.payment_number || '-'}</div>
+              <div class="text-sm text-gray-500">发票: ${payment.invoice_number || '-'}</div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${payment.customer_name || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">¥${payment.amount ? payment.amount.toLocaleString() : '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${getPaymentMethodText(payment.payment_method)}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(payment.status)}">
+              ${getStatusText(payment.status)}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            ${payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : '-'}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewPayment(${payment.payment_id})">
+              查看
+            </button>
+            <button class="text-green-600 hover:text-green-900 mr-3" onclick="editPayment(${payment.payment_id})">
+              编辑
+            </button>
+            <button class="text-red-600 hover:text-red-900" onclick="deletePayment(${payment.payment_id})">
+              删除
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // 获取付款方式文本
+    function getPaymentMethodText(method) {
+      const methods = {
+        'bank_transfer': '银行转账',
+        'cash': '现金',
+        'check': '支票',
+        'credit_card': '信用卡',
+        'other': '其他'
+      };
+      return methods[method] || '未知';
+    }
+    
+    // 获取状态颜色
+    function getStatusColor(status) {
+      const colors = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'confirmed': 'bg-green-100 text-green-800',
+        'failed': 'bg-red-100 text-red-800'
+      };
+      return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+    
+    // 获取状态文本
+    function getStatusText(status) {
+      const texts = {
+        'pending': '待确认',
+        'confirmed': '已确认',
+        'failed': '失败'
+      };
+      return texts[status] || '未知';
+    }
+    
+    // 查看付款
+    function viewPayment(paymentId) {
+      alert(`查看付款 ID: ${paymentId} 功能开发中...`);
+    }
+    
+    // 编辑付款
+    function editPayment(paymentId) {
+      alert(`编辑付款 ID: ${paymentId} 功能开发中...`);
+    }
+    
+    // 删除付款
+    function deletePayment(paymentId) {
+      if (confirm('确定要删除这个付款记录吗？')) {
+        alert(`删除付款 ID: ${paymentId} 功能开发中...`);
+      }
+    }
+  </script>
 </body>
-</html> 
+</html>

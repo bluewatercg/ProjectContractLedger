@@ -90,29 +90,29 @@ frontend/
    npm install
    npm start
    ```
-3. 打开浏览器访问：`http://localhost:3001`
+3. 打开浏览器访问：`http://localhost:8000`
 
 ### 方法2：使用HTTP服务器
 
 1. 安装Node.js（如果尚未安装）
 2. 安装http-server：`npm install -g http-server`
-3. 在项目根目录运行：`http-server frontend -p 3001`
-4. 打开浏览器访问：`http://localhost:3001`
+3. 在项目根目录运行：`http-server frontend -p 8000`
+4. 打开浏览器访问：`http://localhost:8000`
 
 ### 方法3：使用Python内置HTTP服务器
 
 1. 安装Python（如果尚未安装）
 2. 在项目根目录运行：
-   - Python 2: `python -m SimpleHTTPServer 3001`
-   - Python 3: `python -m http.server 3001`
-3. 打开浏览器访问：`http://localhost:3001/frontend`
+   - Python 2: `python -m SimpleHTTPServer 8000`
+   - Python 3: `python -m http.server 8000`
+3. 打开浏览器访问：`http://localhost:8000/frontend`
 
 ### 方法4：使用VSCode Live Server插件
 
 1. 在VSCode中安装"Live Server"插件
 2. 右键点击`frontend/index.html`文件
 3. 选择"Open with Live Server"
-4. 在插件设置中将端口配置为3001
+4. 在插件设置中将端口配置为8000
 5. 浏览器将自动打开项目
 
 ## 主要功能模块

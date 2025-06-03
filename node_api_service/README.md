@@ -141,7 +141,7 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=procontractledger
-PORT=3000
+PORT=8080
 JWT_SECRET=your_jwt_secret_key
 ```
 
@@ -166,7 +166,7 @@ npm run dev
 npm start
 ```
 
-服务器将在http://localhost:3000/api/v1运行
+服务器将在http://localhost:8080/api/v1运行
 
 
 ## API文档
@@ -178,7 +178,7 @@ npm start
 服务启动后，可通过以下方式访问Swagger UI交互式API文档：
 
 ```
-http://localhost:3000/api-docs
+http://localhost:8080/api-docs
 ```
 
 该文档基于`backend_service/api_spec.yaml`生成，提供了所有API端点的详细说明、请求参数和响应示例。您可以直接在Swagger UI界面中测试API调用（需要提供有效的JWT令牌）。

@@ -3,36 +3,308 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>客户管理 - 合同管理系统</title>
-  <!-- Tailwind CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-  <!-- 自定义样式 -->
-  <link href="../assets/css/style.css" rel="stylesheet">
+  <title>客户合同管理系统 - 客户管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-100">
-  <div class="flex h-screen">
+<body class="bg-gray-50">
+  <div class="min-h-screen flex">
     <!-- 侧边栏 -->
-    <div id="sidebar" class="w-64 bg-blue-800 text-white p-6 hidden md:block">
-      <!-- 侧边栏内容由sidebar.js渲染 -->
-    </div>
-    
+    <aside class="w-64 bg-blue-800 text-white p-4 hidden md:block">
+      <div class="mb-8">
+        <h1 class="text-xl font-bold">合同管理系统</h1>
+        <p class="text-sm text-blue-200">单用户版</p>
+      </div>
+
+      <nav>
+        <ul class="space-y-2">
+          <li>
+            <a href="dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+              <i class="fas fa-tachometer-alt mr-3"></i>
+              <span>仪表盘</span>
+            </a>
+          </li>
+          <li>
+            <a href="customers.html" class="flex items-center p-2 rounded bg-blue-700">
+              <i class="fas fa-users mr-3"></i>
+              <span>客户管理</span>
+            </a>
+          </li>
+          <li>
+            <a href="contracts.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+              <i class="fas fa-file-contract mr-3"></i>
+              <span>合同管理</span>
+            </a>
+          </li>
+          <li>
+            <a href="invoices.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+              <i class="fas fa-file-invoice mr-3"></i>
+              <span>开票管理</span>
+            </a>
+          </li>
+          <li>
+            <a href="payments.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+              <i class="fas fa-money-bill-wave mr-3"></i>
+              <span>到款管理</span>
+            </a>
+          </li>
+          <li>
+            <a href="notifications.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+              <i class="fas fa-bell mr-3"></i>
+              <span>提醒中心</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
     <!-- 主内容区 -->
     <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- 顶部导航栏 -->
-      <div id="navbar" class="bg-white shadow-sm">
-        <!-- 导航栏内容由navbar.js渲染 -->
-      </div>
-      
-      <!-- 主内容 -->
-      <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
-        <div id="app">
-          <!-- 页面内容由customers.js渲染 -->
-          <div class="flex items-center justify-center h-full">
-            <div class="text-center">
-              <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-              <p class="mt-4 text-gray-600">加载中...</p>
+      <!-- 顶部导航 -->
+      <header class="bg-white shadow-sm z-10">
+        <div class="flex items-center justify-between p-4">
+          <div class="flex items-center md:hidden">
+            <button class="text-gray-500 focus:outline-none">
+              <i class="fas fa-bars"></i>
+            </button>
+          </div>
+          <div class="flex items-center">
+            <div class="relative">
+              <button class="flex items-center text-gray-500 focus:outline-none">
+                <i class="fas fa-bell mr-1"></i>
+                <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+            </div>
+            <div class="ml-4 relative">
+              <div class="flex items-center">
+                <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                <span class="ml-2 text-gray-700">管理员</span>
+                <button id="logoutBtn" class="ml-2 text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-sign-out-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">客户管理</h1>
+            <p class="text-gray-600">管理所有客户信息</p>
+          </div>
+          <a href="customer-create.html" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            <span>新增客户</span>
+          </a>
+        </div>
+
+        <!-- 搜索和筛选 -->
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex-1">
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-search text-gray-400"></i>
+                </div>
+                <input type="text" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="搜索客户名称、联系人...">
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <select class="border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <option value="">所有类型</option>
+                <option value="企业">企业客户</option>
+                <option value="个人">个人客户</option>
+                <option value="政府">政府机构</option>
+              </select>
+              <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md flex items-center text-sm">
+                <i class="fas fa-filter mr-1"></i>
+                <span>更多筛选</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 客户列表 -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">客户名称</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系人</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合同数量</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">
+                      <a href="customer-detail.html">上海科技有限公司</a>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">张三</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">13800138000</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">zhangsan@example.com</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">3</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">
+                      <a href="customer-detail.html">北京数字科技有限公司</a>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">李四</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">13900139000</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">lisi@example.com</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">2</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">
+                      <a href="customer-detail.html">广州网络科技有限公司</a>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">王五</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">13700137000</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">wangwu@example.com</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">4</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">
+                      <a href="customer-detail.html">深圳电子科技有限公司</a>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">赵六</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">13600136000</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">zhaoliu@example.com</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">1</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">
+                      <a href="customer-detail.html">杭州互联网有限公司</a>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">钱七</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">13500135000</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">qianqi@example.com</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">2</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- 分页 -->
+          <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  显示第 <span class="font-medium">1</span> 至 <span class="font-medium">5</span> 条，共 <span class="font-medium">24</span> 条记录
+                </p>
+              </div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">上一页</span>
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    1
+                  </a>
+                  <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    2
+                  </a>
+                  <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    3
+                  </a>
+                  <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                    ...
+                  </span>
+                  <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    5
+                  </a>
+                  <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">下一页</span>
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </nav>
+              </div>
             </div>
           </div>
         </div>
@@ -40,7 +312,41 @@
     </div>
   </div>
 
-  <!-- 应用脚本 -->
-  <script type="module" src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 检查登录状态
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 退出登录
+      const logoutBtn = document.getElementById('logoutBtn');
+      logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm('确定要退出登录吗？')) {
+          localStorage.removeItem('auth_token');
+          window.location.href = 'login.html';
+        }
+      });
+
+      // 新增客户按钮
+      const addCustomerBtn = document.querySelector('a[href="customer-create.html"]');
+      addCustomerBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('新增客户功能开发中...');
+      });
+
+      // 客户详情链接
+      const customerLinks = document.querySelectorAll('a[href*="customer-detail.html"], a[href*="customer-edit.html"]');
+      customerLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          alert('此功能正在开发中...');
+        });
+      });
+    });
+  </script>
 </body>
-</html> 
+</html>

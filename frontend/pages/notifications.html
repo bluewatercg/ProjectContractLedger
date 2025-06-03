@@ -15,24 +15,177 @@
   <div class="flex h-screen">
     <!-- 侧边栏 -->
     <div id="sidebar" class="w-64 bg-blue-800 text-white p-6 hidden md:block">
-      <!-- 侧边栏内容由sidebar.js渲染 -->
+      <div class="flex items-center mb-8">
+        <h1 class="text-xl font-bold">合同管理系统</h1>
+      </div>
+
+      <nav class="space-y-2">
+        <a href="dashboard.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-tachometer-alt mr-3"></i>
+          仪表盘
+        </a>
+        <a href="customers.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-users mr-3"></i>
+          客户管理
+        </a>
+        <a href="contracts.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-file-contract mr-3"></i>
+          合同管理
+        </a>
+        <a href="invoices.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-file-invoice mr-3"></i>
+          发票管理
+        </a>
+        <a href="payments.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-credit-card mr-3"></i>
+          付款管理
+        </a>
+        <a href="notifications.html" class="flex items-center px-4 py-2 text-white bg-blue-700 rounded-lg">
+          <i class="fas fa-bell mr-3"></i>
+          提醒中心
+        </a>
+        <a href="settings.html" class="flex items-center px-4 py-2 text-blue-100 hover:bg-blue-700 rounded-lg">
+          <i class="fas fa-cog mr-3"></i>
+          系统设置
+        </a>
+      </nav>
     </div>
-    
+
     <!-- 主内容区 -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- 顶部导航栏 -->
-      <div id="navbar" class="bg-white shadow-sm">
-        <!-- 导航栏内容由navbar.js渲染 -->
+      <div id="navbar" class="bg-white shadow-sm px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <button id="sidebarToggle" class="md:hidden mr-4">
+              <i class="fas fa-bars"></i>
+            </button>
+            <h2 class="text-xl font-semibold text-gray-800">提醒中心</h2>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <button id="userMenu" class="flex items-center text-gray-700 hover:text-gray-900">
+                <i class="fas fa-user-circle text-2xl mr-2"></i>
+                <span>管理员</span>
+                <i class="fas fa-chevron-down ml-2"></i>
+              </button>
+              <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden">
+                <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">个人设置</a>
+                <a href="#" id="logoutBtn" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">退出登录</a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      
+
       <!-- 主内容 -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
         <div id="app">
-          <!-- 页面内容由notifications.js渲染 -->
-          <div class="flex items-center justify-center h-full">
-            <div class="text-center">
-              <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-              <p class="mt-4 text-gray-600">加载中...</p>
+          <!-- 页面头部 -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-bold text-gray-900">提醒中心</h1>
+                <p class="text-gray-600">查看系统提醒和通知</p>
+              </div>
+              <button id="markAllReadBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-check mr-2"></i>
+                全部标记为已读
+              </button>
+            </div>
+          </div>
+
+          <!-- 统计卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                  <i class="fas fa-exclamation-triangle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">紧急提醒</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="urgentCount">3</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                  <i class="fas fa-clock text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">即将到期</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="dueSoonCount">8</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                  <i class="fas fa-bell text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">未读通知</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="unreadCount">15</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                  <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-sm font-medium text-gray-500">已处理</h3>
+                  <p class="text-2xl font-bold text-gray-900" id="processedCount">42</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 筛选选项 -->
+          <div class="bg-white rounded-lg shadow mb-6 p-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+              <div class="flex space-x-4">
+                <select id="typeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">全部类型</option>
+                  <option value="contract_expiry">合同到期</option>
+                  <option value="payment_due">付款到期</option>
+                  <option value="invoice_overdue">发票逾期</option>
+                  <option value="system">系统通知</option>
+                </select>
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">全部状态</option>
+                  <option value="unread">未读</option>
+                  <option value="read">已读</option>
+                  <option value="processed">已处理</option>
+                </select>
+              </div>
+              <div class="flex space-x-2">
+                <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <i class="fas fa-sync-alt mr-2"></i>
+                  刷新
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 提醒列表 -->
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">提醒列表</h3>
+            </div>
+
+            <div id="notificationList" class="divide-y divide-gray-200">
+              <!-- 提醒数据将在这里动态加载 -->
+              <div class="px-6 py-4 text-center text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                加载中...
+              </div>
             </div>
           </div>
         </div>
@@ -40,7 +193,229 @@
     </div>
   </div>
 
-  <!-- 应用脚本 -->
-  <script type="module" src="../assets/js/app.js"></script>
+  <!-- 提醒中心脚本 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 检查登录状态
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 用户菜单切换
+      const userMenu = document.getElementById('userMenu');
+      const userDropdown = document.getElementById('userDropdown');
+
+      userMenu.addEventListener('click', function() {
+        userDropdown.classList.toggle('hidden');
+      });
+
+      // 点击其他地方关闭下拉菜单
+      document.addEventListener('click', function(e) {
+        if (!userMenu.contains(e.target)) {
+          userDropdown.classList.add('hidden');
+        }
+      });
+
+      // 退出登录
+      const logoutBtn = document.getElementById('logoutBtn');
+      logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        localStorage.removeItem('auth_token');
+        window.location.href = 'login.html';
+      });
+
+      // 全部标记为已读按钮
+      const markAllReadBtn = document.getElementById('markAllReadBtn');
+      markAllReadBtn.addEventListener('click', function() {
+        alert('全部标记为已读功能开发中...');
+      });
+
+      // 刷新按钮
+      const refreshBtn = document.getElementById('refreshBtn');
+      refreshBtn.addEventListener('click', function() {
+        loadNotifications();
+      });
+
+      // 加载提醒数据
+      loadNotifications();
+    });
+
+    // 加载提醒数据
+    function loadNotifications() {
+      const notificationList = document.getElementById('notificationList');
+
+      // 显示加载状态
+      notificationList.innerHTML = `
+        <div class="px-6 py-4 text-center text-gray-500">
+          <i class="fas fa-spinner fa-spin mr-2"></i>
+          加载中...
+        </div>
+      `;
+
+      // 模拟提醒数据
+      setTimeout(() => {
+        const notifications = [
+          {
+            id: 1,
+            type: 'contract_expiry',
+            title: '合同即将到期',
+            message: '与ABC公司的服务合同将在7天后到期，请及时续签。',
+            priority: 'high',
+            status: 'unread',
+            created_at: new Date(Date.now() - 2 * 60 * 60 * 1000)
+          },
+          {
+            id: 2,
+            type: 'payment_due',
+            title: '付款提醒',
+            message: 'XYZ公司的发票INV-2024-001已逾期3天，请跟进付款情况。',
+            priority: 'urgent',
+            status: 'unread',
+            created_at: new Date(Date.now() - 5 * 60 * 60 * 1000)
+          },
+          {
+            id: 3,
+            type: 'system',
+            title: '系统维护通知',
+            message: '系统将于今晚22:00-24:00进行维护，期间可能影响正常使用。',
+            priority: 'normal',
+            status: 'read',
+            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000)
+          }
+        ];
+
+        displayNotifications(notifications);
+      }, 1000);
+    }
+
+    // 显示提醒数据
+    function displayNotifications(notifications) {
+      const notificationList = document.getElementById('notificationList');
+
+      if (notifications.length === 0) {
+        notificationList.innerHTML = `
+          <div class="px-6 py-4 text-center text-gray-500">
+            <i class="fas fa-inbox mr-2"></i>
+            暂无提醒
+          </div>
+        `;
+        return;
+      }
+
+      notificationList.innerHTML = notifications.map(notification => `
+        <div class="px-6 py-4 hover:bg-gray-50 ${notification.status === 'unread' ? 'bg-blue-50' : ''}">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <div class="p-2 rounded-full ${getPriorityColor(notification.priority)}">
+                <i class="${getTypeIcon(notification.type)} text-sm"></i>
+              </div>
+            </div>
+            <div class="ml-4 flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium text-gray-900">${notification.title}</h4>
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full ${getPriorityBadgeColor(notification.priority)}">
+                    ${getPriorityText(notification.priority)}
+                  </span>
+                  <span class="text-xs text-gray-500">${formatTime(notification.created_at)}</span>
+                </div>
+              </div>
+              <p class="mt-1 text-sm text-gray-600">${notification.message}</p>
+              <div class="mt-2 flex space-x-2">
+                <button class="text-xs text-blue-600 hover:text-blue-800" onclick="markAsRead(${notification.id})">
+                  标记为已读
+                </button>
+                <button class="text-xs text-green-600 hover:text-green-800" onclick="processNotification(${notification.id})">
+                  处理
+                </button>
+                <button class="text-xs text-red-600 hover:text-red-800" onclick="deleteNotification(${notification.id})">
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 获取类型图标
+    function getTypeIcon(type) {
+      const icons = {
+        'contract_expiry': 'fas fa-file-contract',
+        'payment_due': 'fas fa-credit-card',
+        'invoice_overdue': 'fas fa-file-invoice',
+        'system': 'fas fa-cog'
+      };
+      return icons[type] || 'fas fa-bell';
+    }
+
+    // 获取优先级颜色
+    function getPriorityColor(priority) {
+      const colors = {
+        'urgent': 'bg-red-100 text-red-600',
+        'high': 'bg-orange-100 text-orange-600',
+        'normal': 'bg-blue-100 text-blue-600',
+        'low': 'bg-gray-100 text-gray-600'
+      };
+      return colors[priority] || 'bg-gray-100 text-gray-600';
+    }
+
+    // 获取优先级徽章颜色
+    function getPriorityBadgeColor(priority) {
+      const colors = {
+        'urgent': 'bg-red-100 text-red-800',
+        'high': 'bg-orange-100 text-orange-800',
+        'normal': 'bg-blue-100 text-blue-800',
+        'low': 'bg-gray-100 text-gray-800'
+      };
+      return colors[priority] || 'bg-gray-100 text-gray-800';
+    }
+
+    // 获取优先级文本
+    function getPriorityText(priority) {
+      const texts = {
+        'urgent': '紧急',
+        'high': '高',
+        'normal': '普通',
+        'low': '低'
+      };
+      return texts[priority] || '普通';
+    }
+
+    // 格式化时间
+    function formatTime(date) {
+      const now = new Date();
+      const diff = now - date;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+
+      if (hours < 1) {
+        return '刚刚';
+      } else if (hours < 24) {
+        return `${hours}小时前`;
+      } else {
+        const days = Math.floor(hours / 24);
+        return `${days}天前`;
+      }
+    }
+
+    // 标记为已读
+    function markAsRead(notificationId) {
+      alert(`标记提醒 ID: ${notificationId} 为已读功能开发中...`);
+    }
+
+    // 处理提醒
+    function processNotification(notificationId) {
+      alert(`处理提醒 ID: ${notificationId} 功能开发中...`);
+    }
+
+    // 删除提醒
+    function deleteNotification(notificationId) {
+      if (confirm('确定要删除这个提醒吗？')) {
+        alert(`删除提醒 ID: ${notificationId} 功能开发中...`);
+      }
+    }
+  </script>
 </body>
-</html> 
+</html>

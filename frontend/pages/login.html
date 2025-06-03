@@ -13,16 +13,214 @@
 </head>
 <body>
   <div id="app">
-    <!-- 页面内容由login.js渲染 -->
-    <div class="flex items-center justify-center h-screen">
-      <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-        <p class="mt-4 text-gray-600">加载中...</p>
+    <!-- 登录页面内容 -->
+    <div class="flex min-h-screen bg-gray-100">
+      <div class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto w-full max-w-md">
+          <div class="text-center">
+            <h1 class="text-3xl font-extrabold text-gray-900">合同管理系统</h1>
+            <p class="mt-2 text-sm text-gray-600">请登录您的账号</p>
+          </div>
+
+          <div class="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <form id="loginForm" class="space-y-6">
+              <div class="form-group">
+                <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
+                <div class="mt-1">
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autocomplete="username"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
+                <div class="mt-1">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <input
+                    id="remember_me"
+                    name="remember_me"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  >
+                  <label for="remember_me" class="ml-2 block text-sm text-gray-900">记住我</label>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  id="loginButton"
+                  class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  登录
+                </button>
+              </div>
+
+              <div id="errorMessage" class="text-red-500 text-center text-sm hidden"></div>
+            </form>
+
+            <div class="mt-6">
+              <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                  <span class="px-2 bg-white text-gray-500">演示账号</span>
+                </div>
+              </div>
+
+              <div class="mt-6 grid grid-cols-1 gap-3">
+                <div>
+                  <button
+                    type="button"
+                    id="demoButton"
+                    class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    使用演示账号登录
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden lg:block relative w-0 flex-1">
+        <div class="absolute inset-0 h-full w-full bg-gradient-to-r from-blue-800 to-blue-600 flex items-center justify-center">
+          <div class="max-w-lg mx-auto px-8">
+            <h2 class="text-3xl font-extrabold text-white sm:text-4xl">合同管理系统</h2>
+            <p class="mt-4 text-lg text-blue-100">
+              高效管理您的合同、发票和付款，轻松掌控业务流程。
+            </p>
+            <ul class="mt-8 text-blue-100 space-y-3">
+              <li class="flex items-center">
+                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                <span>客户信息管理</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                <span>合同全生命周期管理</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                <span>发票和付款跟踪</span>
+              </li>
+              <li class="flex items-center">
+                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                <span>数据统计和可视化</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 应用脚本 -->
-  <script type="module" src="../assets/js/app.js"></script>
+  <!-- 登录脚本 -->
+  <script>
+    // 简化的登录功能
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginForm = document.getElementById('loginForm');
+      const loginButton = document.getElementById('loginButton');
+      const demoButton = document.getElementById('demoButton');
+      const errorMessage = document.getElementById('errorMessage');
+
+      // 显示错误信息
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('hidden');
+      }
+
+      // 隐藏错误信息
+      function hideError() {
+        errorMessage.classList.add('hidden');
+      }
+
+      // 设置加载状态
+      function setLoading(isLoading) {
+        if (isLoading) {
+          loginButton.disabled = true;
+          loginButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 登录中...';
+          demoButton.disabled = true;
+        } else {
+          loginButton.disabled = false;
+          loginButton.innerHTML = '登录';
+          demoButton.disabled = false;
+        }
+      }
+
+      // 登录函数
+      async function login(username, password) {
+        try {
+          setLoading(true);
+          hideError();
+
+          const response = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              username: username,
+              password: password
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.access_token) {
+            // 保存token
+            localStorage.setItem('auth_token', data.access_token);
+            // 跳转到仪表盘
+            window.location.href = 'dashboard.html';
+          } else {
+            showError(data.message || '登录失败，请检查用户名和密码');
+          }
+        } catch (error) {
+          console.error('登录错误:', error);
+          showError('网络错误，请稍后重试');
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      // 表单提交事件
+      loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+          showError('请输入用户名和密码');
+          return;
+        }
+
+        login(username, password);
+      });
+
+      // 演示账号登录
+      demoButton.addEventListener('click', function() {
+        login('admin', '123456');
+      });
+    });
+  </script>
 </body>
 </html> 

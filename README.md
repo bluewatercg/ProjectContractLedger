@@ -64,7 +64,7 @@
    DB_USER=root
    DB_PASSWORD=your_password
    DB_NAME=procontractledger
-   PORT=3000
+   PORT=8080
    ```
 
 4. 初始化数据库：
@@ -75,7 +75,7 @@
    npm start
    ```
 
-6. API服务将在http://localhost:3000/api/v1运行
+6. API服务将在http://localhost:8080/api/v1运行
 
 ### 前端开发环境
 
@@ -94,7 +94,7 @@
    npm start
    ```
 
-4. 前端服务将在http://localhost:3001运行
+4. 前端服务将在http://localhost:8000运行
 
 ## 部署说明
 
