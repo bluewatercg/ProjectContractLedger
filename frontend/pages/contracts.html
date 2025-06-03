@@ -255,11 +255,14 @@
   </div>
 
   <!-- 合同管理脚本 -->
-  <script>
+  <script type="module">
+    // 导入服务
+    import contractService from '../assets/js/services/contract.js';
+    import authService from '../assets/js/services/auth.js';
+
     document.addEventListener('DOMContentLoaded', function() {
       // 检查登录状态
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
+      if (!authService.checkAuth()) {
         window.location.href = 'login.html';
         return;
       }
@@ -327,9 +330,8 @@
     
     // 加载合同数据
     async function loadContracts() {
-      const token = localStorage.getItem('auth_token');
       const tableBody = document.getElementById('contractTableBody');
-      
+
       try {
         // 显示加载状态
         tableBody.innerHTML = `
@@ -340,21 +342,10 @@
             </td>
           </tr>
         `;
-        
-        // 调用API获取合同数据
-        const response = await fetch('http://127.0.0.1:8080/api/v1/contracts', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          displayContracts(data.data || []);
-        } else {
-          throw new Error('获取合同数据失败');
-        }
+
+        // 使用合同服务获取数据
+        const response = await contractService.getAllContracts();
+        displayContracts(response.data || []);
       } catch (error) {
         console.error('加载合同数据失败:', error);
         tableBody.innerHTML = `

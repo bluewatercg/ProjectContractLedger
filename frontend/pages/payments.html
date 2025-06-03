@@ -213,11 +213,14 @@
   </div>
 
   <!-- 付款管理脚本 -->
-  <script>
+  <script type="module">
+    // 导入服务
+    import paymentService from '../assets/js/services/payment.js';
+    import authService from '../assets/js/services/auth.js';
+
     document.addEventListener('DOMContentLoaded', function() {
       // 检查登录状态
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
+      if (!authService.checkAuth()) {
         window.location.href = 'login.html';
         return;
       }

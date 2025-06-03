@@ -2,13 +2,15 @@
  * API服务基类
  * 提供基础的HTTP请求方法和认证逻辑
  */
+import { getBaseUrl, getApiConfig, DEFAULT_HEADERS } from '../config/api.js';
+
 class ApiService {
-  constructor(baseUrl = 'http://127.0.0.1:8080/api/v1') {
-    this.baseUrl = baseUrl;
-    this.headers = {
-      'Content-Type': 'application/json'
-    };
-    
+  constructor(baseUrl = null) {
+    // 使用配置文件中的baseUrl，如果没有传入自定义baseUrl
+    this.baseUrl = baseUrl || getBaseUrl();
+    this.config = getApiConfig();
+    this.headers = { ...DEFAULT_HEADERS };
+
     // 从本地存储中获取认证令牌
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -26,42 +28,68 @@ class ApiService {
   }
 
   // 发送请求的通用方法
-  async request(endpoint, method = 'GET', data = null) {
+  async request(endpoint, method = 'GET', data = null, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
-    const options = {
+    const requestOptions = {
       method,
-      headers: this.headers,
-      credentials: 'include'
+      headers: { ...this.headers, ...options.headers },
+      // 暂时移除credentials以避免CORS问题
+      // credentials: 'include',
+      ...options
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      options.body = JSON.stringify(data);
+      requestOptions.body = JSON.stringify(data);
     }
 
-    try {
-      const response = await fetch(url, options);
-      
-      // 处理未认证错误
-      if (response.status === 401) {
-        // 清除本地存储的令牌
-        localStorage.removeItem('auth_token');
-        // 重定向到登录页
-        window.location.href = '/pages/login.html';
-        return null;
+    // 实现重试逻辑
+    let lastError;
+    for (let attempt = 0; attempt < this.config.retryAttempts; attempt++) {
+      try {
+        // 创建带超时的fetch请求
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+        const response = await fetch(url, {
+          ...requestOptions,
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        // 处理未认证错误
+        if (response.status === 401) {
+          // 清除本地存储的令牌
+          localStorage.removeItem('auth_token');
+          // 重定向到登录页
+          window.location.href = '/pages/login.html';
+          return null;
+        }
+
+        // 解析响应
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || `请求失败 (${response.status})`);
+        }
+
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.warn(`API请求失败 (尝试 ${attempt + 1}/${this.config.retryAttempts}):`, error.message);
+
+        // 如果是最后一次尝试，或者是认证错误，不再重试
+        if (attempt === this.config.retryAttempts - 1 || error.name === 'AbortError') {
+          break;
+        }
+
+        // 等待一段时间后重试
+        await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
       }
-      
-      // 解析响应
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.message || '请求失败');
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('API请求错误:', error);
-      throw error;
     }
+
+    console.error('API请求最终失败:', lastError);
+    throw lastError;
   }
 
   // HTTP方法封装

@@ -3,11 +3,11 @@
  * 处理用户登录、注销等认证相关功能
  */
 import ApiService from './api.js';
+import { API_ENDPOINTS } from '../config/api.js';
 
 class AuthService extends ApiService {
   constructor() {
     super();
-    this.endpoint = '/auth';
     this.isAuthenticated = !!localStorage.getItem('auth_token');
   }
 
@@ -20,15 +20,15 @@ class AuthService extends ApiService {
    */
   async login(credentials) {
     try {
-      const response = await this.post(`${this.endpoint}/login`, credentials);
-      
+      const response = await this.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
+
       if (response && response.access_token) {
         // 存储令牌
         localStorage.setItem('auth_token', response.access_token);
         this.setAuthToken(response.access_token);
         this.isAuthenticated = true;
       }
-      
+
       return response;
     } catch (error) {
       console.error('登录失败:', error);

@@ -135,92 +135,97 @@
   </div>
 
   <!-- 登录脚本 -->
-  <script>
-    // 简化的登录功能
-    document.addEventListener('DOMContentLoaded', function() {
-      const loginForm = document.getElementById('loginForm');
-      const loginButton = document.getElementById('loginButton');
-      const demoButton = document.getElementById('demoButton');
-      const errorMessage = document.getElementById('errorMessage');
+  <script type="module">
+    console.log('开始加载模块...');
 
-      // 显示错误信息
-      function showError(message) {
-        errorMessage.textContent = message;
-        errorMessage.classList.remove('hidden');
-      }
+    // 使用立即执行的异步函数
+    (async function() {
+      try {
+        // 导入认证服务
+        const authService = await import('../assets/js/services/auth.js').then(module => module.default);
+        console.log('认证服务加载成功:', authService);
 
-      // 隐藏错误信息
-      function hideError() {
-        errorMessage.classList.add('hidden');
-      }
+        // 登录功能
+        document.addEventListener('DOMContentLoaded', function() {
+          const loginForm = document.getElementById('loginForm');
+          const loginButton = document.getElementById('loginButton');
+          const demoButton = document.getElementById('demoButton');
+          const errorMessage = document.getElementById('errorMessage');
 
-      // 设置加载状态
-      function setLoading(isLoading) {
-        if (isLoading) {
-          loginButton.disabled = true;
-          loginButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 登录中...';
-          demoButton.disabled = true;
-        } else {
-          loginButton.disabled = false;
-          loginButton.innerHTML = '登录';
-          demoButton.disabled = false;
-        }
-      }
+          // 显示错误信息
+          function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+          }
 
-      // 登录函数
-      async function login(username, password) {
-        try {
-          setLoading(true);
-          hideError();
+          // 隐藏错误信息
+          function hideError() {
+            errorMessage.classList.add('hidden');
+          }
 
-          const response = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              username: username,
-              password: password
-            })
+          // 设置加载状态
+          function setLoading(isLoading) {
+            if (isLoading) {
+              loginButton.disabled = true;
+              loginButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 登录中...';
+              demoButton.disabled = true;
+            } else {
+              loginButton.disabled = false;
+              loginButton.innerHTML = '登录';
+              demoButton.disabled = false;
+            }
+          }
+
+          // 登录函数
+          async function login(username, password) {
+            try {
+              setLoading(true);
+              hideError();
+
+              // 使用认证服务进行登录
+              const response = await authService.login({
+                username: username,
+                password: password
+              });
+
+              if (response && response.access_token) {
+                // 跳转到仪表盘
+                window.location.href = 'dashboard.html';
+              } else {
+                showError(response?.message || '登录失败，请检查用户名和密码');
+              }
+            } catch (error) {
+              console.error('登录错误:', error);
+              showError(error.message || '网络错误，请稍后重试');
+            } finally {
+              setLoading(false);
+            }
+          }
+
+          // 表单提交事件
+          loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+              showError('请输入用户名和密码');
+              return;
+            }
+
+            login(username, password);
           });
 
-          const data = await response.json();
-
-          if (response.ok && data.access_token) {
-            // 保存token
-            localStorage.setItem('auth_token', data.access_token);
-            // 跳转到仪表盘
-            window.location.href = 'dashboard.html';
-          } else {
-            showError(data.message || '登录失败，请检查用户名和密码');
-          }
-        } catch (error) {
-          console.error('登录错误:', error);
-          showError('网络错误，请稍后重试');
-        } finally {
-          setLoading(false);
-        }
+          // 演示账号登录
+          demoButton.addEventListener('click', function() {
+            login('admin', '123456');
+          });
+        });
+      } catch (error) {
+        console.error('模块加载失败:', error);
+        alert('页面加载失败，请刷新重试');
       }
-
-      // 表单提交事件
-      loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        if (!username || !password) {
-          showError('请输入用户名和密码');
-          return;
-        }
-
-        login(username, password);
-      });
-
-      // 演示账号登录
-      demoButton.addEventListener('click', function() {
-        login('admin', '123456');
-      });
-    });
+    })();
   </script>
 </body>
 </html> 

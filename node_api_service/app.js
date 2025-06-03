@@ -16,7 +16,12 @@ const app = express();
 const apiSpec = YAML.load(path.join(__dirname, '../backend_service/api_spec.yaml'));
 
 // 中间件配置
-app.use(cors()); // 启用CORS
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8080', 'http://127.0.0.1:8080'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+})); // 启用CORS
 app.use(morgan('dev')); // 日志记录
 app.use(express.json()); // 解析JSON请求体
 app.use(express.urlencoded({ extended: true })); // 解析URL编码的请求体
