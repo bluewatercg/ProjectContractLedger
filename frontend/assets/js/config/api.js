@@ -69,7 +69,12 @@ export const API_ENDPOINTS = {
     DETAIL: (id) => `/customers/${id}`,
     CREATE: '/customers',
     UPDATE: (id) => `/customers/${id}`,
-    DELETE: (id) => `/customers/${id}`
+    DELETE: (id) => `/customers/${id}`,
+    // 开票信息相关
+    INVOICE_INFOS: (id) => `/customers/${id}/invoice-infos`,
+    INVOICE_INFO_CREATE: (id) => `/customers/${id}/invoice-infos`,
+    INVOICE_INFO_UPDATE: (customerId, infoId) => `/customers/${customerId}/invoice-infos/${infoId}`,
+    INVOICE_INFO_DELETE: (customerId, infoId) => `/customers/${customerId}/invoice-infos/${infoId}`
   },
   
   // 合同相关

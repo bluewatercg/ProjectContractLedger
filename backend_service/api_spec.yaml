@@ -40,6 +40,12 @@ tags:
     description: 合同提醒
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT认证令牌。在请求头中添加：Authorization: Bearer <token>"
   schemas:
     # Authentication Schemas
     LoginRequest:

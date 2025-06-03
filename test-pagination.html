@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分页功能测试</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 p-8">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">分页功能测试</h1>
+    
+    <!-- 测试控制面板 -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">测试控制面板</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">总记录数</label>
+          <input type="number" id="totalRecords" value="34" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">每页数量</label>
+          <select id="pageSize" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">当前页</label>
+          <input type="number" id="currentPage" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+      </div>
+      
+      <button onclick="testPagination()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+        测试分页
+      </button>
+    </div>
+
+    <!-- 分页信息显示 -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">分页信息</h2>
+      <div id="paginationInfo" class="text-sm text-gray-700 mb-4">
+        显示第 <span id="startRecord">0</span> 至 <span id="endRecord">0</span> 条，共 <span id="totalRecordsDisplay">0</span> 条记录
+      </div>
+    </div>
+
+    <!-- 分页控件 -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">分页控件</h2>
+      <nav id="paginationNav" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+        <!-- 分页按钮将在这里生成 -->
+      </nav>
+    </div>
+
+    <!-- 测试结果 -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold mb-4">测试结果</h2>
+      <div id="testResults" class="space-y-2">
+        <!-- 测试结果将在这里显示 -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let currentPageNum = 1;
+    let pageSizeNum = 10;
+    let totalRecordsNum = 34;
+
+    // 分页渲染函数（从customers.html复制并修改）
+    function renderPagination(pagination) {
+      const nav = document.getElementById('paginationNav');
+      
+      console.log('分页数据:', pagination);
+
+      if (!pagination || !pagination.total || pagination.total === 0) {
+        nav.innerHTML = '<p class="text-gray-500">无数据</p>';
+        return;
+      }
+
+      // 兼容不同的API响应格式
+      const currentPageNum = pagination.current_page || pagination.page || 1;
+      const perPageNum = pagination.per_page || pagination.pageSize || 10;
+      const totalNum = pagination.total || 0;
+      const lastPageNum = pagination.last_page || pagination.totalPages || Math.ceil(totalNum / perPageNum);
+
+      // 更新分页信息
+      const startRecord = (currentPageNum - 1) * perPageNum + 1;
+      const endRecord = Math.min(currentPageNum * perPageNum, totalNum);
+
+      document.getElementById('startRecord').textContent = startRecord;
+      document.getElementById('endRecord').textContent = endRecord;
+      document.getElementById('totalRecordsDisplay').textContent = totalNum;
+
+      // 生成分页按钮
+      let paginationHTML = '';
+
+      // 上一页按钮
+      if (currentPageNum > 1) {
+        paginationHTML += `
+          <button onclick="goToPage(${currentPageNum - 1})"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+        `;
+      }
+
+      // 页码按钮 - 智能分页显示
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(lastPageNum, startPage + maxVisiblePages - 1);
+      
+      // 调整起始页
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      // 第一页
+      if (startPage > 1) {
+        paginationHTML += `
+          <button onclick="goToPage(1)"
+                  class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+            1
+          </button>
+        `;
+        if (startPage > 2) {
+          paginationHTML += `
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              ...
+            </span>
+          `;
+        }
+      }
+
+      // 中间页码
+      for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPageNum) {
+          paginationHTML += `
+            <button class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+              ${i}
+            </button>
+          `;
+        } else {
+          paginationHTML += `
+            <button onclick="goToPage(${i})"
+                    class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+              ${i}
+            </button>
+          `;
+        }
+      }
+
+      // 最后一页
+      if (endPage < lastPageNum) {
+        if (endPage < lastPageNum - 1) {
+          paginationHTML += `
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              ...
+            </span>
+          `;
+        }
+        paginationHTML += `
+          <button onclick="goToPage(${lastPageNum})"
+                  class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+            ${lastPageNum}
+          </button>
+        `;
+      }
+
+      // 下一页按钮
+      if (currentPageNum < lastPageNum) {
+        paginationHTML += `
+          <button onclick="goToPage(${currentPageNum + 1})"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        `;
+      }
+
+      nav.innerHTML = paginationHTML;
+    }
+
+    // 测试分页功能
+    function testPagination() {
+      totalRecordsNum = parseInt(document.getElementById('totalRecords').value);
+      pageSizeNum = parseInt(document.getElementById('pageSize').value);
+      currentPageNum = parseInt(document.getElementById('currentPage').value);
+
+      const lastPageNum = Math.ceil(totalRecordsNum / pageSizeNum);
+      
+      // 验证当前页是否有效
+      if (currentPageNum > lastPageNum) {
+        currentPageNum = lastPageNum;
+        document.getElementById('currentPage').value = currentPageNum;
+      }
+      if (currentPageNum < 1) {
+        currentPageNum = 1;
+        document.getElementById('currentPage').value = currentPageNum;
+      }
+
+      const paginationData = {
+        total: totalRecordsNum,
+        current_page: currentPageNum,
+        per_page: pageSizeNum,
+        last_page: lastPageNum
+      };
+
+      renderPagination(paginationData);
+
+      // 显示测试结果
+      const results = document.getElementById('testResults');
+      results.innerHTML = `
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 class="font-semibold text-green-800 mb-2">✅ 测试结果</h3>
+          <ul class="text-green-700 space-y-1">
+            <li>总记录数: ${totalRecordsNum}</li>
+            <li>每页数量: ${pageSizeNum}</li>
+            <li>当前页: ${currentPageNum}</li>
+            <li>总页数: ${lastPageNum}</li>
+            <li>起始记录: ${(currentPageNum - 1) * pageSizeNum + 1}</li>
+            <li>结束记录: ${Math.min(currentPageNum * pageSizeNum, totalRecordsNum)}</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    // 跳转到指定页
+    function goToPage(page) {
+      document.getElementById('currentPage').value = page;
+      testPagination();
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      testPagination();
+      
+      // 监听输入变化
+      document.getElementById('totalRecords').addEventListener('input', testPagination);
+      document.getElementById('pageSize').addEventListener('change', testPagination);
+      document.getElementById('currentPage').addEventListener('input', testPagination);
+    });
+  </script>
+</body>
+</html>

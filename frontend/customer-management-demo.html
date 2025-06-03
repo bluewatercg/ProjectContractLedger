@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户管理演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+        
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button.danger {
+            background-color: #dc3545;
+        }
+        
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        
+        button.success {
+            background-color: #28a745;
+        }
+        
+        button.success:hover {
+            background-color: #218838;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .token-section {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .customer-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        
+        .customer-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .customer-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .customer-item:last-child {
+            border-bottom: none;
+        }
+        
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .col {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 客户管理系统演示</h1>
+        
+        <!-- Token配置 -->
+        <div class="token-section">
+            <h3>🔑 访问令牌配置</h3>
+            <div class="form-group">
+                <label for="accessToken">Access Token:</label>
+                <input type="text" id="accessToken" 
+                       value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQHFpamkuY29tIiwiaWF0IjoxNzQ4OTM2MDg5LCJleHAiOjE3NDkwMjI0ODl9.W7dKfYNo5YL2Nwn622-yQB8_dGWCKkf9awdI8Hfm8mY"
+                       placeholder="请输入您的访问令牌">
+            </div>
+            <button onclick="setToken()">设置Token</button>
+        </div>
+
+        <div class="row">
+            <!-- 左侧：客户列表 -->
+            <div class="col">
+                <div class="section">
+                    <h2>📋 客户列表</h2>
+                    <div class="form-group">
+                        <label for="searchName">搜索客户名称:</label>
+                        <input type="text" id="searchName" placeholder="输入客户名称进行搜索">
+                    </div>
+                    <div class="form-group">
+                        <label for="pageSize">每页显示数量:</label>
+                        <select id="pageSize">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                    <button onclick="loadCustomers()">🔍 查询客户</button>
+                    <button onclick="loadCustomers(1)" class="success">🔄 刷新列表</button>
+                    
+                    <div id="customerList" class="customer-list"></div>
+                    <div id="customerListResult" class="result" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- 右侧：客户操作 -->
+            <div class="col">
+                <div class="section">
+                    <h2>✏️ 客户操作</h2>
+                    <div class="form-group">
+                        <label for="customerId">客户ID (用于查询/更新/删除):</label>
+                        <input type="number" id="customerId" placeholder="输入客户ID">
+                    </div>
+                    
+                    <h3>客户信息</h3>
+                    <div class="form-group">
+                        <label for="customerName">客户名称 *:</label>
+                        <input type="text" id="customerName" placeholder="请输入客户名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPerson">联系人:</label>
+                        <input type="text" id="contactPerson" placeholder="请输入联系人">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">联系电话:</label>
+                        <input type="tel" id="phone" placeholder="请输入联系电话">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">邮箱地址:</label>
+                        <input type="email" id="email" placeholder="请输入邮箱地址">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">客户地址:</label>
+                        <input type="text" id="address" placeholder="请输入客户地址">
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">备注信息:</label>
+                        <textarea id="notes" placeholder="请输入备注信息"></textarea>
+                    </div>
+                    
+                    <button onclick="createCustomer()" class="success">➕ 创建客户</button>
+                    <button onclick="getCustomerById()">🔍 查询客户</button>
+                    <button onclick="updateCustomer()">✏️ 更新客户</button>
+                    <button onclick="deleteCustomer()" class="danger">🗑️ 删除客户</button>
+                    <button onclick="clearForm()">🧹 清空表单</button>
+                    
+                    <div id="customerOperationResult" class="result" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 开票信息管理 -->
+        <div class="section">
+            <h2>🧾 开票信息管理</h2>
+            <div class="form-group">
+                <label for="invoiceCustomerId">客户ID:</label>
+                <input type="number" id="invoiceCustomerId" placeholder="输入客户ID">
+            </div>
+            <div class="form-group">
+                <label for="invoiceInfoId">开票信息ID (用于更新/删除):</label>
+                <input type="number" id="invoiceInfoId" placeholder="输入开票信息ID">
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="companyName">开票公司名称 *:</label>
+                        <input type="text" id="companyName" placeholder="请输入开票公司名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taxNumber">税号:</label>
+                        <input type="text" id="taxNumber" placeholder="请输入税号">
+                    </div>
+                    <div class="form-group">
+                        <label for="bankName">开户银行:</label>
+                        <input type="text" id="bankName" placeholder="请输入开户银行">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="bankAccount">银行账号:</label>
+                        <input type="text" id="bankAccount" placeholder="请输入银行账号">
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceAddress">开票地址:</label>
+                        <input type="text" id="invoiceAddress" placeholder="请输入开票地址">
+                    </div>
+                    <div class="form-group">
+                        <label for="invoicePhone">开票电话:</label>
+                        <input type="tel" id="invoicePhone" placeholder="请输入开票电话">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="isDefault"> 设为默认开票信息
+                </label>
+            </div>
+            
+            <button onclick="getInvoiceInfos()" class="success">📋 查询开票信息</button>
+            <button onclick="createInvoiceInfo()">➕ 创建开票信息</button>
+            <button onclick="updateInvoiceInfo()">✏️ 更新开票信息</button>
+            <button onclick="deleteInvoiceInfo()" class="danger">🗑️ 删除开票信息</button>
+            
+            <div id="invoiceInfoResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // API配置
+        const API_BASE_URL = 'http://127.0.0.1:8080/api/v1';
+        let currentToken = '';
+
+        // 设置Token
+        function setToken() {
+            currentToken = document.getElementById('accessToken').value.trim();
+            if (currentToken) {
+                showResult('customerOperationResult', 'Token已设置成功！', 'success');
+            } else {
+                showResult('customerOperationResult', 'Token不能为空！', 'error');
+            }
+        }
+
+        // 获取请求头
+        function getHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            };
+        }
+
+        // 显示结果
+        function showResult(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        // API请求函数
+        async function apiRequest(endpoint, options = {}) {
+            if (!currentToken) {
+                throw new Error('请先设置访问令牌！');
+            }
+
+            const url = `${API_BASE_URL}${endpoint}`;
+            const config = {
+                headers: getHeaders(),
+                ...options
+            };
+
+            const response = await fetch(url, config);
+            const responseText = await response.text();
+            
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (e) {
+                responseData = responseText;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${responseData.message || responseText}`);
+            }
+
+            return responseData;
+        }
+
+        // 加载客户列表
+        async function loadCustomers(page = 1) {
+            try {
+                const searchName = document.getElementById('searchName').value.trim();
+                const pageSize = document.getElementById('pageSize').value;
+                
+                let url = `/customers?page=${page}&pageSize=${pageSize}`;
+                if (searchName) {
+                    url += `&name=${encodeURIComponent(searchName)}`;
+                }
+
+                const result = await apiRequest(url);
+                
+                // 显示客户列表
+                const listElement = document.getElementById('customerList');
+                if (result.data && result.data.length > 0) {
+                    listElement.innerHTML = result.data.map(customer => `
+                        <div class="customer-item" onclick="selectCustomer(${customer.customer_id})">
+                            <strong>${customer.name}</strong><br>
+                            <small>ID: ${customer.customer_id} | 联系人: ${customer.contact_person || '无'} | 电话: ${customer.phone || '无'}</small>
+                        </div>
+                    `).join('');
+                } else {
+                    listElement.innerHTML = '<div class="customer-item">暂无客户数据</div>';
+                }
+
+                showResult('customerListResult', `查询成功！共找到 ${result.pagination?.total || 0} 条记录`, 'success');
+            } catch (error) {
+                showResult('customerListResult', `查询失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 选择客户
+        function selectCustomer(customerId) {
+            document.getElementById('customerId').value = customerId;
+            getCustomerById();
+        }
+
+        // 获取客户详情
+        async function getCustomerById() {
+            const customerId = document.getElementById('customerId').value;
+            if (!customerId) {
+                showResult('customerOperationResult', '请输入客户ID', 'error');
+                return;
+            }
+
+            try {
+                const customer = await apiRequest(`/customers/${customerId}`);
+                
+                // 填充表单
+                document.getElementById('customerName').value = customer.name || '';
+                document.getElementById('contactPerson').value = customer.contact_person || '';
+                document.getElementById('phone').value = customer.phone || '';
+                document.getElementById('email').value = customer.email || '';
+                document.getElementById('address').value = customer.address || '';
+                document.getElementById('notes').value = customer.notes || '';
+                
+                showResult('customerOperationResult', customer, 'success');
+            } catch (error) {
+                showResult('customerOperationResult', `查询失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 创建客户
+        async function createCustomer() {
+            const customerData = {
+                name: document.getElementById('customerName').value.trim(),
+                contact_person: document.getElementById('contactPerson').value.trim() || null,
+                phone: document.getElementById('phone').value.trim() || null,
+                email: document.getElementById('email').value.trim() || null,
+                address: document.getElementById('address').value.trim() || null,
+                notes: document.getElementById('notes').value.trim() || null
+            };
+
+            if (!customerData.name) {
+                showResult('customerOperationResult', '客户名称不能为空！', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiRequest('/customers', {
+                    method: 'POST',
+                    body: JSON.stringify(customerData)
+                });
+                
+                document.getElementById('customerId').value = result.customer_id;
+                showResult('customerOperationResult', result, 'success');
+                loadCustomers(); // 刷新客户列表
+            } catch (error) {
+                showResult('customerOperationResult', `创建失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 更新客户
+        async function updateCustomer() {
+            const customerId = document.getElementById('customerId').value;
+            if (!customerId) {
+                showResult('customerOperationResult', '请输入客户ID', 'error');
+                return;
+            }
+
+            const customerData = {
+                name: document.getElementById('customerName').value.trim(),
+                contact_person: document.getElementById('contactPerson').value.trim() || null,
+                phone: document.getElementById('phone').value.trim() || null,
+                email: document.getElementById('email').value.trim() || null,
+                address: document.getElementById('address').value.trim() || null,
+                notes: document.getElementById('notes').value.trim() || null
+            };
+
+            if (!customerData.name) {
+                showResult('customerOperationResult', '客户名称不能为空！', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiRequest(`/customers/${customerId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(customerData)
+                });
+                
+                showResult('customerOperationResult', result, 'success');
+                loadCustomers(); // 刷新客户列表
+            } catch (error) {
+                showResult('customerOperationResult', `更新失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 删除客户
+        async function deleteCustomer() {
+            const customerId = document.getElementById('customerId').value;
+            if (!customerId) {
+                showResult('customerOperationResult', '请输入客户ID', 'error');
+                return;
+            }
+
+            if (!confirm('确定要删除这个客户吗？此操作不可撤销！')) {
+                return;
+            }
+
+            try {
+                const result = await apiRequest(`/customers/${customerId}`, {
+                    method: 'DELETE'
+                });
+                
+                showResult('customerOperationResult', result, 'success');
+                clearForm();
+                loadCustomers(); // 刷新客户列表
+            } catch (error) {
+                showResult('customerOperationResult', `删除失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空表单
+        function clearForm() {
+            document.getElementById('customerId').value = '';
+            document.getElementById('customerName').value = '';
+            document.getElementById('contactPerson').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('address').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        // 获取开票信息
+        async function getInvoiceInfos() {
+            const customerId = document.getElementById('invoiceCustomerId').value;
+            if (!customerId) {
+                showResult('invoiceInfoResult', '请输入客户ID', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiRequest(`/customers/${customerId}/invoice-infos`);
+                showResult('invoiceInfoResult', result, 'success');
+            } catch (error) {
+                showResult('invoiceInfoResult', `查询失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 创建开票信息
+        async function createInvoiceInfo() {
+            const customerId = document.getElementById('invoiceCustomerId').value;
+            if (!customerId) {
+                showResult('invoiceInfoResult', '请输入客户ID', 'error');
+                return;
+            }
+
+            const invoiceData = {
+                company_name: document.getElementById('companyName').value.trim(),
+                tax_number: document.getElementById('taxNumber').value.trim() || null,
+                bank_name: document.getElementById('bankName').value.trim() || null,
+                bank_account: document.getElementById('bankAccount').value.trim() || null,
+                address: document.getElementById('invoiceAddress').value.trim() || null,
+                phone: document.getElementById('invoicePhone').value.trim() || null,
+                is_default: document.getElementById('isDefault').checked
+            };
+
+            if (!invoiceData.company_name) {
+                showResult('invoiceInfoResult', '开票公司名称不能为空！', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiRequest(`/customers/${customerId}/invoice-infos`, {
+                    method: 'POST',
+                    body: JSON.stringify(invoiceData)
+                });
+                
+                document.getElementById('invoiceInfoId').value = result.id;
+                showResult('invoiceInfoResult', result, 'success');
+            } catch (error) {
+                showResult('invoiceInfoResult', `创建失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 更新开票信息
+        async function updateInvoiceInfo() {
+            const customerId = document.getElementById('invoiceCustomerId').value;
+            const infoId = document.getElementById('invoiceInfoId').value;
+            
+            if (!customerId || !infoId) {
+                showResult('invoiceInfoResult', '请输入客户ID和开票信息ID', 'error');
+                return;
+            }
+
+            const invoiceData = {
+                company_name: document.getElementById('companyName').value.trim(),
+                tax_number: document.getElementById('taxNumber').value.trim() || null,
+                bank_name: document.getElementById('bankName').value.trim() || null,
+                bank_account: document.getElementById('bankAccount').value.trim() || null,
+                address: document.getElementById('invoiceAddress').value.trim() || null,
+                phone: document.getElementById('invoicePhone').value.trim() || null,
+                is_default: document.getElementById('isDefault').checked
+            };
+
+            if (!invoiceData.company_name) {
+                showResult('invoiceInfoResult', '开票公司名称不能为空！', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiRequest(`/customers/${customerId}/invoice-infos/${infoId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(invoiceData)
+                });
+                
+                showResult('invoiceInfoResult', result, 'success');
+            } catch (error) {
+                showResult('invoiceInfoResult', `更新失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 删除开票信息
+        async function deleteInvoiceInfo() {
+            const customerId = document.getElementById('invoiceCustomerId').value;
+            const infoId = document.getElementById('invoiceInfoId').value;
+            
+            if (!customerId || !infoId) {
+                showResult('invoiceInfoResult', '请输入客户ID和开票信息ID', 'error');
+                return;
+            }
+
+            if (!confirm('确定要删除这个开票信息吗？此操作不可撤销！')) {
+                return;
+            }
+
+            try {
+                const result = await apiRequest(`/customers/${customerId}/invoice-infos/${infoId}`, {
+                    method: 'DELETE'
+                });
+                
+                showResult('invoiceInfoResult', result, 'success');
+            } catch (error) {
+                showResult('invoiceInfoResult', `删除失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动设置Token
+        window.onload = function() {
+            setToken();
+        };
+    </script>
+</body>
+</html>

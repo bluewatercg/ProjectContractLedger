@@ -6,85 +6,145 @@
   <title>客户合同管理系统 - 客户管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="../assets/css/style.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50">
-  <div class="min-h-screen flex">
-    <!-- 侧边栏 -->
-    <aside class="w-64 bg-blue-800 text-white p-4 hidden md:block">
-      <div class="mb-8">
-        <h1 class="text-xl font-bold">合同管理系统</h1>
-        <p class="text-sm text-blue-200">单用户版</p>
+  <!-- 加载提示 -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex items-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+        <span class="text-gray-700">加载中...</span>
       </div>
+    </div>
+  </div>
 
-      <nav>
-        <ul class="space-y-2">
-          <li>
-            <a href="dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-700">
-              <i class="fas fa-tachometer-alt mr-3"></i>
-              <span>仪表盘</span>
-            </a>
-          </li>
-          <li>
-            <a href="customers.html" class="flex items-center p-2 rounded bg-blue-700">
-              <i class="fas fa-users mr-3"></i>
-              <span>客户管理</span>
-            </a>
-          </li>
-          <li>
-            <a href="contracts.html" class="flex items-center p-2 rounded hover:bg-blue-700">
-              <i class="fas fa-file-contract mr-3"></i>
-              <span>合同管理</span>
-            </a>
-          </li>
-          <li>
-            <a href="invoices.html" class="flex items-center p-2 rounded hover:bg-blue-700">
-              <i class="fas fa-file-invoice mr-3"></i>
-              <span>开票管理</span>
-            </a>
-          </li>
-          <li>
-            <a href="payments.html" class="flex items-center p-2 rounded hover:bg-blue-700">
-              <i class="fas fa-money-bill-wave mr-3"></i>
-              <span>到款管理</span>
-            </a>
-          </li>
-          <li>
-            <a href="notifications.html" class="flex items-center p-2 rounded hover:bg-blue-700">
-              <i class="fas fa-bell mr-3"></i>
-              <span>提醒中心</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
+  <!-- 消息提示 -->
+  <div id="messageContainer" class="fixed top-4 right-4 z-50"></div>
+
+  <div class="min-h-screen flex">
+    <!-- 桌面端侧边栏 -->
+    <aside id="sidebar" class="w-64 bg-blue-800 text-white flex flex-col hidden md:flex">
+      <div class="p-4">
+        <div class="mb-8">
+          <h1 class="text-xl font-bold">合同管理系统</h1>
+          <p class="text-sm text-blue-200">单用户版</p>
+        </div>
+
+        <nav class="flex-1">
+          <ul class="space-y-1">
+            <li>
+              <a href="dashboard.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-tachometer-alt mr-3 w-5"></i>
+                <span>仪表盘</span>
+              </a>
+            </li>
+            <li>
+              <a href="customers.html" class="flex items-center p-3 rounded-lg bg-blue-700 text-white">
+                <i class="fas fa-users mr-3 w-5"></i>
+                <span>客户管理</span>
+              </a>
+            </li>
+            <li>
+              <a href="contracts.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-file-contract mr-3 w-5"></i>
+                <span>合同管理</span>
+              </a>
+            </li>
+            <li>
+              <a href="invoices.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-file-invoice mr-3 w-5"></i>
+                <span>发票管理</span>
+              </a>
+            </li>
+            <li>
+              <a href="payments.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-credit-card mr-3 w-5"></i>
+                <span>付款管理</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="mt-auto pt-4 border-t border-blue-700">
+          <a href="#" id="logoutBtn" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-sign-out-alt mr-3 w-5"></i>
+            <span>退出登录</span>
+          </a>
+        </div>
+      </div>
     </aside>
 
-    <!-- 主内容区 -->
+    <!-- 移动端侧边栏 -->
+    <aside id="mobileSidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-blue-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
+      <div class="p-4 h-full flex flex-col">
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h1 class="text-xl font-bold">合同管理系统</h1>
+            <p class="text-sm text-blue-200">单用户版</p>
+          </div>
+          <button id="closeMobileSidebar" class="text-white hover:text-gray-300">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <nav class="flex-1">
+          <ul class="space-y-1">
+            <li>
+              <a href="dashboard.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-tachometer-alt mr-3 w-5"></i>
+                <span>仪表盘</span>
+              </a>
+            </li>
+            <li>
+              <a href="customers.html" class="flex items-center p-3 rounded-lg bg-blue-700 text-white">
+                <i class="fas fa-users mr-3 w-5"></i>
+                <span>客户管理</span>
+              </a>
+            </li>
+            <li>
+              <a href="contracts.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-file-contract mr-3 w-5"></i>
+                <span>合同管理</span>
+              </a>
+            </li>
+            <li>
+              <a href="invoices.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-file-invoice mr-3 w-5"></i>
+                <span>发票管理</span>
+              </a>
+            </li>
+            <li>
+              <a href="payments.html" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-credit-card mr-3 w-5"></i>
+                <span>付款管理</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="mt-auto pt-4 border-t border-blue-700">
+          <a href="#" class="flex items-center p-3 rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-sign-out-alt mr-3 w-5"></i>
+            <span>退出登录</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 移动端侧边栏背景 -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- 主内容区域 -->
     <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- 顶部导航 -->
-      <header class="bg-white shadow-sm z-10">
-        <div class="flex items-center justify-between p-4">
-          <div class="flex items-center md:hidden">
-            <button class="text-gray-500 focus:outline-none">
-              <i class="fas fa-bars"></i>
-            </button>
-          </div>
-          <div class="flex items-center">
-            <div class="relative">
-              <button class="flex items-center text-gray-500 focus:outline-none">
-                <i class="fas fa-bell mr-1"></i>
-                <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-              </button>
-            </div>
-            <div class="ml-4 relative">
-              <div class="flex items-center">
-                <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
-                <span class="ml-2 text-gray-700">管理员</span>
-                <button id="logoutBtn" class="ml-2 text-gray-500 hover:text-gray-700">
-                  <i class="fas fa-sign-out-alt"></i>
-                </button>
-              </div>
-            </div>
-          </div>
+      <!-- 移动端顶部导航栏 -->
+      <header class="bg-white shadow-sm border-b border-gray-200 p-4 md:hidden">
+        <div class="flex items-center justify-between">
+          <button id="sidebarToggle" class="text-gray-600 hover:text-gray-900 focus:outline-none">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+          <h1 class="text-lg font-semibold text-gray-800">客户管理</h1>
+          <div class="w-6"></div>
         </div>
       </header>
 
@@ -95,10 +155,10 @@
             <h1 class="text-2xl font-bold text-gray-800">客户管理</h1>
             <p class="text-gray-600">管理所有客户信息</p>
           </div>
-          <a href="customer-create.html" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center">
+          <button id="addCustomerBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center">
             <i class="fas fa-plus mr-2"></i>
             <span>新增客户</span>
-          </a>
+          </button>
         </div>
 
         <!-- 搜索和筛选 -->
@@ -109,19 +169,18 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <i class="fas fa-search text-gray-400"></i>
                 </div>
-                <input type="text" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="搜索客户名称、联系人...">
+                <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="搜索客户名称、联系人...">
               </div>
             </div>
             <div class="flex flex-wrap gap-2">
-              <select class="border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                <option value="">所有类型</option>
-                <option value="企业">企业客户</option>
-                <option value="个人">个人客户</option>
-                <option value="政府">政府机构</option>
+              <select id="pageSizeSelect" class="border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <option value="10">每页10条</option>
+                <option value="20">每页20条</option>
+                <option value="50">每页50条</option>
               </select>
-              <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md flex items-center text-sm">
-                <i class="fas fa-filter mr-1"></i>
-                <span>更多筛选</span>
+              <button id="refreshBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md flex items-center text-sm">
+                <i class="fas fa-sync-alt mr-1"></i>
+                <span>刷新</span>
               </button>
             </div>
           </div>
@@ -129,7 +188,24 @@
 
         <!-- 客户列表 -->
         <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div class="overflow-x-auto">
+          <!-- 加载状态 -->
+          <div id="tableLoading" class="flex items-center justify-center py-12 hidden">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+            <span class="text-gray-600">加载中...</span>
+          </div>
+
+          <!-- 空状态 -->
+          <div id="emptyState" class="text-center py-12 hidden">
+            <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">暂无客户数据</h3>
+            <p class="text-gray-500 mb-4">开始添加您的第一个客户吧</p>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+              <i class="fas fa-plus mr-2"></i>
+              添加客户
+            </button>
+          </div>
+
+          <div id="customerTable" class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
@@ -137,172 +213,26 @@
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系人</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合同数量</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-blue-600">
-                      <a href="customer-detail.html">上海科技有限公司</a>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">张三</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">13800138000</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">zhangsan@example.com</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">3</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
-                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
-                    </div>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-blue-600">
-                      <a href="customer-detail.html">北京数字科技有限公司</a>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">李四</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">13900139000</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">lisi@example.com</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">2</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
-                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
-                    </div>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-blue-600">
-                      <a href="customer-detail.html">广州网络科技有限公司</a>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">王五</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">13700137000</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">wangwu@example.com</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">4</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
-                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
-                    </div>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-blue-600">
-                      <a href="customer-detail.html">深圳电子科技有限公司</a>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">赵六</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">13600136000</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">zhaoliu@example.com</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">1</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
-                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
-                    </div>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-blue-600">
-                      <a href="customer-detail.html">杭州互联网有限公司</a>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">钱七</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">13500135000</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">qianqi@example.com</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">2</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                      <a href="customer-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
-                      <a href="customer-edit.html" class="text-indigo-600 hover:text-indigo-900">编辑</a>
-                    </div>
-                  </td>
-                </tr>
+              <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- 动态生成的客户数据将在这里显示 -->
               </tbody>
             </table>
           </div>
           <!-- 分页 -->
-          <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div id="paginationContainer" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 hidden">
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p class="text-sm text-gray-700">
-                  显示第 <span class="font-medium">1</span> 至 <span class="font-medium">5</span> 条，共 <span class="font-medium">24</span> 条记录
+                <p id="paginationInfo" class="text-sm text-gray-700">
+                  显示第 <span id="startRecord">0</span> 至 <span id="endRecord">0</span> 条，共 <span id="totalRecords">0</span> 条记录
                 </p>
               </div>
               <div>
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span class="sr-only">上一页</span>
-                    <i class="fas fa-chevron-left"></i>
-                  </a>
-                  <a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    1
-                  </a>
-                  <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    2
-                  </a>
-                  <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    3
-                  </a>
-                  <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                    ...
-                  </span>
-                  <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    5
-                  </a>
-                  <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span class="sr-only">下一页</span>
-                    <i class="fas fa-chevron-right"></i>
-                  </a>
+                <nav id="paginationNav" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <!-- 分页按钮将动态生成 -->
                 </nav>
               </div>
             </div>
@@ -312,39 +242,814 @@
     </div>
   </div>
 
+  <!-- 客户表单模态框 -->
+  <div id="customerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="modalTitle" class="text-lg font-medium text-gray-900">添加客户</h3>
+          <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <form id="customerForm" class="space-y-4">
+          <input type="hidden" id="customerId" name="customer_id">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="customerName" class="block text-sm font-medium text-gray-700 mb-1">客户名称 *</label>
+              <input type="text" id="customerName" name="name" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+              <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-1">联系人</label>
+              <input type="text" id="contactPerson" name="contact_person"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+              <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+              <input type="tel" id="phone" name="phone"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">邮箱地址</label>
+              <input type="email" id="email" name="email"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+
+          <div>
+            <label for="address" class="block text-sm font-medium text-gray-700 mb-1">客户地址</label>
+            <input type="text" id="address" name="address"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          </div>
+
+          <div>
+            <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">备注信息</label>
+            <textarea id="notes" name="notes" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+              取消
+            </button>
+            <button type="submit" id="submitBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 开票信息管理模态框 -->
+  <div id="invoiceInfoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 shadow-lg rounded-md bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="invoiceModalTitle" class="text-lg font-medium text-gray-900">开票信息管理</h3>
+          <button id="closeInvoiceModal" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <!-- 开票信息列表 -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-md font-medium text-gray-800">开票信息列表</h4>
+            <button id="addInvoiceInfoBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm">
+              <i class="fas fa-plus mr-1"></i>
+              添加开票信息
+            </button>
+          </div>
+
+          <div id="invoiceInfoList" class="border rounded-lg overflow-hidden">
+            <!-- 开票信息列表将动态生成 -->
+          </div>
+        </div>
+
+        <!-- 开票信息表单 -->
+        <div id="invoiceInfoForm" class="border-t pt-4 hidden">
+          <h4 class="text-md font-medium text-gray-800 mb-4">
+            <span id="invoiceFormTitle">添加开票信息</span>
+          </h4>
+
+          <form id="invoiceForm" class="space-y-4">
+            <input type="hidden" id="invoiceInfoId" name="invoice_info_id">
+            <input type="hidden" id="invoiceCustomerId" name="customer_id">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">开票公司名称 *</label>
+                <input type="text" id="companyName" name="company_name" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+
+              <div>
+                <label for="taxNumber" class="block text-sm font-medium text-gray-700 mb-1">税号</label>
+                <input type="text" id="taxNumber" name="tax_number"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+
+              <div>
+                <label for="bankName" class="block text-sm font-medium text-gray-700 mb-1">开户银行</label>
+                <input type="text" id="bankName" name="bank_name"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+
+              <div>
+                <label for="bankAccount" class="block text-sm font-medium text-gray-700 mb-1">银行账号</label>
+                <input type="text" id="bankAccount" name="bank_account"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+
+              <div>
+                <label for="invoiceAddress" class="block text-sm font-medium text-gray-700 mb-1">开票地址</label>
+                <input type="text" id="invoiceAddress" name="address"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+
+              <div>
+                <label for="invoicePhone" class="block text-sm font-medium text-gray-700 mb-1">开票电话</label>
+                <input type="tel" id="invoicePhone" name="phone"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="isDefault" name="is_default" class="mr-2">
+                <span class="text-sm text-gray-700">设为默认开票信息</span>
+              </label>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" id="cancelInvoiceBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                取消
+              </button>
+              <button type="submit" id="submitInvoiceBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                保存
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // 检查登录状态
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        window.location.href = 'login.html';
+    // API配置
+    const API_BASE_URL = 'http://127.0.0.1:8080/api/v1';
+    const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQHFpamkuY29tIiwiaWF0IjoxNzQ4OTM2MDg5LCJleHAiOjE3NDkwMjI0ODl9.W7dKfYNo5YL2Nwn622-yQB8_dGWCKkf9awdI8Hfm8mY';
+
+    // 全局变量
+    let currentPage = 1;
+    let pageSize = 10;
+    let totalRecords = 0;
+    let currentCustomerId = null;
+    let isEditMode = false;
+
+    // 工具函数
+    function showLoading() {
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+      } else {
+        // 如果没有加载遮罩层，显示表格加载状态
+        const tableLoading = document.getElementById('tableLoading');
+        if (tableLoading) {
+          tableLoading.classList.remove('hidden');
+        }
+      }
+    }
+
+    function hideLoading() {
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      if (loadingOverlay) {
+        loadingOverlay.classList.add('hidden');
+      }
+      const tableLoading = document.getElementById('tableLoading');
+      if (tableLoading) {
+        tableLoading.classList.add('hidden');
+      }
+    }
+
+    function showMessage(message, type = 'success') {
+      const container = document.getElementById('messageContainer');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `p-4 rounded-lg shadow-lg mb-2 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+      messageDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span>${message}</span>
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(messageDiv);
+
+      // 自动移除消息
+      setTimeout(() => {
+        if (messageDiv.parentNode) {
+          messageDiv.remove();
+        }
+      }, 5000);
+    }
+
+    // API请求函数
+    async function apiRequest(endpoint, options = {}) {
+      const url = `${API_BASE_URL}${endpoint}`;
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        },
+        ...options
+      };
+
+      try {
+        const response = await fetch(url, config);
+        const responseText = await response.text();
+
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (e) {
+          responseData = responseText;
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${responseData.message || responseText}`);
+        }
+
+        return responseData;
+      } catch (error) {
+        console.error('API请求错误:', error);
+        throw error;
+      }
+    }
+
+    // 客户管理功能
+    async function loadCustomers(page = 1) {
+      try {
+        showLoading();
+
+        const searchName = document.getElementById('searchInput').value.trim();
+        pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+
+        let url = `/customers?page=${page}&pageSize=${pageSize}`;
+        if (searchName) {
+          url += `&name=${encodeURIComponent(searchName)}`;
+        }
+
+        console.log('请求URL:', url);
+        const result = await apiRequest(url);
+        console.log('API响应:', result);
+
+        currentPage = page;
+
+        // 处理不同的API响应格式
+        let customers = [];
+        let paginationData = {};
+
+        if (Array.isArray(result)) {
+          // 如果直接返回数组
+          customers = result;
+          paginationData = {
+            total: result.length,
+            current_page: page,
+            per_page: pageSize,
+            last_page: 1
+          };
+        } else if (result.data) {
+          // 如果有data字段
+          customers = result.data || [];
+          paginationData = result.pagination || result.meta || {
+            total: customers.length,
+            current_page: page,
+            per_page: pageSize,
+            last_page: Math.ceil(customers.length / pageSize)
+          };
+        } else {
+          // 其他格式
+          customers = result.customers || result.items || [];
+          paginationData = {
+            total: result.total || customers.length,
+            current_page: page,
+            per_page: pageSize,
+            last_page: Math.ceil((result.total || customers.length) / pageSize)
+          };
+        }
+
+        totalRecords = paginationData.total || 0;
+
+        renderCustomerTable(customers);
+        renderPagination(paginationData);
+
+        hideLoading();
+      } catch (error) {
+        hideLoading();
+        console.error('加载客户列表错误:', error);
+        showMessage(`加载客户列表失败: ${error.message}`, 'error');
+
+        // 显示空状态
+        document.getElementById('customerTable').classList.add('hidden');
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('paginationContainer').classList.add('hidden');
+      }
+    }
+
+    function renderCustomerTable(customers) {
+      const tbody = document.getElementById('customerTableBody');
+      const emptyState = document.getElementById('emptyState');
+      const customerTable = document.getElementById('customerTable');
+
+      if (customers.length === 0) {
+        customerTable.classList.add('hidden');
+        emptyState.classList.remove('hidden');
         return;
       }
 
-      // 退出登录
-      const logoutBtn = document.getElementById('logoutBtn');
-      logoutBtn.addEventListener('click', function(e) {
+      customerTable.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      tbody.innerHTML = customers.map(customer => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-blue-600 cursor-pointer" onclick="viewCustomer(${customer.customer_id})">
+              ${customer.name || ''}
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${customer.contact_person || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${customer.phone || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${customer.email || '-'}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${formatDate(customer.created_at)}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <div class="flex space-x-2">
+              <button onclick="editCustomer(${customer.customer_id})" class="text-blue-600 hover:text-blue-900">编辑</button>
+              <button onclick="manageInvoiceInfo(${customer.customer_id})" class="text-green-600 hover:text-green-900">开票信息</button>
+              <button onclick="deleteCustomer(${customer.customer_id})" class="text-red-600 hover:text-red-900">删除</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPagination(pagination) {
+      const container = document.getElementById('paginationContainer');
+      const nav = document.getElementById('paginationNav');
+
+      // 调试信息
+      console.log('分页数据:', pagination);
+
+      if (!pagination || !pagination.total || pagination.total === 0) {
+        container.classList.add('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+
+      // 兼容不同的API响应格式
+      const currentPageNum = pagination.current_page || pagination.page || currentPage || 1;
+      const perPageNum = pagination.per_page || pagination.pageSize || pageSize || 10;
+      const totalNum = pagination.total || 0;
+      const lastPageNum = pagination.last_page || pagination.totalPages || Math.ceil(totalNum / perPageNum);
+
+      // 更新分页信息
+      const startRecord = (currentPageNum - 1) * perPageNum + 1;
+      const endRecord = Math.min(currentPageNum * perPageNum, totalNum);
+
+      document.getElementById('startRecord').textContent = startRecord;
+      document.getElementById('endRecord').textContent = endRecord;
+      document.getElementById('totalRecords').textContent = totalNum;
+
+      // 生成分页按钮
+      let paginationHTML = '';
+
+      // 上一页按钮
+      if (currentPageNum > 1) {
+        paginationHTML += `
+          <button onclick="loadCustomers(${currentPageNum - 1})"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+        `;
+      }
+
+      // 页码按钮 - 智能分页显示
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(lastPageNum, startPage + maxVisiblePages - 1);
+
+      // 调整起始页
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      // 第一页
+      if (startPage > 1) {
+        paginationHTML += `
+          <button onclick="loadCustomers(1)"
+                  class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+            1
+          </button>
+        `;
+        if (startPage > 2) {
+          paginationHTML += `
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              ...
+            </span>
+          `;
+        }
+      }
+
+      // 中间页码
+      for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPageNum) {
+          paginationHTML += `
+            <button class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+              ${i}
+            </button>
+          `;
+        } else {
+          paginationHTML += `
+            <button onclick="loadCustomers(${i})"
+                    class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+              ${i}
+            </button>
+          `;
+        }
+      }
+
+      // 最后一页
+      if (endPage < lastPageNum) {
+        if (endPage < lastPageNum - 1) {
+          paginationHTML += `
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              ...
+            </span>
+          `;
+        }
+        paginationHTML += `
+          <button onclick="loadCustomers(${lastPageNum})"
+                  class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+            ${lastPageNum}
+          </button>
+        `;
+      }
+
+      // 下一页按钮
+      if (currentPageNum < lastPageNum) {
+        paginationHTML += `
+          <button onclick="loadCustomers(${currentPageNum + 1})"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        `;
+      }
+
+      nav.innerHTML = paginationHTML;
+    }
+
+    // 工具函数
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN');
+    }
+
+    // 客户操作函数
+    function addCustomer() {
+      isEditMode = false;
+      currentCustomerId = null;
+      document.getElementById('modalTitle').textContent = '添加客户';
+      document.getElementById('customerForm').reset();
+      document.getElementById('customerId').value = '';
+      document.getElementById('customerModal').classList.remove('hidden');
+    }
+
+    async function editCustomer(customerId) {
+      try {
+        showLoading();
+        const customer = await apiRequest(`/customers/${customerId}`);
+
+        isEditMode = true;
+        currentCustomerId = customerId;
+        document.getElementById('modalTitle').textContent = '编辑客户';
+
+        // 填充表单
+        document.getElementById('customerId').value = customer.customer_id;
+        document.getElementById('customerName').value = customer.name || '';
+        document.getElementById('contactPerson').value = customer.contact_person || '';
+        document.getElementById('phone').value = customer.phone || '';
+        document.getElementById('email').value = customer.email || '';
+        document.getElementById('address').value = customer.address || '';
+        document.getElementById('notes').value = customer.notes || '';
+
+        document.getElementById('customerModal').classList.remove('hidden');
+        hideLoading();
+      } catch (error) {
+        hideLoading();
+        showMessage(`获取客户信息失败: ${error.message}`, 'error');
+      }
+    }
+
+    function viewCustomer(customerId) {
+      editCustomer(customerId);
+    }
+
+    async function deleteCustomer(customerId) {
+      if (!confirm('确定要删除这个客户吗？此操作不可撤销！')) {
+        return;
+      }
+
+      try {
+        showLoading();
+        await apiRequest(`/customers/${customerId}`, { method: 'DELETE' });
+        showMessage('客户删除成功');
+        loadCustomers(currentPage);
+        hideLoading();
+      } catch (error) {
+        hideLoading();
+        showMessage(`删除客户失败: ${error.message}`, 'error');
+      }
+    }
+
+    // 开票信息管理
+    async function manageInvoiceInfo(customerId) {
+      currentCustomerId = customerId;
+      document.getElementById('invoiceCustomerId').value = customerId;
+      document.getElementById('invoiceInfoModal').classList.remove('hidden');
+      await loadInvoiceInfos(customerId);
+    }
+
+    async function loadInvoiceInfos(customerId) {
+      try {
+        const invoiceInfos = await apiRequest(`/customers/${customerId}/invoice-infos`);
+        renderInvoiceInfoList(invoiceInfos);
+      } catch (error) {
+        showMessage(`加载开票信息失败: ${error.message}`, 'error');
+      }
+    }
+
+    function renderInvoiceInfoList(invoiceInfos) {
+      const container = document.getElementById('invoiceInfoList');
+
+      if (!invoiceInfos || invoiceInfos.length === 0) {
+        container.innerHTML = `
+          <div class="p-4 text-center text-gray-500">
+            暂无开票信息
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = invoiceInfos.map(info => `
+        <div class="p-4 border-b last:border-b-0 ${info.is_default ? 'bg-blue-50' : ''}">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h5 class="font-medium text-gray-900">${info.company_name}</h5>
+                ${info.is_default ? '<span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">默认</span>' : ''}
+              </div>
+              <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                <div>税号: ${info.tax_number || '-'}</div>
+                <div>开户银行: ${info.bank_name || '-'}</div>
+                <div>银行账号: ${info.bank_account || '-'}</div>
+                <div>电话: ${info.phone || '-'}</div>
+                <div class="col-span-2">地址: ${info.address || '-'}</div>
+              </div>
+            </div>
+            <div class="flex space-x-2 ml-4">
+              <button onclick="editInvoiceInfo(${info.id})" class="text-blue-600 hover:text-blue-900 text-sm">编辑</button>
+              <button onclick="deleteInvoiceInfo(${info.id})" class="text-red-600 hover:text-red-900 text-sm">删除</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 开票信息操作
+    function addInvoiceInfo() {
+      document.getElementById('invoiceFormTitle').textContent = '添加开票信息';
+      document.getElementById('invoiceForm').reset();
+      document.getElementById('invoiceInfoId').value = '';
+      document.getElementById('invoiceInfoForm').classList.remove('hidden');
+    }
+
+    async function editInvoiceInfo(infoId) {
+      try {
+        // 这里需要根据实际API调整，可能需要先获取开票信息详情
+        document.getElementById('invoiceFormTitle').textContent = '编辑开票信息';
+        document.getElementById('invoiceInfoId').value = infoId;
+        document.getElementById('invoiceInfoForm').classList.remove('hidden');
+      } catch (error) {
+        showMessage(`获取开票信息失败: ${error.message}`, 'error');
+      }
+    }
+
+    async function deleteInvoiceInfo(infoId) {
+      if (!confirm('确定要删除这个开票信息吗？')) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/customers/${currentCustomerId}/invoice-infos/${infoId}`, { method: 'DELETE' });
+        showMessage('开票信息删除成功');
+        await loadInvoiceInfos(currentCustomerId);
+      } catch (error) {
+        showMessage(`删除开票信息失败: ${error.message}`, 'error');
+      }
+    }
+
+    // 移动端侧边栏控制
+    function toggleMobileSidebar() {
+      const mobileSidebar = document.getElementById('mobileSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+
+      mobileSidebar.classList.toggle('-translate-x-full');
+      backdrop.classList.toggle('hidden');
+    }
+
+    function closeMobileSidebar() {
+      const mobileSidebar = document.getElementById('mobileSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+
+      mobileSidebar.classList.add('-translate-x-full');
+      backdrop.classList.add('hidden');
+    }
+
+    // 事件监听器
+    document.addEventListener('DOMContentLoaded', function() {
+      // 移动端侧边栏事件
+      document.getElementById('sidebarToggle').addEventListener('click', toggleMobileSidebar);
+      document.getElementById('closeMobileSidebar').addEventListener('click', closeMobileSidebar);
+      document.getElementById('sidebarBackdrop').addEventListener('click', closeMobileSidebar);
+
+      // 退出登录事件
+      document.getElementById('logoutBtn').addEventListener('click', function(e) {
         e.preventDefault();
         if (confirm('确定要退出登录吗？')) {
-          localStorage.removeItem('auth_token');
+          // 清除本地存储的token
+          localStorage.removeItem('access_token');
+          sessionStorage.removeItem('access_token');
+          // 跳转到登录页面
           window.location.href = 'login.html';
         }
       });
 
-      // 新增客户按钮
-      const addCustomerBtn = document.querySelector('a[href="customer-create.html"]');
-      addCustomerBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        alert('新增客户功能开发中...');
+      // 初始化加载客户列表
+      loadCustomers();
+
+      // 搜索功能
+      const searchInput = document.getElementById('searchInput');
+      let searchTimeout;
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          loadCustomers(1);
+        }, 500);
       });
 
-      // 客户详情链接
-      const customerLinks = document.querySelectorAll('a[href*="customer-detail.html"], a[href*="customer-edit.html"]');
-      customerLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          e.preventDefault();
-          alert('此功能正在开发中...');
-        });
+      // 每页数量变化
+      document.getElementById('pageSizeSelect').addEventListener('change', function() {
+        loadCustomers(1);
+      });
+
+      // 刷新按钮
+      document.getElementById('refreshBtn').addEventListener('click', function() {
+        loadCustomers(currentPage);
+      });
+
+      // 添加客户按钮
+      document.getElementById('addCustomerBtn').addEventListener('click', addCustomer);
+
+      // 客户表单提交
+      document.getElementById('customerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const customerData = {
+          name: formData.get('name'),
+          contact_person: formData.get('contact_person') || null,
+          phone: formData.get('phone') || null,
+          email: formData.get('email') || null,
+          address: formData.get('address') || null,
+          notes: formData.get('notes') || null
+        };
+
+        try {
+          showLoading();
+
+          if (isEditMode && currentCustomerId) {
+            await apiRequest(`/customers/${currentCustomerId}`, {
+              method: 'PUT',
+              body: JSON.stringify(customerData)
+            });
+            showMessage('客户更新成功');
+          } else {
+            await apiRequest('/customers', {
+              method: 'POST',
+              body: JSON.stringify(customerData)
+            });
+            showMessage('客户创建成功');
+          }
+
+          document.getElementById('customerModal').classList.add('hidden');
+          loadCustomers(currentPage);
+          hideLoading();
+        } catch (error) {
+          hideLoading();
+          showMessage(`${isEditMode ? '更新' : '创建'}客户失败: ${error.message}`, 'error');
+        }
+      });
+
+      // 关闭客户模态框
+      document.getElementById('closeModal').addEventListener('click', function() {
+        document.getElementById('customerModal').classList.add('hidden');
+      });
+
+      document.getElementById('cancelBtn').addEventListener('click', function() {
+        document.getElementById('customerModal').classList.add('hidden');
+      });
+
+      // 开票信息模态框事件
+      document.getElementById('closeInvoiceModal').addEventListener('click', function() {
+        document.getElementById('invoiceInfoModal').classList.add('hidden');
+        document.getElementById('invoiceInfoForm').classList.add('hidden');
+      });
+
+      document.getElementById('addInvoiceInfoBtn').addEventListener('click', addInvoiceInfo);
+
+      document.getElementById('cancelInvoiceBtn').addEventListener('click', function() {
+        document.getElementById('invoiceInfoForm').classList.add('hidden');
+      });
+
+      // 开票信息表单提交
+      document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const invoiceData = {
+          company_name: formData.get('company_name'),
+          tax_number: formData.get('tax_number') || null,
+          bank_name: formData.get('bank_name') || null,
+          bank_account: formData.get('bank_account') || null,
+          address: formData.get('address') || null,
+          phone: formData.get('phone') || null,
+          is_default: formData.get('is_default') === 'on'
+        };
+
+        try {
+          const infoId = document.getElementById('invoiceInfoId').value;
+
+          if (infoId) {
+            await apiRequest(`/customers/${currentCustomerId}/invoice-infos/${infoId}`, {
+              method: 'PUT',
+              body: JSON.stringify(invoiceData)
+            });
+            showMessage('开票信息更新成功');
+          } else {
+            await apiRequest(`/customers/${currentCustomerId}/invoice-infos`, {
+              method: 'POST',
+              body: JSON.stringify(invoiceData)
+            });
+            showMessage('开票信息创建成功');
+          }
+
+          document.getElementById('invoiceInfoForm').classList.add('hidden');
+          await loadInvoiceInfos(currentCustomerId);
+        } catch (error) {
+          showMessage(`${infoId ? '更新' : '创建'}开票信息失败: ${error.message}`, 'error');
+        }
+      });
+
+      // 点击模态框背景关闭
+      document.getElementById('customerModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('invoiceInfoModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.add('hidden');
+          document.getElementById('invoiceInfoForm').classList.add('hidden');
+        }
       });
     });
   </script>
