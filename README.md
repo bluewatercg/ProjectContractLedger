@@ -21,11 +21,6 @@
 ## 项目结构
 
 ```
-├── web_frontend/         # 前端代码
-│   ├── assets/           # 静态资源(CSS, JS, 图片等)
-│   ├── pages/            # HTML页面
-│   └── README.md         # 前端说明文档
-│
 ├── node_api_service/     # 后端API服务
 │   ├── config/           # 配置文件
 │   ├── controllers/      # 控制器
@@ -50,20 +45,6 @@
 
 ## 开发环境设置
 
-### 前端开发环境
-
-1. 进入前端目录：
-   ```
-   cd web_frontend
-   ```
-
-2. 使用任意HTTP服务器启动前端（例如使用Node.js的http-server）：
-   ```
-   npx http-server -p 3000
-   ```
-
-3. 在浏览器中访问：http://localhost:3000
-
 ### 后端开发环境
 
 1. 进入后端目录：
@@ -83,7 +64,7 @@
    DB_USER=root
    DB_PASSWORD=your_password
    DB_NAME=procontractledger
-   PORT=8080
+   PORT=3000
    ```
 
 4. 初始化数据库：
@@ -94,7 +75,26 @@
    npm start
    ```
 
-6. API服务将在http://localhost:8080/api/v1运行
+6. API服务将在http://localhost:3000/api/v1运行
+
+### 前端开发环境
+
+1. 进入前端目录：
+   ```
+   cd frontend
+   ```
+
+2. 安装依赖：
+   ```
+   npm install
+   ```
+
+3. 启动前端服务：
+   ```
+   npm start
+   ```
+
+4. 前端服务将在http://localhost:3001运行
 
 ## 部署说明
 

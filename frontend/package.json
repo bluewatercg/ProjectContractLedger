@@ -1,0 +1,12 @@
+{
+  "name": "contract-ledger-frontend",
+  "version": "1.0.0",
+  "description": "客户合同管理系统前端",
+  "scripts": {
+    "start": "http-server -p 3001"
+  },
+  "dependencies": {
+    "contract-ledger-frontend": "file:",
+    "http-server": "^14.1.1"
+  }
+}

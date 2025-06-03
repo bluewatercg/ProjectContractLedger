@@ -1,0 +1,170 @@
+/**
+ * 应用入口文件
+ * 初始化应用
+ */
+import Router from './router.js';
+import authService from './services/auth.js';
+import Sidebar from './components/sidebar.js';
+import Navbar from './components/navbar.js';
+import Alert from './components/alert.js';
+
+class App {
+  constructor() {
+    this.router = null;
+    this.sidebar = null;
+    this.navbar = null;
+    this.alert = null;
+    
+    this.init();
+  }
+
+  /**
+   * 初始化应用
+   */
+  async init() {
+    // 检查认证状态
+    const isAuthenticated = authService.checkAuth();
+    
+    // 初始化路由
+    this.initRouter(isAuthenticated);
+    
+    // 初始化组件
+    this.initComponents();
+  }
+
+  /**
+   * 初始化路由
+   * @param {boolean} isAuthenticated - 是否已认证
+   */
+  initRouter(isAuthenticated) {
+    this.router = new Router({
+      container: document.getElementById('app'),
+      beforeEach: (to, from) => {
+        // 登录页不需要认证
+        if (to.path === '/pages/login.html') {
+          return true;
+        }
+        
+        // 其他页面需要认证
+        if (!isAuthenticated) {
+          return '/pages/login.html';
+        }
+        
+        return true;
+      }
+    });
+    
+    // 添加路由
+    this.router
+      .add('/', async (container) => {
+        window.location.href = '/pages/index.html';
+      })
+      .add('/index.html', async (container) => {
+        window.location.href = '/pages/index.html';
+      })
+      .add('/pages/login.html', async (container) => {
+        const { default: LoginPage } = await import('./pages/login.js');
+        new LoginPage(container);
+      })
+      .add('/pages/index.html', async (container) => {
+        const { default: IndexPage } = await import('./pages/index.js');
+        new IndexPage(container);
+      })
+      .add('/pages/dashboard.html', async (container) => {
+        const { default: DashboardPage } = await import('./pages/dashboard.js');
+        new DashboardPage(container);
+      })
+      .add('/pages/customers.html', async (container) => {
+        const { default: CustomersPage } = await import('./pages/customers.js');
+        new CustomersPage(container);
+      })
+      .add('/pages/customer-detail.html', async (container, route) => {
+        const { default: CustomerDetailPage } = await import('./pages/customer-detail.js');
+        new CustomerDetailPage(container, { customerId: route.query.id });
+      })
+      .add('/pages/customer-create.html', async (container) => {
+        const { default: CustomerCreatePage } = await import('./pages/customer-create.js');
+        new CustomerCreatePage(container);
+      })
+      .add('/pages/contracts.html', async (container) => {
+        const { default: ContractsPage } = await import('./pages/contracts.js');
+        new ContractsPage(container);
+      })
+      .add('/pages/contract-detail.html', async (container, route) => {
+        const { default: ContractDetailPage } = await import('./pages/contract-detail.js');
+        new ContractDetailPage(container, { contractId: route.query.id });
+      })
+      .add('/pages/contract-create.html', async (container) => {
+        const { default: ContractCreatePage } = await import('./pages/contract-create.js');
+        new ContractCreatePage(container);
+      })
+      .add('/pages/invoices.html', async (container) => {
+        const { default: InvoicesPage } = await import('./pages/invoices.js');
+        new InvoicesPage(container);
+      })
+      .add('/pages/invoice-detail.html', async (container, route) => {
+        const { default: InvoiceDetailPage } = await import('./pages/invoice-detail.js');
+        new InvoiceDetailPage(container, { invoiceId: route.query.id });
+      })
+      .add('/pages/invoice-create.html', async (container) => {
+        const { default: InvoiceCreatePage } = await import('./pages/invoice-create.js');
+        new InvoiceCreatePage(container);
+      })
+      .add('/pages/payments.html', async (container) => {
+        const { default: PaymentsPage } = await import('./pages/payments.js');
+        new PaymentsPage(container);
+      })
+      .add('/pages/payment-create.html', async (container) => {
+        const { default: PaymentCreatePage } = await import('./pages/payment-create.js');
+        new PaymentCreatePage(container);
+      })
+      .add('/pages/notifications.html', async (container) => {
+        const { default: NotificationsPage } = await import('./pages/notifications.js');
+        new NotificationsPage(container);
+      })
+      .add('/pages/settings.html', async (container) => {
+        const { default: SettingsPage } = await import('./pages/settings.js');
+        new SettingsPage(container);
+      });
+  }
+
+  /**
+   * 初始化组件
+   */
+  initComponents() {
+    // 初始化侧边栏
+    const sidebarEl = document.getElementById('sidebar');
+    if (sidebarEl) {
+      this.sidebar = new Sidebar(sidebarEl);
+    }
+    
+    // 初始化导航栏
+    const navbarEl = document.getElementById('navbar');
+    if (navbarEl) {
+      this.navbar = new Navbar(navbarEl, {
+        sidebarEl: sidebarEl
+      });
+    }
+    
+    // 初始化提示组件
+    const alertContainerEl = document.createElement('div');
+    alertContainerEl.id = 'alertContainer';
+    document.body.appendChild(alertContainerEl);
+    this.alert = new Alert(alertContainerEl, {
+      position: 'top-right',
+      duration: 3000
+    });
+    
+    // 将提示组件添加到全局
+    window.showAlert = (type, message, duration) => {
+      this.alert.show(type, message, duration);
+    };
+  }
+}
+
+// 在DOM加载完成后初始化应用
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = new App();
+});
+
+export default App; 
