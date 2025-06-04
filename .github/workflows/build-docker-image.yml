@@ -1,0 +1,54 @@
+# 工作流名称
+name: Build and Push Node.js API Docker Image
+
+# 定义触发工作流的事件
+# This workflow is triggered on pushes to the 'main' branch.
+on:
+  push:
+    branches:
+      - main
+
+# 定义工作流中的作业
+jobs:
+  build-and-push:
+    # 运行作业的虚拟机环境
+    # This job runs on the latest Ubuntu runner provided by GitHub Actions.
+    runs-on: ubuntu-latest
+
+    # 作业步骤
+    steps:
+      # 检出仓库代码
+      # This step checks out the repository content, making it available to the workflow.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 登录到 GitHub Container Registry (GHCR)
+      # This step authenticates with the GitHub Container Registry using a GitHub token.
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 定义 Docker 镜像的元数据
+      # This step generates Docker image tags based on the repository and commit SHA.
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=node-api-service:latest
+            type=sha,format=long,prefix=node-api-service-
+
+      # 构建并推送 Docker 镜像
+      # This step builds the Docker image from the Dockerfile located in node_api_service/
+      # and pushes it to the GitHub Container Registry.
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./node_api_service # 指定 Dockerfile 的上下文路径
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
