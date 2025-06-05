@@ -18,6 +18,7 @@ RUN npm install --omit=dev
 
 # 将所有应用程序代码复制到工作目录
 # This command copies all application source code from the host to the container's /app directory.
+COPY backend_service /backend_service
 COPY . .
 
 # 暴露应用程序运行的端口
