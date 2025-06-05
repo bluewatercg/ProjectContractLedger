@@ -48,6 +48,8 @@ async function login(req, res) {
     const token = jwt.sign(
       { userId: user.id, username: user.username, email: user.email },
       process.env.JWT_SECRET || 'your_jwt_secret_key',
+      // 添加日志，打印实际使用的JWT_SECRET
+      console.log('JWT_SECRET used for signing:', process.env.JWT_SECRET || 'your_jwt_secret_key'),
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
     
@@ -79,22 +81,24 @@ async function validateToken(req, res) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: '未提供认证令牌' });
     }
-    
+
     const token = authHeader.split(' ')[1];
-    
+
     // 验证令牌
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key');
-    
+    const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret_key';
+    console.log('JWT_SECRET used for verification:', jwtSecret); // 添加日志
+    const decoded = jwt.verify(token, jwtSecret);
+
     // 查询用户是否存在且激活
     const [users] = await pool.execute(
       'SELECT id, username, email, is_active FROM users WHERE id = ?',
       [decoded.userId]
     );
-    
+
     if (users.length === 0 || !users[0].is_active) {
       return res.status(401).json({ message: '无效的用户或账户已禁用' });
     }
-    
+
     // 返回用户信息
     res.json({
       user: {
@@ -107,13 +111,84 @@ async function validateToken(req, res) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(401).json({ message: '无效的令牌或令牌已过期' });
     }
-    
+
     console.error('验证令牌错误:', error);
+    res.status(500).json({ message: '服务器内部错误' });
+  }
+}
+
+/**
+ * 刷新令牌
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function refreshToken(req, res) {
+  try {
+    // 从请求头获取令牌
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: '未提供认证令牌' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // 验证令牌（即使过期也要能解析出用户信息）
+    let decoded;
+    try {
+      const jwtSecretRefresh = process.env.JWT_SECRET || 'your_jwt_secret_key';
+      console.log('JWT_SECRET used for refresh verification:', jwtSecretRefresh); // 添加日志
+      decoded = jwt.verify(token, jwtSecretRefresh);
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        // 令牌过期，但仍可以解析用户信息
+        decoded = jwt.decode(token);
+      } else {
+        return res.status(401).json({ message: '无效的令牌' });
+      }
+    }
+
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({ message: '无效的令牌格式' });
+    }
+
+    // 查询用户是否存在且激活
+    const [users] = await pool.execute(
+      'SELECT id, username, email, is_active FROM users WHERE id = ?',
+      [decoded.userId]
+    );
+
+    if (users.length === 0 || !users[0].is_active) {
+      return res.status(401).json({ message: '无效的用户或账户已禁用' });
+    }
+
+    const user = users[0];
+
+    // 生成新的JWT令牌
+    const newToken = jwt.sign(
+      { userId: user.id, username: user.username, email: user.email },
+      process.env.JWT_SECRET || 'your_jwt_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
+      console.log('JWT_SECRET used for new token signing:', process.env.JWT_SECRET || 'your_jwt_secret_key') // 添加日志
+    );
+
+    // 返回新令牌
+    res.json({
+      access_token: newToken,
+      token_type: 'bearer',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('刷新令牌错误:', error);
     res.status(500).json({ message: '服务器内部错误' });
   }
 }
 
 module.exports = {
   login,
-  validateToken
+  validateToken,
+  refreshToken
 };

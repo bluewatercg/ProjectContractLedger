@@ -6,7 +6,6 @@
     "start": "http-server -p 8000"
   },
   "dependencies": {
-    "contract-ledger-frontend": "file:",
-    "http-server": "^14.1.1"
+    "contract-ledger-frontend": "file:"
   }
 }

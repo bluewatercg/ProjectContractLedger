@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量更新页面令牌管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        
+        .page-list {
+            margin: 20px 0;
+        }
+        .page-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .page-name {
+            font-weight: bold;
+        }
+        .page-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-updated { background-color: #28a745; color: white; }
+        .status-pending { background-color: #ffc107; color: black; }
+        .status-error { background-color: #dc3545; color: white; }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 批量更新页面令牌管理</h1>
+        
+        <div class="status info">
+            <strong>说明：</strong>此工具显示所有页面的令牌管理更新状态。已更新的页面将自动支持令牌刷新功能。
+        </div>
+
+        <div class="page-list">
+            <h3>页面更新状态</h3>
+            
+            <div class="page-item">
+                <span class="page-name">dashboard.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">customers.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">contracts.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">invoices.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">payments.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">settings.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">notifications.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">customer-create.html</span>
+                <span class="page-status status-updated">✅ 已更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">contract-create.html</span>
+                <span class="page-status status-pending">⏳ 需要更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">invoice-create.html</span>
+                <span class="page-status status-pending">⏳ 需要更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">payment-create.html</span>
+                <span class="page-status status-pending">⏳ 需要更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">customer-detail.html</span>
+                <span class="page-status status-pending">⏳ 需要更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">contract-detail.html</span>
+                <span class="page-status status-pending">⏳ 需要更新</span>
+            </div>
+            
+            <div class="page-item">
+                <span class="page-name">invoice-detail.html</span>
+                <span class="page-status status-pending">⏳ 需要更新</span>
+            </div>
+        </div>
+
+        <div class="status success">
+            <strong>✅ 主要页面已完成更新：</strong><br>
+            • 仪表盘页面 (dashboard.html)<br>
+            • 客户管理页面 (customers.html)<br>
+            • 合同管理页面 (contracts.html)<br>
+            • 发票管理页面 (invoices.html)<br>
+            • 付款管理页面 (payments.html)<br>
+            • 设置页面 (settings.html)<br>
+            • 通知页面 (notifications.html)<br>
+            • 客户创建页面 (customer-create.html)
+        </div>
+
+        <div class="status warning">
+            <strong>⏳ 剩余页面状态：</strong><br>
+            剩余的创建和详情页面大多使用模块化架构，通过 app.js 统一管理。<br>
+            app.js 已经更新了令牌管理功能，这些页面会自动继承令牌管理能力。
+        </div>
+
+        <h3>令牌管理功能说明</h3>
+        <div class="code-block">
+已更新的页面具备以下功能：
+
+1. 自动令牌检查
+   - 页面加载时检查令牌是否存在
+   - 无令牌时自动跳转到登录页
+
+2. 令牌有效性验证
+   - 验证当前令牌是否有效
+   - 无效时尝试自动刷新
+
+3. 自动令牌刷新
+   - 令牌即将过期时自动刷新
+   - API请求遇到401错误时自动重试
+
+4. 统一退出登录
+   - 使用 authService.logout() 统一处理
+   - 自动清理令牌和跳转
+
+5. 错误处理
+   - 刷新失败时自动跳转到登录页
+   - 提供详细的错误信息
+        </div>
+
+        <h3>测试建议</h3>
+        <div class="status info">
+            <strong>建议测试步骤：</strong><br>
+            1. 使用快速修复工具获取新令牌<br>
+            2. 访问各个已更新的页面，确认正常加载<br>
+            3. 等待令牌过期或手动使用过期令牌测试自动刷新<br>
+            4. 测试退出登录功能是否正常工作
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="window.open('quick-login-fix.html', '_blank')">
+                🚀 打开快速修复工具
+            </button>
+            <button onclick="window.open('token-refresh-test.html', '_blank')">
+                🧪 打开令牌测试工具
+            </button>
+            <button onclick="window.open('pages/customers.html', '_blank')">
+                👥 测试客户管理
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('批量更新页面已加载');
+            
+            // 检查当前令牌状态
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                console.log('当前有令牌，长度:', token.length);
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const currentTime = Math.floor(Date.now() / 1000);
+                    const isExpired = payload.exp <= currentTime;
+                    console.log('令牌状态:', isExpired ? '已过期' : '有效');
+                    console.log('过期时间:', new Date(payload.exp * 1000).toLocaleString());
+                } catch (error) {
+                    console.error('令牌解析失败:', error);
+                }
+            } else {
+                console.log('当前无令牌');
+            }
+        });
+    </script>
+</body>
+</html>

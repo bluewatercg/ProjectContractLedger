@@ -9,6 +9,12 @@ import Form from '../components/form.js';
 import customerService from '../services/customer.js';
 import { formatDate } from '../utils/formatter.js';
 import * as validator from '../utils/validator.js';
+import tokenManager from '../utils/tokenManager.js'; // 导入tokenManager
+import authService from '../services/auth.js'; // 导入authService
+import { getBaseUrl } from '../config/api.js'; // 导入getBaseUrl
+
+// API配置
+const API_BASE_URL = getBaseUrl();
 
 class CustomersPage extends Component {
   constructor(el) {
@@ -17,33 +23,937 @@ class CustomersPage extends Component {
     this.loading = true;
     this.searchTerm = '';
     this.currentCustomer = null;
+    this.currentPage = 1;
+    this.pageSize = 10; // 每页显示10条记录
+    this.totalRecords = 0;
+
+    // 全局变量转换为类属性
+    this.currentEditCustomerId = null;
+    this.currentDeleteCustomerId = null;
+    this.currentInvoiceCustomerId = null;
+    this.currentEditInvoiceInfoId = null;
   }
 
   async initialize() {
-    this.render();
-    this.initComponents();
-    await this.loadCustomers();
+    console.log('CustomersPage 初始化开始');
+    try {
+      this.render();
+      console.log('页面渲染完成');
+
+      this.initComponents();
+      console.log('组件初始化完成');
+
+      await this.loadCustomers(); // 页面加载后立即加载客户数据
+      console.log('客户数据加载完成');
+    } catch (error) {
+      console.error('CustomersPage 初始化失败:', error);
+      this.showMessage('页面初始化失败，请刷新重试', 'error');
+    }
+  }
+
+  /**
+   * 初始化组件和事件绑定
+   */
+  initComponents() {
+    // 初始化模态框
+    this.initModals();
+
+    // 绑定事件
+    this.bindEvents();
+  }
+
+  /**
+   * 初始化模态框
+   */
+  initModals() {
+    // 客户表单模态框
+    this.customerModal = {
+      open: () => {
+        this.el.querySelector('#customerModal').classList.remove('hidden');
+      },
+      close: () => {
+        this.el.querySelector('#customerModal').classList.add('hidden');
+      }
+    };
+
+    // 开票信息模态框
+    this.invoiceInfoModal = {
+      open: () => {
+        this.el.querySelector('#invoiceInfoModal').classList.remove('hidden');
+      },
+      close: () => {
+        this.el.querySelector('#invoiceInfoModal').classList.add('hidden');
+      }
+    };
+
+    // 删除确认模态框
+    this.deleteModal = {
+      open: () => {
+        this.el.querySelector('#deleteModal').classList.remove('hidden');
+      },
+      close: () => {
+        this.el.querySelector('#deleteModal').classList.add('hidden');
+      }
+    };
+  }
+
+  /**
+   * 绑定所有事件
+   */
+  bindEvents() {
+    // 新增客户按钮
+    this.el.querySelector('#addCustomerBtn').addEventListener('click', () => {
+      this.currentEditCustomerId = null;
+      this.showCustomerModal('新增客户');
+    });
+
+    // 搜索输入框
+    const searchInput = this.el.querySelector('#searchInput');
+    searchInput.addEventListener('input', this.debounce((e) => {
+      this.searchTerm = e.target.value.trim();
+      this.currentPage = 1;
+      this.loadCustomers();
+    }, 300));
+
+    // 清除搜索按钮
+    this.el.querySelector('#clearSearchBtn').addEventListener('click', () => {
+      searchInput.value = '';
+      this.searchTerm = '';
+      this.currentPage = 1;
+      this.loadCustomers();
+    });
+
+
+    // 刷新按钮
+    this.el.querySelector('#refreshBtn').addEventListener('click', () => {
+      this.loadCustomers();
+    });
+
+    // 客户表单提交
+    this.el.querySelector('#customerForm').addEventListener('submit', (e) => {
+      this.handleCustomerFormSubmit(e);
+    });
+
+    // 开票信息表单提交
+    this.el.querySelector('#invoiceForm').addEventListener('submit', (e) => {
+      this.handleInvoiceInfoFormSubmit(e);
+    });
+
+    // 模态框关闭按钮
+    this.el.querySelector('#closeModal').addEventListener('click', () => {
+      this.hideCustomerModal();
+    });
+
+    this.el.querySelector('#cancelBtn').addEventListener('click', () => {
+      this.hideCustomerModal();
+    });
+
+    this.el.querySelector('#closeInvoiceModal').addEventListener('click', () => {
+      this.hideInvoiceInfoModal();
+    });
+
+    this.el.querySelector('#cancelInvoiceBtn').addEventListener('click', () => {
+      this.el.querySelector('#invoiceInfoForm').classList.add('hidden');
+    });
+
+    this.el.querySelector('#addInvoiceInfoBtn').addEventListener('click', () => {
+      this.showAddInvoiceInfoForm();
+    });
+
+    // 删除确认模态框按钮
+    this.el.querySelector('#confirmDeleteBtn').addEventListener('click', () => {
+      this.confirmDeleteCustomer();
+    });
+
+    this.el.querySelector('#cancelDeleteBtn').addEventListener('click', () => {
+      this.hideDeleteModal();
+    });
+
+    // 使用事件委托绑定动态生成的按钮
+    this.bindDynamicEvents();
+  }
+
+  /**
+   * 绑定动态生成的按钮事件（使用事件委托）
+   */
+  bindDynamicEvents() {
+    // 客户表格按钮事件委托
+    this.el.addEventListener('click', (e) => {
+      // 查找最近的按钮元素，处理点击图标的情况
+      const target = e.target.closest('button');
+      if (!target) return;
+
+      // 确保按钮在当前组件内
+      if (!this.el.contains(target)) return;
+
+      const customerId = target.getAttribute('data-id');
+
+      console.log('按钮点击事件:', {
+        target: target,
+        classList: Array.from(target.classList),
+        customerId: customerId,
+        originalTarget: e.target,
+        buttonType: target.className
+      });
+
+      if (target.classList.contains('edit-customer-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('编辑客户按钮被点击，客户ID:', customerId);
+        this.editCustomer(customerId);
+      } else if (target.classList.contains('manage-invoice-info-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('管理开票信息按钮被点击，客户ID:', customerId);
+        this.manageInvoiceInfo(customerId);
+      } else if (target.classList.contains('delete-customer-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('删除客户按钮被点击，客户ID:', customerId);
+        this.showDeleteModal(customerId);
+      } else if (target.classList.contains('edit-invoice-info-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const invoiceInfoId = target.getAttribute('data-id');
+        console.log('编辑开票信息按钮被点击，开票信息ID:', invoiceInfoId);
+        if (!invoiceInfoId) {
+          this.showMessage('无法获取开票信息ID', 'error');
+          return;
+        }
+        this.editInvoiceInfo(invoiceInfoId);
+      } else if (target.classList.contains('delete-invoice-info-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const invoiceInfoId = target.getAttribute('data-id');
+        console.log('删除开票信息按钮被点击，开票信息ID:', invoiceInfoId);
+        if (!invoiceInfoId) {
+          this.showMessage('无法获取开票信息ID', 'error');
+          return;
+        }
+        this.deleteInvoiceInfo(invoiceInfoId);
+      } else if (target.classList.contains('pagination-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        // 检查按钮是否被禁用
+        if (target.disabled || target.classList.contains('cursor-not-allowed')) {
+          return;
+        }
+        const page = parseInt(target.getAttribute('data-page'));
+        const totalPages = Math.ceil(this.totalRecords / this.pageSize);
+        console.log('分页按钮被点击，页码:', page);
+        if (page && page !== this.currentPage && page > 0 && page <= totalPages) {
+          this.currentPage = page;
+          this.loadCustomers();
+        }
+      }
+    });
+  }
+
+  /**
+   * 防抖函数
+   * @param {Function} func - 要防抖的函数
+   * @param {number} wait - 等待时间（毫秒）
+   * @returns {Function} 防抖后的函数
+   */
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  /**
+   * 显示加载提示
+   * @param {boolean} show - 是否显示
+   */
+  showLoading(show = true) {
+    const loadingOverlay = document.getElementById('loadingOverlay'); // 假设loadingOverlay是全局的
+    if (loadingOverlay) {
+      if (show) {
+        loadingOverlay.classList.remove('hidden');
+      } else {
+        loadingOverlay.classList.add('hidden');
+      }
+    }
+    const tableLoading = this.el.querySelector('#tableLoading'); // 使用this.el查找组件内部的加载提示
+    if (tableLoading) {
+      if (show) {
+        tableLoading.classList.remove('hidden');
+      } else {
+        tableLoading.classList.add('hidden');
+      }
+    }
+  }
+
+  /**
+   * 隐藏加载提示
+   */
+  hideLoading() {
+    this.showLoading(false);
+  }
+
+  /**
+   * 显示消息提示
+   * @param {string} message - 消息内容
+   * @param {string} type - 消息类型 (success, error, info)
+   */
+  showMessage(message, type = 'success') {
+    // 假设messageContainer是全局的，或者在更高级别的组件中管理
+    const container = document.getElementById('messageContainer');
+    if (!container) {
+        console.warn('Message container not found. Message:', message);
+        return;
+    }
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `p-4 rounded-lg shadow-lg mb-2 ${type === 'success' ? 'bg-green-500 text-white' : type === 'error' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}`;
+    messageDiv.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span>${message}</span>
+        <button class="ml-4 text-white hover:text-gray-200 message-close-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+    container.appendChild(messageDiv);
+
+    // 绑定关闭事件 (使用事件委托或直接绑定)
+    messageDiv.querySelector('.message-close-btn').addEventListener('click', () => {
+        messageDiv.remove();
+    });
+
+    // 自动移除消息
+    setTimeout(() => {
+      if (messageDiv.parentNode) {
+        messageDiv.remove();
+      }
+    }, 5000);
+  }
+
+  /**
+   * API请求函数
+   * @param {string} endpoint - API端点
+   * @param {Object} options - 请求选项
+   * @returns {Promise<Object>} - API响应数据
+   */
+  async apiRequest(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const token = tokenManager.getToken();
+
+    console.log(`开始API请求: ${options.method || 'GET'} ${url}`);
+
+    if (!token) {
+      this.showMessage('未找到认证令牌，请重新登录', 'error');
+      // 延迟重定向，确保消息显示
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 1000);
+      return;
+    }
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      ...options
+    };
+
+    try {
+      const response = await fetch(url, config);
+      console.log(`收到API响应: HTTP ${response.status} ${response.statusText}`);
+
+      // 处理401错误，尝试刷新令牌
+      if (response.status === 401) {
+        try {
+          console.log('令牌可能已过期，尝试刷新...');
+          await authService.refreshToken();
+
+          // 使用新令牌重试请求
+          const newToken = tokenManager.getToken();
+          config.headers['Authorization'] = `Bearer ${newToken}`;
+          const retryResponse = await fetch(url, config);
+          console.log(`令牌刷新后重试请求结果: HTTP ${retryResponse.status} ${retryResponse.statusText}`);
+
+          if (retryResponse.ok) {
+            const data = await retryResponse.json();
+            console.log('重试请求成功，响应数据:', data);
+            return data;
+          } else {
+            throw new Error('重试请求失败');
+          }
+        } catch (refreshError) {
+          console.error('令牌刷新失败:', refreshError);
+          this.showMessage('认证失败，请重新登录', 'error');
+          authService.logout();
+          return;
+        }
+      }
+
+      const responseText = await response.text();
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('API响应详情:', {
+          endpoint,
+          statusCode: response.status,
+          responseData
+        });
+      } catch (e) {
+        responseData = responseText; // 如果不是JSON，则直接返回文本
+        console.warn('API响应不是有效的JSON:', responseText);
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseData.message || responseText}`);
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error('API请求错误:', error);
+      this.showMessage(`API请求失败: ${error.message}`, 'error'); // 显示更具体的错误信息
+      throw error;
+    }
   }
 
   /**
    * 加载客户数据
    */
   async loadCustomers() {
+    this.showLoading(true);
     try {
-      this.loading = true;
-      this.customerTable.setLoading(true);
+      const response = await this.apiRequest(`/customers?page=${this.currentPage}&limit=${this.pageSize}&search=${this.searchTerm}`);
+      console.log('客户数据加载响应:', response);
       
-      this.customers = await customerService.getAllCustomers();
+      this.customers = response.data;
       
-      this.loading = false;
-      this.filterAndRenderCustomers();
+      // 修复：正确获取分页信息，确保totalRecords始终为有效数字
+      this.totalRecords = (response.pagination && typeof response.pagination.total === 'number') ? response.pagination.total : 0;
+      if (this.totalRecords === 0 && response.data && response.data.length > 0) {
+        // 如果后端没有提供total，但有数据，则使用当前数据长度作为总记录数（这可能是单页数据，没有分页信息）
+        this.totalRecords = response.data.length;
+        console.warn('后端未提供总记录数，使用当前页数据长度作为总记录数');
+      }
+      
+      this.renderCustomerTable(this.customers);
+      this.renderPagination(); // 重新渲染分页
+      
+      if (this.customers.length === 0 && !this.searchTerm) {
+        this.el.querySelector('#emptyState').classList.remove('hidden');
+        this.el.querySelector('#customerTable').classList.add('hidden');
+        this.el.querySelector('#paginationContainer').classList.add('hidden'); // 隐藏分页容器
+      } else {
+        this.el.querySelector('#emptyState').classList.add('hidden');
+        this.el.querySelector('#customerTable').classList.remove('hidden');
+        this.el.querySelector('#paginationContainer').classList.remove('hidden'); // 显示分页容器
+      }
     } catch (error) {
       console.error('加载客户数据失败:', error);
-      window.showAlert('error', '加载客户数据失败，请稍后重试');
-      
-      this.loading = false;
-      this.customerTable.setLoading(false);
+      this.showMessage('加载客户数据失败，请稍后重试', 'error');
+    } finally {
+      this.hideLoading();
     }
+  }
+
+  /**
+   * 渲染客户表格
+   * @param {Array} customers - 客户数据数组
+   */
+  renderCustomerTable(customers) {
+    const tableBody = this.el.querySelector('#customerTableBody');
+    tableBody.innerHTML = ''; // 清空现有内容
+
+    if (customers.length === 0) {
+      // 可以在这里显示一个"无数据"的提示
+      return;
+    }
+
+    customers.forEach(customer => {
+      const row = `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${this.escapeHtml(customer.name || '')}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${this.escapeHtml(customer.contact_person || '')}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${this.escapeHtml(customer.phone || '')}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${this.escapeHtml(customer.email || 'N/A')}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${this.formatDate(customer.created_at)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <div class="flex space-x-2 justify-end">
+              <button type="button" class="edit-customer-btn text-blue-600 hover:text-blue-900 p-1 rounded" data-id="${customer.customer_id}" title="编辑客户">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="manage-invoice-info-btn text-green-600 hover:text-green-900 p-1 rounded" data-id="${customer.customer_id}" title="管理开票信息">
+                <i class="fas fa-file-invoice"></i>
+              </button>
+              <button type="button" class="delete-customer-btn text-red-600 hover:text-red-900 p-1 rounded" data-id="${customer.customer_id}" title="删除客户">
+                <i class="fas fa-trash"></i>
+              </button>
+              <a href="customer-detail.html?id=${customer.customer_id}" class="text-indigo-600 hover:text-indigo-900 p-1 rounded inline-block" title="查看详情">
+                <i class="fas fa-eye"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+      `;
+      tableBody.insertAdjacentHTML('beforeend', row);
+    });
+  }
+
+  /**
+   * HTML转义函数，防止XSS攻击
+   * @param {string} text - 要转义的文本
+   * @returns {string} 转义后的文本
+   */
+  escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+  }
+
+  /**
+   * 格式化日期
+   * @param {string} dateString - 日期字符串
+   * @returns {string} 格式化后的日期
+   */
+  formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (error) {
+      return 'N/A';
+    }
+  }
+
+  /**
+   * 渲染分页组件
+   */
+
+  /**
+   * 显示客户表单模态框
+   * @param {string} title - 模态框标题
+   */
+  /**
+   * 渲染分页组件
+   */
+  renderPagination() {
+    const paginationContainer = this.el.querySelector('#paginationContainer');
+    if (!paginationContainer) {
+      console.warn('Pagination container not found.');
+      return;
+    }
+    paginationContainer.innerHTML = ''; // 清空现有内容
+
+    // 确保totalRecords是有效数字，如果不是则默认为0
+    this.totalRecords = typeof this.totalRecords === 'number' && !isNaN(this.totalRecords) ? this.totalRecords : 0;
+    
+    // 确保pageSize是有效数字且大于0，如果不是则默认为10
+    this.pageSize = typeof this.pageSize === 'number' && !isNaN(this.pageSize) && this.pageSize > 0 ? this.pageSize : 10;
+
+    const totalPages = Math.ceil(this.totalRecords / this.pageSize) || 1; // 确保至少有1页
+    const paginationNav = document.createElement('nav');
+    paginationNav.className = 'relative z-0 inline-flex rounded-md shadow-sm -space-x-px';
+    paginationNav.setAttribute('aria-label', 'Pagination');
+
+    if (totalPages <= 1 && this.totalRecords === 0) { // 只有在总记录数为0且只有1页时才隐藏
+      paginationContainer.classList.add('hidden');
+      return;
+    } else {
+      paginationContainer.classList.remove('hidden');
+    }
+
+    // 上一页按钮
+    const prevClass = this.currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50';
+    const prevDisabled = this.currentPage === 1 ? 'disabled' : '';
+    paginationNav.insertAdjacentHTML('beforeend', `
+      <button type="button" data-page="${this.currentPage - 1}" class="pagination-btn relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 ${prevClass}" ${prevDisabled}>
+        <span class="sr-only">Previous</span>
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    `);
+
+    // 页码按钮
+    const maxPagesToShow = 5; // 最多显示5个页码按钮
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const activeClass = i === this.currentPage ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50';
+      paginationNav.insertAdjacentHTML('beforeend', `
+        <button type="button" data-page="${i}" class="pagination-btn relative inline-flex items-center px-4 py-2 border text-sm font-medium ${activeClass}">
+          ${i}
+        </button>
+      `);
+    }
+
+    // 下一页按钮
+    const nextClass = this.currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50';
+    const nextDisabled = this.currentPage === totalPages ? 'disabled' : '';
+    paginationNav.insertAdjacentHTML('beforeend', `
+      <button type="button" data-page="${this.currentPage + 1}" class="pagination-btn relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 ${nextClass}" ${nextDisabled}>
+        <span class="sr-only">Next</span>
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    `);
+
+    paginationContainer.appendChild(paginationNav);
+
+    // 更新分页信息
+    const startRecord = this.totalRecords > 0 ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+    const endRecord = Math.min(this.currentPage * this.pageSize, this.totalRecords);
+
+    const paginationInfo = this.totalRecords > 0
+      ? `显示第 <span id="startRecord">${startRecord}</span> 至 <span id="endRecord">${endRecord}</span> 条，共 <span id="totalRecords">${this.totalRecords}</span> 条记录`
+      : `共 <span id="totalRecords">${this.totalRecords}</span> 条记录`;
+    
+    this.el.querySelector('#paginationInfo').innerHTML = paginationInfo;
+  }
+
+  /**
+   * 显示客户表单模态框
+   * @param {string} title - 模态框标题
+   */
+  showCustomerModal(title = '客户信息') {
+    this.el.querySelector('#modalTitle').textContent = title;
+    this.customerModal.open();
+  }
+
+  /**
+   * 隐藏客户表单模态框
+   */
+  hideCustomerModal() {
+    this.customerModal.close();
+    this.el.querySelector('#customerForm').reset(); // 重置表单
+    this.currentEditCustomerId = null; // 清除当前编辑ID
+  }
+
+  /**
+   * 处理客户表单提交
+   * @param {Event} event - 表单提交事件
+   */
+  async handleCustomerFormSubmit(event) {
+    event.preventDefault();
+    this.showLoading();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    // 验证表单数据
+    if (!data.name || !data.phone) {
+      this.showMessage('客户名称和联系电话是必填项', 'error');
+      this.hideLoading();
+      return;
+    }
+
+    try {
+      if (this.currentEditCustomerId) {
+        // 更新客户
+        await this.apiRequest(`/customers/${this.currentEditCustomerId}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        this.showMessage('客户信息更新成功', 'success');
+      } else {
+        // 添加新客户
+        await this.apiRequest('/customers', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        this.showMessage('新客户添加成功', 'success');
+      }
+      this.hideCustomerModal();
+      await this.loadCustomers(); // 重新加载客户列表
+    } catch (error) {
+      console.error('保存客户失败:', error);
+      this.showMessage(`保存客户失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 编辑客户信息
+   * @param {string} customerId - 客户ID
+   */
+  async editCustomer(customerId) {
+    this.showLoading();
+    try {
+      const customer = await this.apiRequest(`/customers/${customerId}`);
+      this.currentEditCustomerId = customerId;
+      this.showCustomerModal('编辑客户');
+
+      // 填充表单
+      const form = this.el.querySelector('#customerForm');
+      form.querySelector('#customerId').value = customer.customer_id;
+      form.querySelector('#customerName').value = customer.name;
+      form.querySelector('#contactPerson').value = customer.contact_person || '';
+      form.querySelector('#phone').value = customer.phone || '';
+      form.querySelector('#email').value = customer.email || '';
+      form.querySelector('#address').value = customer.address || '';
+      form.querySelector('#notes').value = customer.notes || '';
+    } catch (error) {
+      console.error('获取客户信息失败:', error);
+      this.showMessage(`获取客户信息失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 显示删除确认模态框
+   * @param {string} customerId - 客户ID
+   */
+  showDeleteModal(customerId) {
+    this.currentDeleteCustomerId = customerId;
+    this.deleteModal.open();
+  }
+
+  /**
+   * 隐藏删除确认模态框
+   */
+  hideDeleteModal() {
+    this.deleteModal.close();
+    this.currentDeleteCustomerId = null;
+  }
+
+  /**
+   * 确认删除客户
+   */
+  async confirmDeleteCustomer() {
+    if (!this.currentDeleteCustomerId) return;
+
+    this.showLoading();
+    try {
+      await this.apiRequest(`/customers/${this.currentDeleteCustomerId}`, {
+        method: 'DELETE'
+      });
+      this.showMessage('客户删除成功', 'success');
+      this.hideDeleteModal();
+      await this.loadCustomers(); // 重新加载客户列表
+    } catch (error) {
+      console.error('删除客户失败:', error);
+      this.showMessage(`删除客户失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 管理开票信息
+   * @param {string} customerId - 客户ID
+   */
+  async manageInvoiceInfo(customerId) {
+    this.currentInvoiceCustomerId = customerId;
+    this.showLoading();
+    try {
+      const invoiceInfos = await this.apiRequest(`/customers/${customerId}/invoice-infos`);
+      this.renderInvoiceInfoList(invoiceInfos);
+      this.invoiceInfoModal.open();
+    } catch (error) {
+      console.error('加载开票信息失败:', error);
+      this.showMessage(`加载开票信息失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 隐藏开票信息模态框
+   */
+  hideInvoiceInfoModal() {
+    this.invoiceInfoModal.close();
+    this.el.querySelector('#invoiceForm').reset();
+    this.el.querySelector('#invoiceInfoForm').classList.add('hidden'); // 隐藏表单
+    this.currentInvoiceCustomerId = null;
+    this.currentEditInvoiceInfoId = null;
+  }
+
+  /**
+   * 渲染开票信息列表
+   * @param {Array} invoiceInfos - 开票信息数据数组
+   */
+  renderInvoiceInfoList(invoiceInfos) {
+    const invoiceInfoListDiv = this.el.querySelector('#invoiceInfoList');
+    invoiceInfoListDiv.innerHTML = '';
+
+    if (invoiceInfos.length === 0) {
+      invoiceInfoListDiv.innerHTML = '<p class="text-gray-500 p-4">暂无开票信息。</p>';
+      return;
+    }
+
+    invoiceInfos.forEach(info => {
+      const defaultBadge = info.is_default ? '<span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">默认</span>' : '';
+      const item = `
+        <div class="border-b last:border-b-0 p-4 flex justify-between items-center">
+          <div>
+            <p class="font-semibold text-gray-800">${info.company_name} ${defaultBadge}</p>
+            <p class="text-sm text-gray-600">税号: ${info.tax_number || 'N/A'}</p>
+            <p class="text-sm text-gray-600">银行: ${info.bank_name || 'N/A'} / 账号: ${info.bank_account || 'N/A'}</p>
+            <p class="text-sm text-gray-600">地址: ${info.address || 'N/A'} / 电话: ${info.phone || 'N/A'}</p>
+          </div>
+          <div class="flex space-x-2">
+            <button type="button" class="edit-invoice-info-btn text-blue-600 hover:text-blue-900 p-1 rounded" data-id="${info.id}" title="编辑开票信息">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="delete-invoice-info-btn text-red-600 hover:text-red-900 p-1 rounded" data-id="${info.id}" title="删除开票信息">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      invoiceInfoListDiv.insertAdjacentHTML('beforeend', item);
+    });
+  }
+
+  /**
+   * 显示添加/编辑开票信息表单
+   * @param {Object} invoiceInfo - 开票信息数据，为空时表示新增
+   */
+  showAddInvoiceInfoForm(invoiceInfo = null) {
+    const formContainer = this.el.querySelector('#invoiceInfoForm');
+    const form = this.el.querySelector('#invoiceForm');
+    form.reset();
+    this.currentEditInvoiceInfoId = null;
+
+    if (invoiceInfo) {
+      this.el.querySelector('#invoiceFormTitle').textContent = '编辑开票信息';
+      this.currentEditInvoiceInfoId = invoiceInfo.id;
+      // 填充表单
+      form.querySelector('#invoiceInfoId').value = invoiceInfo.id;
+      form.querySelector('#invoiceCustomerId').value = invoiceInfo.customer_id;
+      form.querySelector('#companyName').value = invoiceInfo.company_name;
+      form.querySelector('#taxNumber').value = invoiceInfo.tax_number || '';
+      form.querySelector('#bankName').value = invoiceInfo.bank_name || '';
+      form.querySelector('#bankAccount').value = invoiceInfo.bank_account || '';
+      form.querySelector('#invoiceAddress').value = invoiceInfo.address || '';
+      form.querySelector('#invoicePhone').value = invoiceInfo.phone || '';
+      form.querySelector('#isDefault').checked = invoiceInfo.is_default;
+    } else {
+      this.el.querySelector('#invoiceFormTitle').textContent = '添加开票信息';
+      form.querySelector('#invoiceCustomerId').value = this.currentInvoiceCustomerId;
+    }
+    formContainer.classList.remove('hidden');
+  }
+
+  /**
+   * 处理开票信息表单提交
+   * @param {Event} event - 表单提交事件
+   */
+  async handleInvoiceInfoFormSubmit(event) {
+    event.preventDefault();
+    this.showLoading();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    data.is_default = this.el.querySelector('#isDefault').checked; // 获取checkbox值
+
+    if (!data.company_name) {
+      this.showMessage('开票公司名称是必填项', 'error');
+      this.hideLoading();
+      return;
+    }
+
+    try {
+      if (this.currentEditInvoiceInfoId) {
+        // 更新开票信息
+        await this.apiRequest(`/customers/${this.currentInvoiceCustomerId}/invoice-infos/${this.currentEditInvoiceInfoId}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        this.showMessage('开票信息更新成功', 'success');
+      } else {
+        // 添加新开票信息
+        await this.apiRequest(`/customers/${this.currentInvoiceCustomerId}/invoice-infos`, {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        this.showMessage('开票信息添加成功', 'success');
+      }
+      this.el.querySelector('#invoiceInfoForm').classList.add('hidden'); // 隐藏表单
+      await this.manageInvoiceInfo(this.currentInvoiceCustomerId); // 重新加载开票信息列表
+    } catch (error) {
+      console.error('保存开票信息失败:', error);
+      this.showMessage(`保存开票信息失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 编辑开票信息
+   * @param {string} invoiceInfoId - 开票信息ID
+   */
+  async editInvoiceInfo(invoiceInfoId) {
+    this.showLoading();
+    try {
+      const invoiceInfo = await this.apiRequest(`/customers/${this.currentInvoiceCustomerId}/invoice-infos/${invoiceInfoId}`);
+      this.showAddInvoiceInfoForm(invoiceInfo);
+    } catch (error) {
+      console.error('获取开票信息失败:', error);
+      this.showMessage(`获取开票信息失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 删除开票信息
+   * @param {string} invoiceInfoId - 开票信息ID
+   */
+  async deleteInvoiceInfo(invoiceInfoId) {
+    if (!confirm('确定要删除这条开票信息吗？')) return;
+
+    this.showLoading();
+    try {
+      await this.apiRequest(`/customers/${this.currentInvoiceCustomerId}/invoice-infos/${invoiceInfoId}`, {
+        method: 'DELETE'
+      });
+      this.showMessage('开票信息删除成功', 'success');
+      await this.manageInvoiceInfo(this.currentInvoiceCustomerId); // 重新加载开票信息列表
+    } catch (error) {
+      console.error('删除开票信息失败:', error);
+      this.showMessage(`删除开票信息失败: ${error.message}`, 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  /**
+   * 处理用户注销
+   */
+  handleLogout() {
+    authService.logout();
+    this.showMessage('您已成功注销', 'info');
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, 1000);
+  }
+
+  /**
+   * 查看客户详情（跳转到详情页）
+   * @param {string} customerId - 客户ID
+   */
+  viewCustomer(customerId) {
+    window.location.href = `customer-detail.html?id=${customerId}`;
   }
 
   /**
@@ -80,147 +990,251 @@ class CustomersPage extends Component {
               </button>
             </div>
           </div>
+          <div class="flex flex-wrap gap-2">
+            <select id="pageSizeSelect" class="border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <option value="10">每页10条</option>
+              <option value="20">每页20条</option>
+              <option value="50">每页50条</option>
+            </select>
+            <button id="refreshBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md flex items-center text-sm">
+              <i class="fas fa-sync-alt mr-1"></i>
+              <span>刷新</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- 客户列表 -->
       <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div id="customerTable"></div>
+        <!-- 加载状态 -->
+        <div id="tableLoading" class="flex items-center justify-center py-12 hidden">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+          <span class="text-gray-600">加载中...</span>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="text-center py-12 hidden">
+          <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">暂无客户数据</h3>
+          <p class="text-gray-500 mb-4">开始添加您的第一个客户吧</p>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+            <i class="fas fa-plus mr-2"></i>
+            添加客户
+          </button>
+        </div>
+
+        <div id="customerTable" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">客户名称</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系人</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
+              <!-- 动态生成的客户数据将在这里显示 -->
+            </tbody>
+          </table>
+        </div>
+        <!-- 分页 -->
+        <div id="paginationContainer" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 hidden">
+          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p id="paginationInfo" class="text-sm text-gray-700">
+                显示第 <span id="startRecord">0</span> 至 <span id="endRecord">0</span> 条，共 <span id="totalRecords">0</span> 条记录
+              </p>
+            </div>
+            <div>
+              <nav id="paginationNav" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <!-- 分页按钮将动态生成 -->
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 客户表单模态框 -->
-      <div id="customerModal" class="hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-auto p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">新增客户</h3>
-            <button data-close class="text-gray-400 hover:text-gray-500 focus:outline-none">
-              <i class="fas fa-times"></i>
-            </button>
+      <div id="customerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+          <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+              <h3 id="modalTitle" class="text-lg font-medium text-gray-900">添加客户</h3>
+              <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+
+            <form id="customerForm" class="space-y-4">
+              <input type="hidden" id="customerId" name="customer_id">
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="customerName" class="block text-sm font-medium text-gray-700 mb-1">客户名称 *</label>
+                  <input type="text" id="customerName" name="name" required
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                  <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-1">联系人</label>
+                  <input type="text" id="contactPerson" name="contact_person"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                  <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+                  <input type="tel" id="phone" name="phone"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                  <label for="email" class="block text-sm font-medium text-gray-700 mb-1">邮箱地址</label>
+                  <input type="email" id="email" name="email"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+              </div>
+
+              <div>
+                <label for="address" class="block text-sm font-medium text-gray-700 mb-1">客户地址</label>
+                <input type="text" id="address" name="address"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+
+              <div>
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">备注信息</label>
+                <textarea id="notes" name="notes" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+              </div>
+
+              <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                  取消
+                </button>
+                <button type="submit" id="submitBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  保存
+                </button>
+              </div>
+            </form>
           </div>
-          
-          <form id="customerForm" class="space-y-4">
-            <input type="hidden" name="customer_id">
-            
-            <div class="form-group">
-              <label for="name" class="block text-sm font-medium text-gray-700 mb-1">客户名称 <span class="text-red-500">*</span></label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="请输入客户名称"
-                required
-              >
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="form-group">
-                <label for="contact_person" class="block text-sm font-medium text-gray-700 mb-1">联系人 <span class="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  id="contact_person"
-                  name="contact_person"
-                  class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="请输入联系人姓名"
-                  required
-                >
-              </div>
-              
-              <div class="form-group">
-                <label for="contact_phone" class="block text-sm font-medium text-gray-700 mb-1">联系电话 <span class="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  id="contact_phone"
-                  name="contact_phone"
-                  class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="请输入联系电话"
-                  required
-                >
-              </div>
-            </div>
-            
-            <div class="form-group">
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">电子邮箱</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="请输入电子邮箱"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="address" class="block text-sm font-medium text-gray-700 mb-1">地址</label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="请输入地址"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows="3"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="请输入备注信息"
-              ></textarea>
-            </div>
-            
-            <div class="flex justify-end space-x-3 pt-4 border-t">
-              <button
-                type="button"
-                data-close
-                class="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                取消
-              </button>
-              <button
-                type="submit"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                保存
+        </div>
+      </div>
+
+      <!-- 开票信息管理模态框 -->
+      <div id="invoiceInfoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 shadow-lg rounded-md bg-white">
+          <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+              <h3 id="invoiceModalTitle" class="text-lg font-medium text-gray-900">开票信息管理</h3>
+              <button id="closeInvoiceModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
               </button>
             </div>
-          </form>
+
+            <!-- 开票信息列表 -->
+            <div class="mb-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-md font-medium text-gray-800">开票信息列表</h4>
+                <button id="addInvoiceInfoBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm">
+                  <i class="fas fa-plus mr-1"></i>
+                  添加开票信息
+                </button>
+              </div>
+
+              <div id="invoiceInfoList" class="border rounded-lg overflow-hidden">
+                <!-- 开票信息列表将动态生成 -->
+              </div>
+            </div>
+
+            <!-- 开票信息表单 -->
+            <div id="invoiceInfoForm" class="border-t pt-4 hidden">
+              <h4 class="text-md font-medium text-gray-800 mb-4">
+                <span id="invoiceFormTitle">添加开票信息</span>
+              </h4>
+
+              <form id="invoiceForm" class="space-y-4">
+                <input type="hidden" id="invoiceInfoId" name="invoice_info_id">
+                <input type="hidden" id="invoiceCustomerId" name="customer_id">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">开票公司名称 *</label>
+                    <input type="text" id="companyName" name="company_name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+
+                  <div>
+                    <label for="taxNumber" class="block text-sm font-medium text-gray-700 mb-1">税号</label>
+                    <input type="text" id="taxNumber" name="tax_number"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+
+                  <div>
+                    <label for="bankName" class="block text-sm font-medium text-gray-700 mb-1">开户银行</label>
+                    <input type="text" id="bankName" name="bank_name"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+
+                  <div>
+                    <label for="bankAccount" class="block text-sm font-medium text-gray-700 mb-1">银行账号</label>
+                    <input type="text" id="bankAccount" name="bank_account"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+
+                  <div>
+                    <label for="invoiceAddress" class="block text-sm font-medium text-gray-700 mb-1">开票地址</label>
+                    <input type="text" id="invoiceAddress" name="address"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+
+                  <div>
+                    <label for="invoicePhone" class="block text-sm font-medium text-gray-700 mb-1">开票电话</label>
+                    <input type="tel" id="invoicePhone" name="phone"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="flex items-center">
+                    <input type="checkbox" id="isDefault" name="is_default" class="mr-2">
+                    <span class="text-sm text-gray-700">设为默认开票信息</span>
+                  </label>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                  <button type="button" id="cancelInvoiceBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    取消
+                  </button>
+                  <button type="submit" id="submitInvoiceBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    保存
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- 删除确认模态框 -->
-      <div id="deleteModal" class="hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">确认删除</h3>
-            <button data-close class="text-gray-400 hover:text-gray-500 focus:outline-none">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <div class="py-3">
-            <p class="text-gray-700">确定要删除这个客户吗？此操作不可撤销。</p>
-            <p class="text-sm text-gray-500 mt-2">删除客户将同时删除与该客户相关的所有合同、发票和付款记录。</p>
-          </div>
-          
-          <div class="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              type="button"
-              data-close
-              class="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            >
-              取消
-            </button>
-            <button
-              id="confirmDeleteBtn"
-              type="button"
-              class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              确认删除
-            </button>
+      <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/3 shadow-lg rounded-md bg-white">
+          <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">确认删除</h3>
+            <div class="mt-2 px-7 py-3">
+              <p class="text-sm text-gray-500">
+                您确定要删除此客户吗？此操作不可撤销。
+              </p>
+            </div>
+            <div class="items-center px-4 py-3">
+              <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                确认删除
+              </button>
+              <button id="cancelDeleteBtn" class="mt-3 px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                取消
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -228,264 +1242,6 @@ class CustomersPage extends Component {
 
     this.el.innerHTML = template;
   }
-
-  /**
-   * 初始化组件
-   */
-  initComponents() {
-    // 客户表格
-    this.customerTable = new Table('#customerTable', {
-      columns: [
-        { key: 'name', label: '客户名称', sortable: true },
-        { key: 'contact_person', label: '联系人', sortable: true },
-        { key: 'contact_phone', label: '联系电话' },
-        { key: 'email', label: '电子邮箱' },
-        { key: 'created_at', label: '创建时间', sortable: true, render: value => formatDate(value) },
-        { 
-          key: 'actions', 
-          label: '操作', 
-          render: (_, row) => `
-            <div class="flex space-x-2">
-              <button class="edit-btn text-blue-600 hover:text-blue-900" data-id="${row.customer_id}">
-                <i class="fas fa-edit"></i>
-              </button>
-              <a href="customer-detail.html?id=${row.customer_id}" class="text-green-600 hover:text-green-900">
-                <i class="fas fa-eye"></i>
-              </a>
-              <button class="delete-btn text-red-600 hover:text-red-900" data-id="${row.customer_id}">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          `
-        }
-      ],
-      emptyMessage: '没有客户数据',
-      loading: true,
-      onRowClick: (row) => {
-        window.location.href = `customer-detail.html?id=${row.customer_id}`;
-      }
-    });
-    
-    // 客户表单模态框
-    this.customerModal = new Modal('#customerModal');
-    
-    // 删除确认模态框
-    this.deleteModal = new Modal('#deleteModal');
-    
-    // 客户表单
-    this.customerForm = new Form('#customerForm', {
-      fields: [
-        { 
-          name: 'name', 
-          validators: [
-            validator.required,
-            validator.maxLength(100)
-          ]
-        },
-        { 
-          name: 'contact_person', 
-          validators: [
-            validator.required,
-            validator.maxLength(50)
-          ]
-        },
-        { 
-          name: 'contact_phone', 
-          validators: [
-            validator.required,
-            validator.phone
-          ]
-        },
-        { 
-          name: 'email', 
-          validators: [
-            validator.email
-          ]
-        }
-      ],
-      onSubmit: this.handleSubmitCustomer.bind(this)
-    });
-    
-    // 绑定事件
-    this.bindEvents();
-  }
-
-  /**
-   * 绑定事件
-   */
-  bindEvents() {
-    // 添加客户按钮
-    const addCustomerBtn = this.el.querySelector('#addCustomerBtn');
-    addCustomerBtn.addEventListener('click', () => this.showCustomerForm());
-    
-    // 搜索输入框
-    const searchInput = this.el.querySelector('#searchInput');
-    searchInput.addEventListener('input', () => {
-      this.searchTerm = searchInput.value.trim().toLowerCase();
-      this.filterAndRenderCustomers();
-    });
-    
-    // 清除搜索按钮
-    const clearSearchBtn = this.el.querySelector('#clearSearchBtn');
-    clearSearchBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      this.searchTerm = '';
-      this.filterAndRenderCustomers();
-    });
-    
-    // 编辑按钮
-    this.el.addEventListener('click', (e) => {
-      const editBtn = e.target.closest('.edit-btn');
-      if (editBtn) {
-        e.stopPropagation(); // 阻止冒泡到行点击事件
-        const customerId = editBtn.dataset.id;
-        this.editCustomer(customerId);
-      }
-    });
-    
-    // 删除按钮
-    this.el.addEventListener('click', (e) => {
-      const deleteBtn = e.target.closest('.delete-btn');
-      if (deleteBtn) {
-        e.stopPropagation(); // 阻止冒泡到行点击事件
-        const customerId = deleteBtn.dataset.id;
-        this.showDeleteConfirm(customerId);
-      }
-    });
-    
-    // 确认删除按钮
-    const confirmDeleteBtn = this.el.querySelector('#confirmDeleteBtn');
-    confirmDeleteBtn.addEventListener('click', () => this.deleteCustomer());
-  }
-
-  /**
-   * 过滤并渲染客户列表
-   */
-  filterAndRenderCustomers() {
-    let filteredCustomers = this.customers;
-    
-    // 应用搜索过滤
-    if (this.searchTerm) {
-      filteredCustomers = this.customers.filter(customer => 
-        customer.name.toLowerCase().includes(this.searchTerm) ||
-        customer.contact_person.toLowerCase().includes(this.searchTerm) ||
-        customer.contact_phone.includes(this.searchTerm)
-      );
-    }
-    
-    this.customerTable.updateData(filteredCustomers);
-  }
-
-  /**
-   * 显示客户表单
-   * @param {Object} customer - 客户数据，为空时表示新增客户
-   */
-  showCustomerForm(customer = null) {
-    this.currentCustomer = customer;
-    
-    // 重置表单
-    const form = this.el.querySelector('#customerForm');
-    form.reset();
-    
-    if (customer) {
-      // 编辑客户
-      this.el.querySelector('#modalTitle').textContent = '编辑客户';
-      
-      // 填充表单
-      form.elements.customer_id.value = customer.customer_id;
-      form.elements.name.value = customer.name;
-      form.elements.contact_person.value = customer.contact_person;
-      form.elements.contact_phone.value = customer.contact_phone;
-      form.elements.email.value = customer.email || '';
-      form.elements.address.value = customer.address || '';
-      form.elements.notes.value = customer.notes || '';
-    } else {
-      // 新增客户
-      this.el.querySelector('#modalTitle').textContent = '新增客户';
-      form.elements.customer_id.value = '';
-    }
-    
-    this.customerModal.open();
-  }
-
-  /**
-   * 处理客户表单提交
-   * @param {Object} formData - 表单数据
-   */
-  async handleSubmitCustomer(formData) {
-    try {
-      if (formData.customer_id) {
-        // 更新客户
-        await customerService.updateCustomer(formData.customer_id, formData);
-        window.showAlert('success', '客户更新成功');
-      } else {
-        // 创建客户
-        await customerService.createCustomer(formData);
-        window.showAlert('success', '客户创建成功');
-      }
-      
-      // 关闭模态框
-      this.customerModal.close();
-      
-      // 重新加载客户列表
-      await this.loadCustomers();
-    } catch (error) {
-      console.error('保存客户失败:', error);
-      window.showAlert('error', '保存客户失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 编辑客户
-   * @param {string} customerId - 客户ID
-   */
-  async editCustomer(customerId) {
-    try {
-      const customer = await customerService.getCustomerById(customerId);
-      this.showCustomerForm(customer);
-    } catch (error) {
-      console.error('获取客户信息失败:', error);
-      window.showAlert('error', '获取客户信息失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 显示删除确认对话框
-   * @param {string} customerId - 客户ID
-   */
-  async showDeleteConfirm(customerId) {
-    try {
-      const customer = await customerService.getCustomerById(customerId);
-      this.currentCustomer = customer;
-      this.deleteModal.open();
-    } catch (error) {
-      console.error('获取客户信息失败:', error);
-      window.showAlert('error', '获取客户信息失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 删除客户
-   */
-  async deleteCustomer() {
-    if (!this.currentCustomer) return;
-    
-    try {
-      await customerService.deleteCustomer(this.currentCustomer.customer_id);
-      
-      // 关闭模态框
-      this.deleteModal.close();
-      
-      // 显示成功提示
-      window.showAlert('success', '客户删除成功');
-      
-      // 重新加载客户列表
-      await this.loadCustomers();
-    } catch (error) {
-      console.error('删除客户失败:', error);
-      window.showAlert('error', '删除客户失败，请稍后重试');
-    }
-  }
 }
 
-export default CustomersPage; 
+export default CustomersPage;
