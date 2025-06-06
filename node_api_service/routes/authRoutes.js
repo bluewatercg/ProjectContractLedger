@@ -4,12 +4,15 @@
 
 const express = require('express');
 const router = express.Router();
-const { login, validateToken } = require('../controllers/authController');
+const { login, validateToken, refreshToken } = require('../controllers/authController');
 
 // 用户登录
 router.post('/login', login);
 
 // 验证令牌
 router.get('/validate', validateToken);
+
+// 刷新令牌
+router.post('/refresh', refreshToken);
 
 module.exports = router;

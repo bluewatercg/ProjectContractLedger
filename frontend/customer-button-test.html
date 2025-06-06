@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户管理按钮测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 300px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .debug-log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-6">
+        <h1 class="text-2xl font-bold mb-6">客户管理按钮测试</h1>
+        
+        <div class="debug-info">
+            <h3 class="font-bold mb-2">调试信息</h3>
+            <div id="debugStatus">等待测试...</div>
+            <div class="debug-log" id="debugLog"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">客户名称</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系人</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- 测试数据 -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">测试客户1</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">张三</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">13800138001</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">test1@example.com</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024/01/15</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex space-x-2 justify-end">
+                                <button type="button" class="edit-customer-btn text-blue-600 hover:text-blue-900 p-1 rounded" data-id="1" title="编辑客户">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="manage-invoice-info-btn text-green-600 hover:text-green-900 p-1 rounded" data-id="1" title="管理开票信息">
+                                    <i class="fas fa-file-invoice"></i>
+                                </button>
+                                <button type="button" class="delete-customer-btn text-red-600 hover:text-red-900 p-1 rounded" data-id="1" title="删除客户">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">测试客户2</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">李四</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">13800138002</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">test2@example.com</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024/01/16</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex space-x-2 justify-end">
+                                <button type="button" class="edit-customer-btn text-blue-600 hover:text-blue-900 p-1 rounded" data-id="2" title="编辑客户">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="manage-invoice-info-btn text-green-600 hover:text-green-900 p-1 rounded" data-id="2" title="管理开票信息">
+                                    <i class="fas fa-file-invoice"></i>
+                                </button>
+                                <button type="button" class="delete-customer-btn text-red-600 hover:text-red-900 p-1 rounded" data-id="2" title="删除客户">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 bg-white p-4 rounded-lg shadow-sm">
+            <h3 class="font-bold mb-4">测试结果</h3>
+            <div id="testResults" class="space-y-2"></div>
+            <button id="clearLog" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                清除日志
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 调试日志功能
+        const debugLog = document.getElementById('debugLog');
+        const debugStatus = document.getElementById('debugStatus');
+        const testResults = document.getElementById('testResults');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logEntry.className = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-gray-300';
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+
+            // 更新测试结果
+            const resultEntry = document.createElement('div');
+            resultEntry.textContent = message;
+            resultEntry.className = `p-2 rounded ${type === 'error' ? 'bg-red-100 text-red-800' : type === 'success' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`;
+            testResults.appendChild(resultEntry);
+        }
+
+        // 清除日志
+        document.getElementById('clearLog').addEventListener('click', () => {
+            debugLog.innerHTML = '';
+            testResults.innerHTML = '';
+            debugStatus.textContent = '日志已清除';
+        });
+
+        // 模拟事件委托（类似CustomersPage中的实现）
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成，开始测试按钮事件');
+            debugStatus.textContent = '测试进行中...';
+
+            // 获取表格容器
+            const tableContainer = document.querySelector('table');
+            
+            // 事件委托
+            tableContainer.addEventListener('click', (e) => {
+                log(`点击事件触发，目标元素: ${e.target.tagName}.${e.target.className}`);
+                
+                // 查找最近的按钮元素
+                const target = e.target.closest('button');
+                if (!target) {
+                    log('未找到按钮元素', 'error');
+                    return;
+                }
+
+                const customerId = target.getAttribute('data-id');
+                log(`找到按钮，客户ID: ${customerId}，按钮类: ${Array.from(target.classList).join(', ')}`);
+                
+                if (target.classList.contains('edit-customer-btn')) {
+                    e.preventDefault();
+                    log(`✅ 编辑客户按钮点击成功！客户ID: ${customerId}`, 'success');
+                    alert(`编辑客户功能触发！客户ID: ${customerId}`);
+                } else if (target.classList.contains('manage-invoice-info-btn')) {
+                    e.preventDefault();
+                    log(`✅ 管理开票信息按钮点击成功！客户ID: ${customerId}`, 'success');
+                    alert(`管理开票信息功能触发！客户ID: ${customerId}`);
+                } else if (target.classList.contains('delete-customer-btn')) {
+                    e.preventDefault();
+                    log(`✅ 删除客户按钮点击成功！客户ID: ${customerId}`, 'success');
+                    alert(`删除客户功能触发！客户ID: ${customerId}`);
+                } else {
+                    log(`未识别的按钮类型: ${Array.from(target.classList).join(', ')}`, 'error');
+                }
+            });
+
+            log('事件委托设置完成');
+            debugStatus.textContent = '测试就绪 - 请点击表格中的按钮';
+
+            // 自动测试
+            setTimeout(() => {
+                log('开始自动测试...');
+                const buttons = document.querySelectorAll('button[data-id]');
+                log(`找到 ${buttons.length} 个按钮`);
+                
+                buttons.forEach((btn, index) => {
+                    const btnType = btn.classList.contains('edit-customer-btn') ? '编辑' : 
+                                   btn.classList.contains('manage-invoice-info-btn') ? '开票信息' : 
+                                   btn.classList.contains('delete-customer-btn') ? '删除' : '未知';
+                    log(`按钮 ${index + 1}: ${btnType} (ID: ${btn.getAttribute('data-id')})`);
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
