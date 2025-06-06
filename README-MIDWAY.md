@@ -22,34 +22,98 @@
 - **HTTP客户端**: Axios
 - **图表**: ECharts
 
+## 架构设计
+
+### 前后端分离架构
+```
+┌─────────────────┐    HTTP/REST API    ┌─────────────────┐
+│   前端应用       │ ◄─────────────────► │   后端服务       │
+│  (Vue 3 SPA)    │                     │  (Midway API)   │
+│  Port: 8000     │                     │  Port: 8080     │
+└─────────────────┘                     └─────────────────┘
+         │                                       │
+         │                                       │
+         ▼                                       ▼
+┌─────────────────┐                     ┌─────────────────┐
+│   浏览器存储     │                     │   MySQL数据库    │
+│ (LocalStorage)  │                     │ (远程数据库)     │
+└─────────────────┘                     └─────────────────┘
+```
+
+### 技术栈对应关系
+| 层级 | 前端技术 | 后端技术 | 说明 |
+|------|----------|----------|------|
+| 表现层 | Vue 3 + Element Plus | - | 用户界面和交互 |
+| 路由层 | Vue Router | Koa Router | 页面路由和API路由 |
+| 状态层 | Pinia | - | 前端状态管理 |
+| 业务层 | API调用 | Service层 | 业务逻辑处理 |
+| 数据层 | Axios | TypeORM | 数据传输和持久化 |
+| 认证层 | JWT Token | JWT中间件 | 用户认证和授权 |
+
 ## 项目结构
 
 ```
 ProjectContractLedger/
-├── midway-backend/          # 后端服务
+├── midway-backend/          # 后端服务 (端口: 8080)
 │   ├── src/
-│   │   ├── controller/      # 控制器
-│   │   ├── service/         # 服务层
-│   │   ├── entity/          # 数据实体
-│   │   ├── middleware/      # 中间件
+│   │   ├── controller/      # 控制器层 (API接口)
+│   │   │   ├── auth.controller.ts      # 认证相关API
+│   │   │   ├── customer.controller.ts  # 客户管理API
+│   │   │   ├── contract.controller.ts  # 合同管理API
+│   │   │   ├── invoice.controller.ts   # 发票管理API
+│   │   │   ├── payment.controller.ts   # 支付管理API
+│   │   │   └── statistics.controller.ts # 统计分析API
+│   │   ├── service/         # 服务层 (业务逻辑)
+│   │   ├── entity/          # 数据实体 (数据库模型)
+│   │   ├── middleware/      # 中间件 (认证、CORS、日志)
 │   │   ├── filter/          # 异常过滤器
-│   │   ├── config/          # 配置文件
-│   │   └── interface.ts     # 类型定义
-│   ├── .env                 # 环境变量
-│   └── package.json
-├── midway-frontend/         # 前端应用
+│   │   ├── config/          # 配置文件 (数据库、JWT等)
+│   │   ├── interface.ts     # 类型定义
+│   │   └── configuration.ts # 主配置文件
+│   ├── dist/               # 编译输出目录
+│   ├── logs/               # 日志文件
+│   ├── test/               # 测试文件
+│   ├── bootstrap.js        # 生产环境启动文件
+│   ├── package.json        # 后端依赖配置
+│   ├── tsconfig.json       # TypeScript配置
+│   └── yarn.lock           # Yarn锁定文件
+├── midway-frontend/         # 前端应用 (端口: 8000)
 │   ├── src/
-│   │   ├── api/             # API接口
-│   │   ├── components/      # 组件
-│   │   ├── views/           # 页面
-│   │   ├── stores/          # 状态管理
+│   │   ├── api/             # API接口层
+│   │   │   ├── config.ts           # Axios配置和拦截器
+│   │   │   ├── auth.ts             # 认证API
+│   │   │   ├── customer.ts         # 客户API
+│   │   │   ├── contract.ts         # 合同API
+│   │   │   ├── invoice.ts          # 发票API
+│   │   │   ├── payment.ts          # 支付API
+│   │   │   ├── statistics.ts       # 统计API
+│   │   │   └── types.ts            # API类型定义
+│   │   ├── views/           # 页面组件
+│   │   │   ├── customers/          # 客户管理页面
+│   │   │   ├── contracts/          # 合同管理页面
+│   │   │   ├── invoices/           # 发票管理页面
+│   │   │   ├── payments/           # 支付管理页面
+│   │   │   ├── Dashboard.vue       # 仪表板
+│   │   │   └── Login.vue           # 登录页
+│   │   ├── stores/          # 状态管理 (Pinia)
 │   │   ├── router/          # 路由配置
-│   │   └── styles/          # 样式文件
-│   ├── .env                 # 环境变量
-│   └── package.json
-├── start-dev.bat           # Windows启动脚本
-├── start-dev.sh            # Linux/Mac启动脚本
-└── README-MIDWAY.md        # 项目文档
+│   │   ├── styles/          # 样式文件
+│   │   ├── App.vue          # 根组件
+│   │   └── main.ts          # 应用入口
+│   ├── dist/               # 构建输出目录
+│   ├── index.html          # HTML模板
+│   ├── vite.config.ts      # Vite配置
+│   ├── package.json        # 前端依赖配置
+│   ├── tsconfig.json       # TypeScript配置
+│   └── yarn.lock           # Yarn锁定文件
+├── database/               # 数据库相关
+│   ├── scripts/            # SQL脚本
+│   └── diagrams/           # 数据库设计图
+├── docs/                   # 项目文档
+├── start-dev.bat          # Windows启动脚本
+├── start-dev.sh           # Linux/Mac启动脚本
+├── package.json           # 根目录配置
+└── README-MIDWAY.md       # 项目文档
 ```
 
 ## 快速开始
@@ -57,18 +121,29 @@ ProjectContractLedger/
 ### 环境要求
 - Node.js >= 16.0.0
 - MySQL >= 5.7
-- npm >= 8.0.0
+- Yarn >= 1.22.0 (推荐) 或 npm >= 8.0.0
 
 ### 1. 安装依赖
 
+#### 方式一：使用根目录脚本 (推荐)
+```bash
+# 自动安装所有依赖
+yarn install-all
+# 或
+npm run install-all
+```
+
+#### 方式二：手动安装
 ```bash
 # 安装后端依赖
 cd midway-backend
-npm install
+yarn install
+# 或 npm install
 
 # 安装前端依赖
 cd ../midway-frontend
-npm install
+yarn install
+# 或 npm install
 ```
 
 ### 2. 配置数据库
@@ -107,11 +182,20 @@ chmod +x start-dev.sh
 ```bash
 # 启动后端服务
 cd midway-backend
-npm run dev
+yarn dev
+# 或 npm run dev
 
 # 启动前端服务（新终端）
 cd midway-frontend
-npm run dev
+yarn dev
+# 或 npm run dev
+```
+
+#### 方式三：使用根目录脚本
+```bash
+# 同时启动前后端服务
+yarn dev
+# 或 npm run dev
 ```
 
 ### 4. 访问应用
@@ -130,8 +214,9 @@ npm run dev
 
 运行API测试脚本验证后端服务：
 ```bash
-npm install axios
-npm run test-api
+# 在根目录执行
+yarn test-api
+# 或 npm run test-api
 ```
 
 ## 功能特性
@@ -146,14 +231,20 @@ npm run test-api
 
 ### 技术特性
 - ✅ TypeScript全栈开发
-- ✅ 依赖注入与IoC容器
-- ✅ 自动API文档生成
-- ✅ 统一异常处理
-- ✅ 请求参数验证
+- ✅ 依赖注入与IoC容器 (Midway)
+- ✅ 自动API文档生成 (Swagger)
+- ✅ 统一异常处理和过滤器
+- ✅ 请求参数验证 (@midwayjs/validate)
 - ✅ JWT认证中间件
 - ✅ CORS跨域支持
 - ✅ 分页查询支持
-- ✅ 响应式UI设计
+- ✅ 响应式UI设计 (Element Plus)
+- ✅ 状态管理 (Pinia)
+- ✅ 路由守卫和权限控制
+- ✅ HTTP请求拦截和错误处理
+- ✅ 热重载开发环境
+- ✅ TypeORM数据库操作
+- ✅ 环境配置管理
 
 ## API接口
 
@@ -250,19 +341,29 @@ export const useExampleStore = defineStore('example', () => {
 1. 构建前端应用：
 ```bash
 cd midway-frontend
-npm run build
+yarn build
+# 或 npm run build
 ```
 
 2. 构建后端应用：
 ```bash
 cd midway-backend
-npm run build
+yarn build
+# 或 npm run build
 ```
 
 3. 启动生产服务：
 ```bash
 cd midway-backend
-npm start
+yarn start
+# 或 npm start
+```
+
+#### 使用根目录脚本构建
+```bash
+# 同时构建前后端
+yarn build-all
+# 或 npm run build-all
 ```
 
 ### Docker部署
@@ -298,6 +399,26 @@ CMD ["npm", "start"]
 - 检查token有效期配置
 - 实现token自动刷新机制
 
+### 4. 依赖安装失败
+- 清理缓存：`yarn cache clean` 或 `npm cache clean --force`
+- 删除 node_modules 重新安装
+- 检查网络连接和镜像源配置
+
+### 5. 编译错误
+- 检查 TypeScript 版本兼容性
+- 确认所有依赖已正确安装
+- 查看具体错误信息并修复类型问题
+
+### 6. 端口占用
+- 检查端口 8000 和 8080 是否被占用
+- 使用 `netstat -ano | findstr :8080` (Windows) 查看端口占用
+- 修改配置文件中的端口号
+
+### 7. 数据库同步问题
+- 检查数据库连接配置
+- 确认数据库表结构是否正确
+- 查看 TypeORM 同步日志
+
 ## 贡献指南
 
 1. Fork项目
@@ -311,6 +432,14 @@ CMD ["npm", "start"]
 MIT License
 
 ## 更新日志
+
+### v1.1.0 (2024-12-19)
+- ✅ 优化项目结构和文档
+- ✅ 修复循环依赖问题
+- ✅ 统一包管理器使用 (Yarn)
+- ✅ 完善启动脚本和配置
+- ✅ 增强错误处理和故障排除指南
+- ✅ 更新架构设计说明
 
 ### v1.0.0 (2024-01-01)
 - ✅ 完成Midway框架重构

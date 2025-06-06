@@ -5,7 +5,7 @@
   "scripts": {
     "test-api": "node test-api.js",
     "start": "start-dev.bat",
-    "install-all": "cd midway-backend && yarn install && cd ../midway-frontend && yarn install && cd ../frontend && yarn install && cd ../node_api_service && yarn install",
+    "install-all": "cd midway-backend && yarn install && cd ../midway-frontend && yarn install",
     "build-all": "cd midway-backend && yarn build && cd ../midway-frontend && yarn build",
     "clean": "rimraf */node_modules */yarn.lock yarn.lock node_modules",
     "dev": "start-dev.bat"
@@ -21,8 +21,5 @@
   "license": "MIT",
   "devDependencies": {
     "axios": "^1.6.0"
-  },
-  "dependencies": {
-    "contract-ledger-midway": "file:"
   }
 }

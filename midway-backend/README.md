@@ -1,29 +1,45 @@
-# my_midway_project
+# Contract Ledger - Backend API
+
+Backend API service built with Midway v3 framework.
 
 ## QuickStart
-
-<!-- add docs here for user -->
-
-see [midway docs][midway] for more detail.
 
 ### Development
 
 ```bash
-$ npm i
-$ npm run dev
-$ open http://localhost:7001/
+$ yarn install
+$ yarn dev
+$ open http://localhost:8080/
 ```
 
-### Deploy
+### Production Deploy
 
 ```bash
-$ npm start
+$ yarn build
+$ yarn start
 ```
 
-### npm scripts
+### Available Scripts
 
-- Use `npm run lint` to check code style.
-- Use `npm test` to run unit test.
+- `yarn dev` - Start development server (Port: 8080)
+- `yarn build` - Build for production
+- `yarn start` - Start production server
+- `yarn test` - Run unit tests
+- `yarn lint` - Check code style
+- `yarn lint:fix` - Auto fix code style issues
 
+### API Documentation
+
+Visit: http://localhost:8080/api-docs after starting the server
+
+### Tech Stack
+
+- **Framework**: Midway v3 + Koa
+- **Database**: MySQL + TypeORM
+- **Authentication**: JWT
+- **Validation**: @midwayjs/validate
+- **Documentation**: Swagger
+
+See [midway docs][midway] for more detail.
 
 [midway]: https://midwayjs.org
