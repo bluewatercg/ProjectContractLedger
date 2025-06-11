@@ -70,15 +70,6 @@
           />
         </el-form-item>
         
-        <el-form-item label="到期日期" prop="due_date">
-          <el-date-picker
-            v-model="form.due_date"
-            type="date"
-            placeholder="请选择到期日期"
-            style="width: 100%"
-          />
-        </el-form-item>
-        
         <el-form-item label="发票描述" prop="description">
           <el-input
             v-model="form.description"
@@ -136,7 +127,6 @@ const form = reactive<CreateInvoiceDto>({
   amount: 0,
   tax_rate: 0,
   issue_date: '',
-  due_date: '',
   description: '',
   notes: ''
 })
@@ -160,9 +150,6 @@ const rules: FormRules = {
   ],
   issue_date: [
     { required: true, message: '请选择开票日期', trigger: 'change' }
-  ],
-  due_date: [
-    { required: true, message: '请选择到期日期', trigger: 'change' }
   ]
 }
 
@@ -217,8 +204,7 @@ const fetchInvoice = async () => {
       // 处理日期字段，确保正确显示
       Object.assign(form, {
         ...invoiceData,
-        issue_date: parseDate(invoiceData.issue_date),
-        due_date: parseDate(invoiceData.due_date)
+        issue_date: parseDate(invoiceData.issue_date)
       })
     }
   } catch (error) {
@@ -240,8 +226,7 @@ const handleSubmit = async () => {
     // 格式化日期字段
     const submitData = {
       ...form,
-      issue_date: formatDate(form.issue_date),
-      due_date: formatDate(form.due_date)
+      issue_date: formatDate(form.issue_date)
     }
 
     let response

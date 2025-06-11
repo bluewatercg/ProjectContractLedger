@@ -43,7 +43,6 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="开票日期">{{ formatDate(payment.invoice.issue_date) }}</el-descriptions-item>
-          <el-descriptions-item label="到期日期">{{ formatDate(payment.invoice.due_date) }}</el-descriptions-item>
         </el-descriptions>
       </div>
     </div>

@@ -33,17 +33,17 @@ export class DateUtil {
    * 格式化包含日期字段的对象
    */
   static formatEntityResponse<T extends Record<string, any>>(
-    entity: T, 
-    dateFields: string[]
+    entity: T,
+    dateFields: (keyof T)[]
   ): T {
     const result = { ...entity };
-    
+
     dateFields.forEach(field => {
       if (result[field]) {
-        result[field] = this.formatDateForResponse(result[field]);
+        result[field] = this.formatDateForResponse(result[field]) as T[keyof T];
       }
     });
-    
+
     return result;
   }
 }

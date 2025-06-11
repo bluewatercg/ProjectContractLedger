@@ -104,7 +104,6 @@ export interface CreateInvoiceDto {
   amount: number;
   tax_rate?: number;
   issue_date: string;
-  due_date: string;
   description?: string;
   notes?: string;
 }

@@ -18,7 +18,6 @@
         <el-descriptions-item label="税额">¥{{ formatCurrency(invoice.tax_amount) }}</el-descriptions-item>
         <el-descriptions-item label="总金额">¥{{ formatCurrency(invoice.total_amount) }}</el-descriptions-item>
         <el-descriptions-item label="开票日期">{{ invoice.issue_date }}</el-descriptions-item>
-        <el-descriptions-item label="到期日期">{{ invoice.due_date }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="getStatusType(invoice.status)">
             {{ getStatusText(invoice.status) }}

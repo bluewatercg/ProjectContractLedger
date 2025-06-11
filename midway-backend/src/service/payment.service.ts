@@ -164,12 +164,6 @@ export class PaymentService {
       newStatus = 'paid';
     } else if (totalPaid > 0) {
       newStatus = 'sent'; // 部分支付
-    } else {
-      // 检查是否逾期
-      const today = new Date();
-      if (invoice.due_date < today && invoice.status === 'sent') {
-        newStatus = 'overdue';
-      }
     }
     
     if (newStatus !== invoice.status) {

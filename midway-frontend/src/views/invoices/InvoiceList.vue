@@ -42,7 +42,6 @@
           </template>
         </el-table-column>
         <el-table-column prop="issue_date" label="开票日期" width="120" />
-        <el-table-column prop="due_date" label="到期日期" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">

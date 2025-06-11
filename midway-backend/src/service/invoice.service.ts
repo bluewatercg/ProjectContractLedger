@@ -14,7 +14,7 @@ export class InvoiceService {
    * 格式化发票数据，处理日期字段
    */
   private formatInvoiceResponse(invoice: Invoice): any {
-    return DateUtil.formatEntityResponse(invoice, ['issue_date', 'due_date']);
+    return DateUtil.formatEntityResponse(invoice, ['issue_date']);
   }
 
   /**
@@ -34,8 +34,7 @@ export class InvoiceService {
       invoice_number: invoiceNumber,
       tax_amount,
       total_amount,
-      issue_date: DateUtil.parseDate(createInvoiceDto.issue_date),
-      due_date: DateUtil.parseDate(createInvoiceDto.due_date)
+      issue_date: DateUtil.parseDate(createInvoiceDto.issue_date)
     });
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
@@ -115,9 +114,6 @@ export class InvoiceService {
     const updateData = { ...updateInvoiceDto };
     if (updateData.issue_date) {
       updateData.issue_date = DateUtil.parseDate(updateData.issue_date) as any;
-    }
-    if (updateData.due_date) {
-      updateData.due_date = DateUtil.parseDate(updateData.due_date) as any;
     }
 
     // 如果更新了金额或税率，重新计算
