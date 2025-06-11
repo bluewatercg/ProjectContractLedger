@@ -4,11 +4,14 @@
   "description": "客户合同管理系统 - Midway版本",
   "scripts": {
     "test-api": "node test-api.js",
-    "start": "start-dev.bat",
+    "test-login": "node test-login.js",
+    "start": "start-simple.bat",
+    "start-ps": "powershell -ExecutionPolicy Bypass -File start-dev.ps1",
     "install-all": "cd midway-backend && yarn install && cd ../midway-frontend && yarn install",
     "build-all": "cd midway-backend && yarn build && cd ../midway-frontend && yarn build",
     "clean": "rimraf */node_modules */yarn.lock yarn.lock node_modules",
-    "dev": "start-dev.bat"
+    "dev": "start-simple.bat",
+    "dev-ps": "powershell -ExecutionPolicy Bypass -File start-dev.ps1"
   },
   "keywords": [
     "contract",
