@@ -3,6 +3,7 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
 import { CreateInvoiceDto, UpdateInvoiceDto, PaginationQuery, PaginationResult } from '../interface';
+import { DateUtil } from '../utils/date.util';
 
 @Provide()
 export class InvoiceService {
@@ -10,57 +11,72 @@ export class InvoiceService {
   invoiceRepository: Repository<Invoice>;
 
   /**
+   * 格式化发票数据，处理日期字段
+   */
+  private formatInvoiceResponse(invoice: Invoice): any {
+    return DateUtil.formatEntityResponse(invoice, ['issue_date', 'due_date']);
+  }
+
+  /**
    * 创建发票
    */
-  async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
+  async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<any> {
     // 生成发票编号
     const invoiceNumber = await this.generateInvoiceNumber();
-    
+
     // 计算税额和总额
     const { amount, tax_rate = 0 } = createInvoiceDto;
     const tax_amount = amount * (tax_rate / 100);
     const total_amount = amount + tax_amount;
-    
+
     const invoice = this.invoiceRepository.create({
       ...createInvoiceDto,
       invoice_number: invoiceNumber,
       tax_amount,
-      total_amount
+      total_amount,
+      issue_date: DateUtil.parseDate(createInvoiceDto.issue_date),
+      due_date: DateUtil.parseDate(createInvoiceDto.due_date)
     });
-    
-    return await this.invoiceRepository.save(invoice);
+
+    const savedInvoice = await this.invoiceRepository.save(invoice);
+
+    // 格式化返回数据，处理日期字段
+    return this.formatInvoiceResponse(savedInvoice);
   }
 
   /**
    * 获取发票列表（分页）
    */
-  async getInvoices(query: PaginationQuery & { contractId?: number; status?: string }): Promise<PaginationResult<Invoice>> {
+  async getInvoices(query: PaginationQuery & { contractId?: number; status?: string }): Promise<PaginationResult<any>> {
     const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', contractId, status } = query;
-    
+
     const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer');
-    
+
     // 过滤条件
     if (contractId) {
       queryBuilder.andWhere('invoice.contract_id = :contractId', { contractId });
     }
-    
+
     if (status) {
       queryBuilder.andWhere('invoice.status = :status', { status });
     }
-    
+
     // 排序
     queryBuilder.orderBy(`invoice.${sortBy}`, sortOrder);
-    
+
     // 分页
     const offset = (page - 1) * limit;
     queryBuilder.skip(offset).take(limit);
-    
+
     const [items, total] = await queryBuilder.getManyAndCount();
-    
+
+    // 格式化返回数据，处理日期字段
+    const formattedItems = items.map(item => this.formatInvoiceResponse(item));
+
     return {
-      items,
+      items: formattedItems,
       total,
       page,
       limit,
@@ -71,36 +87,55 @@ export class InvoiceService {
   /**
    * 根据ID获取发票
    */
-  async getInvoiceById(id: number): Promise<Invoice | null> {
-    return await this.invoiceRepository.findOne({
+  async getInvoiceById(id: number): Promise<any | null> {
+    const invoice = await this.invoiceRepository.findOne({
       where: { id },
       relations: ['contract', 'contract.customer', 'payments']
     });
+
+    if (!invoice) {
+      return null;
+    }
+
+    // 格式化返回数据，处理日期字段
+    return this.formatInvoiceResponse(invoice);
   }
 
   /**
    * 更新发票
    */
-  async updateInvoice(id: number, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice | null> {
+  async updateInvoice(id: number, updateInvoiceDto: UpdateInvoiceDto): Promise<any | null> {
     const invoice = await this.invoiceRepository.findOne({ where: { id } });
-    
+
     if (!invoice) {
       return null;
     }
-    
+
+    // 处理日期字段
+    const updateData = { ...updateInvoiceDto };
+    if (updateData.issue_date) {
+      updateData.issue_date = DateUtil.parseDate(updateData.issue_date) as any;
+    }
+    if (updateData.due_date) {
+      updateData.due_date = DateUtil.parseDate(updateData.due_date) as any;
+    }
+
     // 如果更新了金额或税率，重新计算
-    if (updateInvoiceDto.amount !== undefined || updateInvoiceDto.tax_rate !== undefined) {
-      const amount = updateInvoiceDto.amount ?? invoice.amount;
-      const tax_rate = updateInvoiceDto.tax_rate ?? invoice.tax_rate;
+    if (updateData.amount !== undefined || updateData.tax_rate !== undefined) {
+      const amount = updateData.amount ?? invoice.amount;
+      const tax_rate = updateData.tax_rate ?? invoice.tax_rate;
       const tax_amount = amount * (tax_rate / 100);
       const total_amount = amount + tax_amount;
-      
-      updateInvoiceDto.tax_amount = tax_amount;
-      updateInvoiceDto.total_amount = total_amount;
+
+      updateData.tax_amount = tax_amount;
+      updateData.total_amount = total_amount;
     }
-    
-    Object.assign(invoice, updateInvoiceDto);
-    return await this.invoiceRepository.save(invoice);
+
+    Object.assign(invoice, updateData);
+    const savedInvoice = await this.invoiceRepository.save(invoice);
+
+    // 格式化返回数据，处理日期字段
+    return this.formatInvoiceResponse(savedInvoice);
   }
 
   /**
@@ -137,44 +172,32 @@ export class InvoiceService {
   }
 
   /**
-   * 获取发票统计信息
+   * 获取发票统计信息（优化版本）
    */
   async getInvoiceStats(): Promise<any> {
-    const total = await this.invoiceRepository.count();
-    const draft = await this.invoiceRepository.count({ where: { status: 'draft' } });
-    const sent = await this.invoiceRepository.count({ where: { status: 'sent' } });
-    const paid = await this.invoiceRepository.count({ where: { status: 'paid' } });
-    const overdue = await this.invoiceRepository.count({ where: { status: 'overdue' } });
-    
-    // 计算总金额
-    const totalAmountResult = await this.invoiceRepository
+    const result = await this.invoiceRepository
       .createQueryBuilder('invoice')
-      .select('SUM(invoice.total_amount)', 'total')
+      .select([
+        'COUNT(*) as total',
+        'SUM(CASE WHEN invoice.status = \'draft\' THEN 1 ELSE 0 END) as draft',
+        'SUM(CASE WHEN invoice.status = \'sent\' THEN 1 ELSE 0 END) as sent',
+        'SUM(CASE WHEN invoice.status = \'paid\' THEN 1 ELSE 0 END) as paid',
+        'SUM(CASE WHEN invoice.status = \'overdue\' THEN 1 ELSE 0 END) as overdue',
+        'SUM(invoice.total_amount) as totalAmount',
+        'SUM(CASE WHEN invoice.status = \'paid\' THEN invoice.total_amount ELSE 0 END) as paidAmount',
+        'SUM(CASE WHEN invoice.status IN (\'sent\', \'overdue\') THEN invoice.total_amount ELSE 0 END) as unpaidAmount'
+      ])
       .getRawOne();
-    
-    // 计算已付金额
-    const paidAmountResult = await this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .select('SUM(invoice.total_amount)', 'total')
-      .where('invoice.status = :status', { status: 'paid' })
-      .getRawOne();
-    
-    // 计算未付金额
-    const unpaidAmountResult = await this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .select('SUM(invoice.total_amount)', 'total')
-      .where('invoice.status IN (:...statuses)', { statuses: ['sent', 'overdue'] })
-      .getRawOne();
-    
+
     return {
-      total,
-      draft,
-      sent,
-      paid,
-      overdue,
-      totalAmount: parseFloat(totalAmountResult.total) || 0,
-      paidAmount: parseFloat(paidAmountResult.total) || 0,
-      unpaidAmount: parseFloat(unpaidAmountResult.total) || 0
+      total: parseInt(result.total) || 0,
+      draft: parseInt(result.draft) || 0,
+      sent: parseInt(result.sent) || 0,
+      paid: parseInt(result.paid) || 0,
+      overdue: parseInt(result.overdue) || 0,
+      totalAmount: parseFloat(result.totalAmount) || 0,
+      paidAmount: parseFloat(result.paidAmount) || 0,
+      unpaidAmount: parseFloat(result.unpaidAmount) || 0
     };
   }
 

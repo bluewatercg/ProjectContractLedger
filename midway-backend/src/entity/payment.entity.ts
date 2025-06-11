@@ -12,8 +12,8 @@ export class Payment {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount: number;
 
-  @Column({ 
-    type: 'date',
+  @Column({
+    type: 'datetime',
     nullable: true
    })
   payment_date: Date;

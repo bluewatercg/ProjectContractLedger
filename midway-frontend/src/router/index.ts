@@ -12,103 +12,119 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    redirect: '/dashboard'
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/views/Dashboard.vue'),
-    meta: { requiresAuth: true, title: '仪表板' }
-  },
-  {
-    path: '/customers',
-    name: 'Customers',
-    component: () => import('@/views/customers/CustomerList.vue'),
-    meta: { requiresAuth: true, title: '客户管理' }
-  },
-  {
-    path: '/customers/create',
-    name: 'CustomerCreate',
-    component: () => import('@/views/customers/CustomerForm.vue'),
-    meta: { requiresAuth: true, title: '新建客户' }
-  },
-  {
-    path: '/customers/:id',
-    name: 'CustomerDetail',
-    component: () => import('@/views/customers/CustomerDetail.vue'),
-    meta: { requiresAuth: true, title: '客户详情' }
-  },
-  {
-    path: '/customers/:id/edit',
-    name: 'CustomerEdit',
-    component: () => import('@/views/customers/CustomerForm.vue'),
-    meta: { requiresAuth: true, title: '编辑客户' }
-  },
-  {
-    path: '/contracts',
-    name: 'Contracts',
-    component: () => import('@/views/contracts/ContractList.vue'),
-    meta: { requiresAuth: true, title: '合同管理' }
-  },
-  {
-    path: '/contracts/create',
-    name: 'ContractCreate',
-    component: () => import('@/views/contracts/ContractForm.vue'),
-    meta: { requiresAuth: true, title: '新建合同' }
-  },
-  {
-    path: '/contracts/:id',
-    name: 'ContractDetail',
-    component: () => import('@/views/contracts/ContractDetail.vue'),
-    meta: { requiresAuth: true, title: '合同详情' }
-  },
-  {
-    path: '/contracts/:id/edit',
-    name: 'ContractEdit',
-    component: () => import('@/views/contracts/ContractForm.vue'),
-    meta: { requiresAuth: true, title: '编辑合同' }
-  },
-  {
-    path: '/invoices',
-    name: 'Invoices',
-    component: () => import('@/views/invoices/InvoiceList.vue'),
-    meta: { requiresAuth: true, title: '发票管理' }
-  },
-  {
-    path: '/invoices/create',
-    name: 'InvoiceCreate',
-    component: () => import('@/views/invoices/InvoiceForm.vue'),
-    meta: { requiresAuth: true, title: '新建发票' }
-  },
-  {
-    path: '/invoices/:id',
-    name: 'InvoiceDetail',
-    component: () => import('@/views/invoices/InvoiceDetail.vue'),
-    meta: { requiresAuth: true, title: '发票详情' }
-  },
-  {
-    path: '/invoices/:id/edit',
-    name: 'InvoiceEdit',
-    component: () => import('@/views/invoices/InvoiceForm.vue'),
-    meta: { requiresAuth: true, title: '编辑发票' }
-  },
-  {
-    path: '/payments',
-    name: 'Payments',
-    component: () => import('@/views/payments/PaymentList.vue'),
-    meta: { requiresAuth: true, title: '支付管理' }
-  },
-  {
-    path: '/payments/create',
-    name: 'PaymentCreate',
-    component: () => import('@/views/payments/PaymentForm.vue'),
-    meta: { requiresAuth: true, title: '新建支付' }
-  },
-  {
-    path: '/settings',
-    name: 'Settings',
-    component: () => import('@/views/Settings.vue'),
-    meta: { requiresAuth: true, title: '系统设置' }
+    component: () => import('@/layouts/MainLayout.vue'),
+    redirect: '/dashboard',
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/Dashboard.vue'),
+        meta: { requiresAuth: true, title: '仪表板' }
+      },
+      {
+        path: 'customers',
+        name: 'Customers',
+        component: () => import('@/views/customers/CustomerList.vue'),
+        meta: { requiresAuth: true, title: '客户管理' }
+      },
+      {
+        path: 'customers/create',
+        name: 'CustomerCreate',
+        component: () => import('@/views/customers/CustomerForm.vue'),
+        meta: { requiresAuth: true, title: '新建客户' }
+      },
+      {
+        path: 'customers/:id',
+        name: 'CustomerDetail',
+        component: () => import('@/views/customers/CustomerDetail.vue'),
+        meta: { requiresAuth: true, title: '客户详情' }
+      },
+      {
+        path: 'customers/:id/edit',
+        name: 'CustomerEdit',
+        component: () => import('@/views/customers/CustomerForm.vue'),
+        meta: { requiresAuth: true, title: '编辑客户' }
+      },
+      {
+        path: 'contracts',
+        name: 'Contracts',
+        component: () => import('@/views/contracts/ContractList.vue'),
+        meta: { requiresAuth: true, title: '合同管理' }
+      },
+      {
+        path: 'contracts/create',
+        name: 'ContractCreate',
+        component: () => import('@/views/contracts/ContractForm.vue'),
+        meta: { requiresAuth: true, title: '新建合同' }
+      },
+      {
+        path: 'contracts/:id',
+        name: 'ContractDetail',
+        component: () => import('@/views/contracts/ContractDetail.vue'),
+        meta: { requiresAuth: true, title: '合同详情' }
+      },
+      {
+        path: 'contracts/:id/edit',
+        name: 'ContractEdit',
+        component: () => import('@/views/contracts/ContractForm.vue'),
+        meta: { requiresAuth: true, title: '编辑合同' }
+      },
+      {
+        path: 'invoices',
+        name: 'Invoices',
+        component: () => import('@/views/invoices/InvoiceList.vue'),
+        meta: { requiresAuth: true, title: '发票管理' }
+      },
+      {
+        path: 'invoices/create',
+        name: 'InvoiceCreate',
+        component: () => import('@/views/invoices/InvoiceForm.vue'),
+        meta: { requiresAuth: true, title: '新建发票' }
+      },
+      {
+        path: 'invoices/:id',
+        name: 'InvoiceDetail',
+        component: () => import('@/views/invoices/InvoiceDetail.vue'),
+        meta: { requiresAuth: true, title: '发票详情' }
+      },
+      {
+        path: 'invoices/:id/edit',
+        name: 'InvoiceEdit',
+        component: () => import('@/views/invoices/InvoiceForm.vue'),
+        meta: { requiresAuth: true, title: '编辑发票' }
+      },
+      {
+        path: 'payments',
+        name: 'Payments',
+        component: () => import('@/views/payments/PaymentList.vue'),
+        meta: { requiresAuth: true, title: '支付管理' }
+      },
+      {
+        path: 'payments/create',
+        name: 'PaymentCreate',
+        component: () => import('@/views/payments/PaymentForm.vue'),
+        meta: { requiresAuth: true, title: '新建支付' }
+      },
+      {
+        path: 'payments/:id',
+        name: 'PaymentDetail',
+        component: () => import('@/views/payments/PaymentDetail.vue'),
+        meta: { requiresAuth: true, title: '支付详情' }
+      },
+      {
+        path: 'payments/:id/edit',
+        name: 'PaymentEdit',
+        component: () => import('@/views/payments/PaymentForm.vue'),
+        meta: { requiresAuth: true, title: '编辑支付' }
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('@/views/Settings.vue'),
+        meta: { requiresAuth: true, title: '系统设置' }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',

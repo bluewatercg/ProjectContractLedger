@@ -13,11 +13,11 @@
         v-loading="loading"
       >
         <el-form-item label="合同" prop="contract_id">
-          <el-select v-model="form.contract_id" placeholder="请选择合同" style="width: 100%">
-            <!-- 这里应该动态加载合同列表 -->
-            <el-option label="合同1" value="1" />
-            <el-option label="合同2" value="2" />
-          </el-select>
+          <ContractSelect
+            v-model="form.contract_id"
+            placeholder="请选择合同（支持搜索）"
+            @change="handleContractChange"
+          />
         </el-form-item>
         
         <el-form-item label="发票金额" prop="amount">
@@ -113,7 +113,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { invoiceApi } from '@/api'
-import type { CreateInvoiceDto, UpdateInvoiceDto } from '@/api/types'
+import type { CreateInvoiceDto, UpdateInvoiceDto, Contract } from '@/api/types'
+import ContractSelect from '@/components/ContractSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -165,21 +166,60 @@ const rules: FormRules = {
   ]
 }
 
+// 处理合同选择变化
+const handleContractChange = (contractId: number | null, contract: any) => {
+  form.contract_id = contractId || 0
+  console.log('Selected contract:', contract)
+}
+
 // 计算总额
 const calculateTotal = () => {
   // 这个方法会触发计算属性的重新计算
 }
 
+// 格式化日期为 yyyy-MM-dd 格式
+const formatDate = (date: Date | string | null): string => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+
+  // 获取本地时间的年月日，格式化为 yyyy-MM-dd
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+// 解析日期字符串为 Date 对象，处理时区问题
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null
+
+  // 如果是 YYYY-MM-DD HH:mm:ss 格式，直接创建 Date 对象
+  // 如果是 ISO 格式，需要转换为本地时间
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return null
+
+  return date
+}
+
 // 获取发票详情（编辑模式）
 const fetchInvoice = async () => {
   if (!isEdit.value) return
-  
+
   try {
     loading.value = true
     const response = await invoiceApi.getInvoiceById(invoiceId.value)
-    
+
     if (response.success && response.data) {
-      Object.assign(form, response.data)
+      const invoiceData = response.data
+
+      // 处理日期字段，确保正确显示
+      Object.assign(form, {
+        ...invoiceData,
+        issue_date: parseDate(invoiceData.issue_date),
+        due_date: parseDate(invoiceData.due_date)
+      })
     }
   } catch (error) {
     console.error('Failed to fetch invoice:', error)
@@ -192,18 +232,25 @@ const fetchInvoice = async () => {
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
     submitting.value = true
-    
+
+    // 格式化日期字段
+    const submitData = {
+      ...form,
+      issue_date: formatDate(form.issue_date),
+      due_date: formatDate(form.due_date)
+    }
+
     let response
     if (isEdit.value) {
-      response = await invoiceApi.updateInvoice(invoiceId.value, form as UpdateInvoiceDto)
+      response = await invoiceApi.updateInvoice(invoiceId.value, submitData as UpdateInvoiceDto)
     } else {
-      response = await invoiceApi.createInvoice(form)
+      response = await invoiceApi.createInvoice(submitData)
     }
-    
+
     if (response.success) {
       ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       router.push('/invoices')

@@ -10,6 +10,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 // 样式
 import './styles/index.css'
+import './styles/page.css'
 
 // 创建应用实例
 const app = createApp(App)

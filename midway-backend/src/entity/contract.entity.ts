@@ -22,10 +22,10 @@ export class Contract {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   total_amount: number;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   start_date: Date;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   end_date: Date;
 
   @Column({ 

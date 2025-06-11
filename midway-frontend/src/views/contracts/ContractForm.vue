@@ -13,11 +13,11 @@
         v-loading="loading"
       >
         <el-form-item label="客户" prop="customer_id">
-          <el-select v-model="form.customer_id" placeholder="请选择客户" style="width: 100%">
-            <!-- 这里应该动态加载客户列表 -->
-            <el-option label="客户1" value="1" />
-            <el-option label="客户2" value="2" />
-          </el-select>
+          <CustomerSelect
+            v-model="form.customer_id"
+            placeholder="请选择客户（支持搜索）"
+            @change="handleCustomerChange"
+          />
         </el-form-item>
         
         <el-form-item label="合同标题" prop="title">
@@ -95,7 +95,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { contractApi } from '@/api'
-import type { CreateContractDto, UpdateContractDto } from '@/api/types'
+import type { CreateContractDto, UpdateContractDto, Customer } from '@/api/types'
+import CustomerSelect from '@/components/CustomerSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -142,16 +143,41 @@ const rules: FormRules = {
   ]
 }
 
+// 处理客户选择变化
+const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
+  form.customer_id = customerId || 0
+  console.log('Selected customer:', customer)
+}
+
+// 解析日期字符串为 Date 对象，处理时区问题
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null
+
+  // 如果是 YYYY-MM-DD HH:mm:ss 格式，直接创建 Date 对象
+  // 如果是 ISO 格式，需要转换为本地时间
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return null
+
+  return date
+}
+
 // 获取合同详情（编辑模式）
 const fetchContract = async () => {
   if (!isEdit.value) return
-  
+
   try {
     loading.value = true
     const response = await contractApi.getContractById(contractId.value)
-    
+
     if (response.success && response.data) {
-      Object.assign(form, response.data)
+      const contractData = response.data
+
+      // 处理日期字段，确保正确显示
+      Object.assign(form, {
+        ...contractData,
+        start_date: parseDate(contractData.start_date),
+        end_date: parseDate(contractData.end_date)
+      })
     }
   } catch (error) {
     console.error('Failed to fetch contract:', error)
@@ -161,21 +187,42 @@ const fetchContract = async () => {
   }
 }
 
+// 格式化日期为 yyyy-MM-dd 格式
+const formatDate = (date: Date | string | null): string => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+
+  // 获取本地时间的年月日，格式化为 yyyy-MM-dd
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
     submitting.value = true
-    
+
+    // 格式化日期字段
+    const submitData = {
+      ...form,
+      start_date: formatDate(form.start_date),
+      end_date: formatDate(form.end_date)
+    }
+
     let response
     if (isEdit.value) {
-      response = await contractApi.updateContract(contractId.value, form as UpdateContractDto)
+      response = await contractApi.updateContract(contractId.value, submitData as UpdateContractDto)
     } else {
-      response = await contractApi.createContract(form)
+      response = await contractApi.createContract(submitData)
     }
-    
+
     if (response.success) {
       ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       router.push('/contracts')
@@ -193,9 +240,10 @@ const goBack = () => {
 }
 
 // 组件挂载时获取数据
-onMounted(() => {
+onMounted(async () => {
+  // 如果是编辑模式，获取合同详情
   if (isEdit.value) {
-    fetchContract()
+    await fetchContract()
   }
 })
 </script>

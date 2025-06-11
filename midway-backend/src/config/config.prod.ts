@@ -1,4 +1,4 @@
-import { MidwayConfig } from '@midwayjs/core';
+// import { MidwayConfig } from '@midwayjs/core';
 
 export default {
   // 生产环境配置
@@ -22,4 +22,4 @@ export default {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
-} as MidwayConfig;
+};

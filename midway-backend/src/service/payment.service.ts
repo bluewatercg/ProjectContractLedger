@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Payment } from '../entity/payment.entity';
 import { Invoice } from '../entity/invoice.entity';
 import { CreatePaymentDto, UpdatePaymentDto, PaginationQuery, PaginationResult } from '../interface';
+import { DateUtil } from '../utils/date.util';
 
 @Provide()
 export class PaymentService {
@@ -14,16 +15,27 @@ export class PaymentService {
   invoiceRepository: Repository<Invoice>;
 
   /**
+   * 格式化支付数据，处理日期字段
+   */
+  private formatPaymentResponse(payment: Payment): any {
+    return DateUtil.formatEntityResponse(payment, ['payment_date']);
+  }
+
+  /**
    * 创建支付记录
    */
-  async createPayment(createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    const payment = this.paymentRepository.create(createPaymentDto);
+  async createPayment(createPaymentDto: CreatePaymentDto): Promise<any> {
+    const payment = this.paymentRepository.create({
+      ...createPaymentDto,
+      payment_date: DateUtil.parseDate(createPaymentDto.payment_date)
+    });
     const savedPayment = await this.paymentRepository.save(payment);
-    
+
     // 更新发票状态
     await this.updateInvoiceStatus(createPaymentDto.invoice_id);
-    
-    return savedPayment;
+
+    // 格式化返回数据，处理日期字段
+    return this.formatPaymentResponse(savedPayment);
   }
 
   /**
@@ -166,21 +178,21 @@ export class PaymentService {
   }
 
   /**
-   * 获取支付统计信息
+   * 获取支付统计信息（优化版本）
    */
   async getPaymentStats(): Promise<any> {
-    const total = await this.paymentRepository.count();
-    const completed = await this.paymentRepository.count({ where: { status: 'completed' } });
-    const pending = await this.paymentRepository.count({ where: { status: 'pending' } });
-    const failed = await this.paymentRepository.count({ where: { status: 'failed' } });
-    
-    // 计算总支付金额
-    const totalAmountResult = await this.paymentRepository
+    // 基础统计信息
+    const basicStats = await this.paymentRepository
       .createQueryBuilder('payment')
-      .select('SUM(payment.amount)', 'total')
-      .where('payment.status = :status', { status: 'completed' })
+      .select([
+        'COUNT(*) as total',
+        'SUM(CASE WHEN payment.status = \'completed\' THEN 1 ELSE 0 END) as completed',
+        'SUM(CASE WHEN payment.status = \'pending\' THEN 1 ELSE 0 END) as pending',
+        'SUM(CASE WHEN payment.status = \'failed\' THEN 1 ELSE 0 END) as failed',
+        'SUM(CASE WHEN payment.status = \'completed\' THEN payment.amount ELSE 0 END) as totalAmount'
+      ])
       .getRawOne();
-    
+
     // 按支付方式统计
     const paymentMethodStats = await this.paymentRepository
       .createQueryBuilder('payment')
@@ -190,13 +202,13 @@ export class PaymentService {
       .where('payment.status = :status', { status: 'completed' })
       .groupBy('payment.payment_method')
       .getRawMany();
-    
+
     return {
-      total,
-      completed,
-      pending,
-      failed,
-      totalAmount: parseFloat(totalAmountResult.total) || 0,
+      total: parseInt(basicStats.total) || 0,
+      completed: parseInt(basicStats.completed) || 0,
+      pending: parseInt(basicStats.pending) || 0,
+      failed: parseInt(basicStats.failed) || 0,
+      totalAmount: parseFloat(basicStats.totalAmount) || 0,
       paymentMethodStats
     };
   }

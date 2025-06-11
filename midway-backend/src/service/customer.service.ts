@@ -101,4 +101,24 @@ export class CustomerService {
       order: { created_at: 'DESC' }
     });
   }
+
+  /**
+   * 获取客户统计信息（优化版本）
+   */
+  async getCustomerStats(): Promise<any> {
+    const result = await this.customerRepository
+      .createQueryBuilder('customer')
+      .select([
+        'COUNT(*) as total',
+        'SUM(CASE WHEN customer.status = \'active\' THEN 1 ELSE 0 END) as active',
+        'SUM(CASE WHEN customer.status = \'inactive\' THEN 1 ELSE 0 END) as inactive'
+      ])
+      .getRawOne();
+
+    return {
+      total: parseInt(result.total) || 0,
+      active: parseInt(result.active) || 0,
+      inactive: parseInt(result.inactive) || 0
+    };
+  }
 }

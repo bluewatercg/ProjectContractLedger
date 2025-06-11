@@ -1,76 +1,17 @@
 <template>
-  <div class="layout-container">
-    <!-- 头部 -->
-    <div class="layout-header">
-      <el-header class="header-content">
-        <div class="header-left">
-          <h1>客户合同管理系统</h1>
-        </div>
-        <div class="header-right">
-          <el-dropdown @command="handleCommand">
-            <span class="user-info">
-              <el-avatar :size="32" :src="userAvatar" />
-              <span class="username">{{ authStore.user?.full_name || authStore.user?.username }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人资料</el-dropdown-item>
-                <el-dropdown-item command="settings">系统设置</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-    </div>
-
-    <!-- 内容区域 -->
-    <div class="layout-content">
-      <!-- 侧边栏 -->
-      <div class="layout-sidebar">
-        <el-menu
-          :default-active="activeMenu"
-          class="sidebar-menu"
-          router
-        >
-          <el-menu-item index="/dashboard">
-            <el-icon><Odometer /></el-icon>
-            <span>仪表板</span>
-          </el-menu-item>
-          <el-menu-item index="/customers">
-            <el-icon><User /></el-icon>
-            <span>客户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/contracts">
-            <el-icon><Document /></el-icon>
-            <span>合同管理</span>
-          </el-menu-item>
-          <el-menu-item index="/invoices">
-            <el-icon><Tickets /></el-icon>
-            <span>发票管理</span>
-          </el-menu-item>
-          <el-menu-item index="/payments">
-            <el-icon><Money /></el-icon>
-            <span>支付管理</span>
-          </el-menu-item>
-          <el-menu-item index="/settings">
-            <el-icon><Setting /></el-icon>
-            <span>系统设置</span>
-          </el-menu-item>
-        </el-menu>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">仪表板</h2>
+      <div class="header-actions">
+        <el-tag v-if="loadTime" type="info" size="small">
+          加载时间: {{ loadTime }}ms
+        </el-tag>
+        <el-button type="primary" @click="refreshData" :loading="loading">
+          <el-icon><Refresh /></el-icon>
+          刷新数据
+        </el-button>
       </div>
-
-      <!-- 主内容 -->
-      <div class="layout-main">
-        <div class="page-container">
-          <div class="page-header">
-            <h2 class="page-title">仪表板</h2>
-            <el-button type="primary" @click="refreshData">
-              <el-icon><Refresh /></el-icon>
-              刷新数据
-            </el-button>
-          </div>
+    </div>
 
           <!-- 统计卡片 -->
           <div class="card-grid" v-loading="loading">
@@ -132,32 +73,23 @@
                 新建支付
               </el-button>
             </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { statisticsApi } from '@/api'
 import type { DashboardStats } from '@/api/types'
 
 const router = useRouter()
-const route = useRoute()
-const authStore = useAuthStore()
 
 // 状态
 const loading = ref(false)
 const stats = ref<DashboardStats>()
-
-// 计算属性
-const activeMenu = computed(() => route.path)
-const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?seed=${authStore.user?.username}`)
+const loadTime = ref<number>()
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
@@ -165,51 +97,46 @@ const formatCurrency = (amount: number) => {
 }
 
 // 获取统计数据
-const fetchStats = async () => {
+const fetchStats = async (useCache: boolean = true) => {
   try {
     loading.value = true
-    const response = await statisticsApi.getDashboardStats()
+    const startTime = Date.now()
+
+    const response = await statisticsApi.getDashboardStats(useCache)
     if (response.success) {
       stats.value = response.data
+
+      const endTime = Date.now()
+      loadTime.value = endTime - startTime
+      console.log(`Dashboard loaded in ${loadTime.value}ms`)
+
+      // 如果加载时间超过1秒，显示提示
+      if (loadTime.value > 1000) {
+        ElMessage.info(`数据加载完成 (${loadTime.value}ms)`)
+      }
+    } else {
+      ElMessage.error(response.message || '获取统计数据失败')
     }
   } catch (error) {
     console.error('Failed to fetch stats:', error)
+    ElMessage.error('获取统计数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
-// 刷新数据
-const refreshData = () => {
-  fetchStats()
-  ElMessage.success('数据已刷新')
-}
-
-// 处理用户菜单命令
-const handleCommand = async (command: string) => {
-  switch (command) {
-    case 'profile':
-      ElMessage.info('个人资料功能开发中')
-      break
-    case 'settings':
-      router.push('/settings')
-      break
-    case 'logout':
-      try {
-        await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        authStore.logout()
-        router.push('/login')
-        ElMessage.success('已退出登录')
-      } catch {
-        // 用户取消
-      }
-      break
+// 刷新数据（强制从服务器获取）
+const refreshData = async () => {
+  try {
+    await statisticsApi.refreshDashboardStats()
+    await fetchStats(false)
+    ElMessage.success('数据已刷新')
+  } catch (error) {
+    ElMessage.error('刷新数据失败')
   }
 }
+
+
 
 // 组件挂载时获取数据
 onMounted(() => {
@@ -218,47 +145,56 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.header-content {
+/* 使用全局页面样式，这里只定义Dashboard特有的样式 */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 24px;
-  height: 64px;
+  margin-bottom: 16px;
 }
 
-.header-left h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-}
-
-.user-info:hover {
-  background-color: #f5f5f5;
-}
-
-.username {
+.stat-card-title {
   font-size: 14px;
-  color: #333;
+  color: #666;
+  font-weight: 500;
 }
 
-.sidebar-menu {
-  border-right: none;
-  height: 100%;
+.stat-card-icon {
+  font-size: 24px;
+  color: #409eff;
+}
+
+.stat-card-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.stat-card-change {
+  font-size: 12px;
+  color: #999;
 }
 
 .quick-actions {

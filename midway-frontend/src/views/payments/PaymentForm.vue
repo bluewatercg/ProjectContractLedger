@@ -13,11 +13,11 @@
         v-loading="loading"
       >
         <el-form-item label="发票" prop="invoice_id">
-          <el-select v-model="form.invoice_id" placeholder="请选择发票" style="width: 100%">
-            <!-- 这里应该动态加载发票列表 -->
-            <el-option label="发票1" value="1" />
-            <el-option label="发票2" value="2" />
-          </el-select>
+          <InvoiceSelect
+            v-model="form.invoice_id"
+            placeholder="请选择发票（支持搜索）"
+            @change="handleInvoiceChange"
+          />
         </el-form-item>
         
         <el-form-item label="支付金额" prop="amount">
@@ -78,7 +78,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { paymentApi } from '@/api'
-import type { CreatePaymentDto, UpdatePaymentDto } from '@/api/types'
+import type { CreatePaymentDto, UpdatePaymentDto, Invoice } from '@/api/types'
+import InvoiceSelect from '@/components/InvoiceSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -120,16 +121,54 @@ const rules: FormRules = {
   ]
 }
 
+// 处理发票选择变化
+const handleInvoiceChange = (invoiceId: number | null, invoice: any) => {
+  form.invoice_id = invoiceId || 0
+  console.log('Selected invoice:', invoice)
+}
+
+// 格式化日期为 yyyy-MM-dd 格式
+const formatDate = (date: Date | string | null): string => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+
+  // 获取本地时间的年月日，格式化为 yyyy-MM-dd
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+// 解析日期字符串为 Date 对象，处理时区问题
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null
+
+  // 如果是 YYYY-MM-DD HH:mm:ss 格式，直接创建 Date 对象
+  // 如果是 ISO 格式，需要转换为本地时间
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return null
+
+  return date
+}
+
 // 获取支付记录详情（编辑模式）
 const fetchPayment = async () => {
   if (!isEdit.value) return
-  
+
   try {
     loading.value = true
     const response = await paymentApi.getPaymentById(paymentId.value)
-    
+
     if (response.success && response.data) {
-      Object.assign(form, response.data)
+      const paymentData = response.data
+
+      // 处理日期字段，确保正确显示
+      Object.assign(form, {
+        ...paymentData,
+        payment_date: parseDate(paymentData.payment_date)
+      })
     }
   } catch (error) {
     console.error('Failed to fetch payment:', error)
@@ -142,18 +181,24 @@ const fetchPayment = async () => {
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
     submitting.value = true
-    
+
+    // 格式化日期字段
+    const submitData = {
+      ...form,
+      payment_date: formatDate(form.payment_date)
+    }
+
     let response
     if (isEdit.value) {
-      response = await paymentApi.updatePayment(paymentId.value, form as UpdatePaymentDto)
+      response = await paymentApi.updatePayment(paymentId.value, submitData as UpdatePaymentDto)
     } else {
-      response = await paymentApi.createPayment(form)
+      response = await paymentApi.createPayment(submitData)
     }
-    
+
     if (response.success) {
       ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       router.push('/payments')

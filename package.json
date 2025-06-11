@@ -11,7 +11,11 @@
     "build-all": "cd midway-backend && yarn build && cd ../midway-frontend && yarn build",
     "clean": "rimraf */node_modules */yarn.lock yarn.lock node_modules",
     "dev": "start-simple.bat",
-    "dev-ps": "powershell -ExecutionPolicy Bypass -File start-dev.ps1"
+    "dev-ps": "powershell -ExecutionPolicy Bypass -File start-dev.ps1",
+    "apply-indexes": "node scripts/apply-mysql-indexes.js",
+    "test-db": "node scripts/apply-mysql-indexes.js --test",
+    "db-info": "node scripts/apply-mysql-indexes.js --info",
+    "performance-test": "node scripts/performance-test.js"
   },
   "keywords": [
     "contract",

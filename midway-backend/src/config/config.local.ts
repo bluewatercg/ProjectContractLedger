@@ -1,4 +1,4 @@
-import { MidwayConfig } from '@midwayjs/core';
+// import { MidwayConfig } from '@midwayjs/core';
 
 export default {
   // 本地开发环境配置
@@ -22,4 +22,4 @@ export default {
     secret: 'local-development-secret-key',
     expiresIn: '24h',
   },
-} as MidwayConfig;
+};

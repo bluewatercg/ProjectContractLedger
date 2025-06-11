@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Inject } from '@midwayjs/core';
+import { Controller, Get, Post, Query, Inject } from '@midwayjs/core';
 import { StatisticsService } from '../service/statistics.service';
 import { ApiResponse } from '../interface';
 
@@ -149,6 +149,26 @@ export class StatisticsController {
       return {
         success: false,
         message: error.message || '获取逾期发票提醒失败',
+        code: 500
+      };
+    }
+  }
+
+  /**
+   * 清除统计数据缓存
+   */
+  @Post('/cache/clear')
+  async clearCache(): Promise<ApiResponse> {
+    try {
+      this.statisticsService.clearCache();
+      return {
+        success: true,
+        message: '缓存清除成功'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '缓存清除失败',
         code: 500
       };
     }

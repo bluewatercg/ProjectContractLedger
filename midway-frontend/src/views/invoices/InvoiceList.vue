@@ -11,10 +11,12 @@
     <div class="table-container">
       <div class="table-toolbar">
         <div class="table-search">
-          <el-select v-model="contractFilter" placeholder="选择合同" style="width: 200px" clearable @change="handleFilter">
-            <el-option label="全部合同" value="" />
-            <!-- 这里应该动态加载合同列表 -->
-          </el-select>
+          <ContractSelect
+            v-model="contractFilter"
+            placeholder="选择合同筛选（支持搜索）"
+            width="250px"
+            @change="handleContractFilter"
+          />
           <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
             <el-option label="全部" value="" />
             <el-option label="草稿" value="draft" />
@@ -77,14 +79,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { invoiceApi } from '@/api'
-import type { Invoice } from '@/api/types'
+import type { Invoice, Contract } from '@/api/types'
+import ContractSelect from '@/components/ContractSelect.vue'
 
 const router = useRouter()
 
 // 状态
 const loading = ref(false)
 const invoices = ref<Invoice[]>([])
-const contractFilter = ref('')
+const contractFilter = ref<number | null>(null)
 const statusFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -126,10 +129,10 @@ const fetchInvoices = async () => {
     const response = await invoiceApi.getInvoices({
       page: currentPage.value,
       limit: pageSize.value,
-      contractId: contractFilter.value ? Number(contractFilter.value) : undefined,
+      contractId: contractFilter.value || undefined,
       status: statusFilter.value
     })
-    
+
     if (response.success && response.data) {
       invoices.value = response.data.items
       total.value = response.data.total
@@ -139,6 +142,13 @@ const fetchInvoices = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 合同筛选处理
+const handleContractFilter = (contractId: number | null, contract: any) => {
+  contractFilter.value = contractId
+  currentPage.value = 1
+  fetchInvoices()
 }
 
 // 筛选处理

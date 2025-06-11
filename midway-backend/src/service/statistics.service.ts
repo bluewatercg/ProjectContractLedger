@@ -4,6 +4,46 @@ import { ContractService } from './contract.service';
 import { InvoiceService } from './invoice.service';
 import { PaymentService } from './payment.service';
 
+// 简单的内存缓存接口
+interface CacheItem {
+  data: any;
+  timestamp: number;
+  ttl: number;
+}
+
+class SimpleCache {
+  private cache = new Map<string, CacheItem>();
+
+  set(key: string, data: any, ttlSeconds: number = 300): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttlSeconds * 1000
+    });
+  }
+
+  get(key: string): any | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+
+    const now = Date.now();
+    if (now - item.timestamp > item.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return item.data;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+}
+
 @Provide()
 export class StatisticsService {
   @Inject()
@@ -18,10 +58,25 @@ export class StatisticsService {
   @Inject()
   paymentService: PaymentService;
 
+  // 缓存实例
+  private cache = new SimpleCache();
+
   /**
-   * 获取仪表板统计数据
+   * 获取仪表板统计数据（带缓存优化）
    */
   async getDashboardStats(): Promise<any> {
+    const cacheKey = 'dashboard_stats';
+
+    // 尝试从缓存获取数据
+    const cachedData = this.cache.get(cacheKey);
+    if (cachedData) {
+      console.log('Dashboard stats served from cache');
+      return cachedData;
+    }
+
+    console.log('Fetching fresh dashboard stats from database');
+    const startTime = Date.now();
+
     const [
       customerStats,
       contractStats,
@@ -34,7 +89,7 @@ export class StatisticsService {
       this.paymentService.getPaymentStats()
     ]);
 
-    return {
+    const result = {
       customers: customerStats,
       contracts: contractStats,
       invoices: invoiceStats,
@@ -47,21 +102,37 @@ export class StatisticsService {
         activeContracts: contractStats.active
       }
     };
+
+    const endTime = Date.now();
+    console.log(`Dashboard stats query took ${endTime - startTime}ms`);
+
+    // 缓存结果，TTL为5分钟
+    this.cache.set(cacheKey, result, 300);
+
+    return result;
   }
 
   /**
-   * 获取客户统计数据
+   * 获取客户统计数据（使用优化后的方法）
    */
   private async getCustomerStats(): Promise<any> {
-    const total = await this.customerService.getActiveCustomersCount();
-    const active = await this.customerService.getCustomersByStatus('active');
-    const inactive = await this.customerService.getCustomersByStatus('inactive');
+    return await this.customerService.getCustomerStats();
+  }
 
-    return {
-      total,
-      active: active.length,
-      inactive: inactive.length
-    };
+  /**
+   * 清除统计数据缓存
+   */
+  clearCache(): void {
+    this.cache.clear();
+    console.log('Statistics cache cleared');
+  }
+
+  /**
+   * 清除特定缓存项
+   */
+  clearCacheItem(key: string): void {
+    this.cache.delete(key);
+    console.log(`Cache item '${key}' cleared`);
   }
 
   /**

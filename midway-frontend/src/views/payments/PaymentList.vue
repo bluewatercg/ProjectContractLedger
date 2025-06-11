@@ -11,10 +11,12 @@
     <div class="table-container">
       <div class="table-toolbar">
         <div class="table-search">
-          <el-select v-model="invoiceFilter" placeholder="选择发票" style="width: 200px" clearable @change="handleFilter">
-            <el-option label="全部发票" value="" />
-            <!-- 这里应该动态加载发票列表 -->
-          </el-select>
+          <InvoiceSelect
+            v-model="invoiceFilter"
+            placeholder="选择发票筛选（支持搜索）"
+            width="250px"
+            @change="handleInvoiceFilter"
+          />
           <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
             <el-option label="全部" value="" />
             <el-option label="待处理" value="pending" />
@@ -80,14 +82,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { paymentApi } from '@/api'
-import type { Payment } from '@/api/types'
+import type { Payment, Invoice } from '@/api/types'
+import InvoiceSelect from '@/components/InvoiceSelect.vue'
 
 const router = useRouter()
 
 // 状态
 const loading = ref(false)
 const payments = ref<Payment[]>([])
-const invoiceFilter = ref('')
+const invoiceFilter = ref<number | null>(null)
 const statusFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -137,10 +140,10 @@ const fetchPayments = async () => {
     const response = await paymentApi.getPayments({
       page: currentPage.value,
       limit: pageSize.value,
-      invoiceId: invoiceFilter.value ? Number(invoiceFilter.value) : undefined,
+      invoiceId: invoiceFilter.value || undefined,
       status: statusFilter.value
     })
-    
+
     if (response.success && response.data) {
       payments.value = response.data.items
       total.value = response.data.total
@@ -150,6 +153,13 @@ const fetchPayments = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 发票筛选处理
+const handleInvoiceFilter = (invoiceId: number | null, invoice: any) => {
+  invoiceFilter.value = invoiceId
+  currentPage.value = 1
+  fetchPayments()
 }
 
 // 筛选处理

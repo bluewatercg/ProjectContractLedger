@@ -11,10 +11,12 @@
     <div class="table-container">
       <div class="table-toolbar">
         <div class="table-search">
-          <el-select v-model="customerFilter" placeholder="选择客户" style="width: 200px" clearable @change="handleFilter">
-            <el-option label="全部客户" value="" />
-            <!-- 这里应该动态加载客户列表 -->
-          </el-select>
+          <CustomerSelect
+            v-model="customerFilter"
+            placeholder="选择客户筛选（支持搜索）"
+            width="250px"
+            @change="handleCustomerFilter"
+          />
           <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
             <el-option label="全部" value="" />
             <el-option label="草稿" value="draft" />
@@ -76,14 +78,15 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { contractApi } from '@/api'
-import type { Contract } from '@/api/types'
+import type { Contract, Customer } from '@/api/types'
+import CustomerSelect from '@/components/CustomerSelect.vue'
 
 const router = useRouter()
 
 // 状态
 const loading = ref(false)
 const contracts = ref<Contract[]>([])
-const customerFilter = ref('')
+const customerFilter = ref<number | null>(null)
 const statusFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -116,6 +119,13 @@ const getStatusText = (status: string) => {
   return statusMap[status] || status
 }
 
+// 处理客户筛选变化
+const handleCustomerFilter = (customerId: number | null, customer: Customer | null) => {
+  customerFilter.value = customerId
+  currentPage.value = 1
+  fetchContracts()
+}
+
 // 获取合同列表
 const fetchContracts = async () => {
   try {
@@ -123,10 +133,10 @@ const fetchContracts = async () => {
     const response = await contractApi.getContracts({
       page: currentPage.value,
       limit: pageSize.value,
-      customerId: customerFilter.value ? Number(customerFilter.value) : undefined,
+      customerId: customerFilter.value || undefined,
       status: statusFilter.value
     })
-    
+
     if (response.success && response.data) {
       contracts.value = response.data.items
       total.value = response.data.total
