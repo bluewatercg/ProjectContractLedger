@@ -1,0 +1,125 @@
+# Git相关
+.git
+.gitignore
+.gitattributes
+
+# 依赖目录
+node_modules
+*/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 构建产物（会在Docker内重新构建）
+dist
+build
+.next
+out
+*/dist
+*/build
+
+# 开发环境文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 日志文件
+logs
+*.log
+*/logs
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率目录
+coverage
+.nyc_output
+*/coverage
+
+# 编辑器和IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 测试文件
+test
+tests
+__tests__
+*.test.js
+*.spec.js
+*/test
+*/tests
+
+# 文档
+README*.md
+*.md
+docs
+design
+
+# Docker相关
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# GitHub Actions
+.github
+
+# 开发脚本
+scripts
+start-*.bat
+start-*.ps1
+start-*.sh
+
+# 数据库相关
+database
+*.sql
+*.db
+*.sqlite
+
+# 其他配置文件
+.eslintrc*
+.prettierrc*
+jest.config.js
+tsconfig*.json
+vite.config.ts
+
+# 临时文件
+tmp
+temp
+.tmp
+
+# 缓存文件
+.cache
+.parcel-cache
+.vite
+
+# 锁文件（会在Docker内重新生成）
+package-lock.json
+yarn.lock
+*/package-lock.json
+*/yarn.lock
+
+# 备份文件
+*.bak
+*.backup
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar

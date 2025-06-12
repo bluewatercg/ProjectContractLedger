@@ -13,7 +13,11 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         '/api/v1/auth/refresh',
         '/api-docs',
         '/',
-        '/favicon.ico'
+        '/favicon.ico',
+        '/health',
+        '/health/simple',
+        '/health/ready',
+        '/health/live'
       ];
 
       const path = ctx.path;

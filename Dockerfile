@@ -1,0 +1,80 @@
+# 多阶段构建 - 后端构建阶段
+FROM node:18-alpine AS backend-build
+
+WORKDIR /app/backend
+
+# 复制后端package.json和yarn.lock
+COPY midway-backend/package.json midway-backend/yarn.lock ./
+
+# 安装后端依赖
+RUN yarn install --frozen-lockfile --production=false
+
+# 复制后端源代码
+COPY midway-backend/ ./
+
+# 构建后端
+RUN yarn build
+
+# 多阶段构建 - 前端构建阶段
+FROM node:18-alpine AS frontend-build
+
+WORKDIR /app/frontend
+
+# 复制前端package.json和yarn.lock
+COPY midway-frontend/package.json midway-frontend/yarn.lock ./
+
+# 安装前端依赖
+RUN yarn install --frozen-lockfile
+
+# 复制前端源代码
+COPY midway-frontend/ ./
+
+# 构建前端
+RUN yarn build
+
+# 生产阶段 - 使用nginx作为基础镜像
+FROM nginx:alpine AS production
+
+# 安装Node.js运行时
+RUN apk add --no-cache nodejs npm
+
+# 创建应用目录
+WORKDIR /app
+
+# 创建非root用户
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S appuser -u 1001 -G nodejs
+
+# 复制后端构建产物和依赖
+COPY --from=backend-build /app/backend/dist ./backend/dist
+COPY --from=backend-build /app/backend/bootstrap.js ./backend/
+COPY --from=backend-build /app/backend/package.json ./backend/
+COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
+
+# 复制前端构建产物
+COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
+
+# 复制nginx配置
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 复制启动脚本
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# 更改文件所有权
+RUN chown -R appuser:nodejs /app && \
+    chown appuser:nodejs /start.sh
+
+# 创建日志目录
+RUN mkdir -p /var/log/app && \
+    chown -R appuser:nodejs /var/log/app
+
+# 暴露端口
+EXPOSE 80 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+
+# 启动应用
+CMD ["/start.sh"]
