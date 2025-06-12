@@ -24,8 +24,8 @@ COPY midway-backend/package.json ./backend/
 COPY midway-frontend/package.json ./frontend/
 
 # 复制yarn.lock文件（如果存在）
-COPY midway-backend/yarn.lock ./backend/ 2>/dev/null || true
-COPY midway-frontend/yarn.lock ./frontend/ 2>/dev/null || true
+COPY midway-backend/yarn.lock ./backend/
+COPY midway-frontend/yarn.lock ./frontend/
 
 # 安装后端依赖
 WORKDIR /app/backend
