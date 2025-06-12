@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Del, Body, Param, Query, Inject } from '@midwayjs/core';
+import { Controller, Get, Post, Put, Del, Body, Param, Query, Inject } from '@midwayjs/decorator';
 import { Validate } from '@midwayjs/validate';
 import { ContractService } from '../service/contract.service';
 import { CreateContractDto, UpdateContractDto, PaginationQuery, ApiResponse } from '../interface';

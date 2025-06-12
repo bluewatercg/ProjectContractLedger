@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Inject } from '@midwayjs/core';
+import { Controller, Get, Post, Query, Inject } from '@midwayjs/decorator';
 import { StatisticsService } from '../service/statistics.service';
 import { ApiResponse } from '../interface';
 

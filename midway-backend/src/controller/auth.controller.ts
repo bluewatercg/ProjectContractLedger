@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Inject } from '@midwayjs/core';
+import { Controller, Post, Body, Inject } from '@midwayjs/decorator';
 import { Validate } from '@midwayjs/validate';
 import { AuthService } from '../service/auth.service';
 import { LoginDto, RegisterDto, ApiResponse } from '../interface';

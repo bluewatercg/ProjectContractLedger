@@ -1,4 +1,4 @@
-import { Controller, Get, Inject } from '@midwayjs/core';
+import { Controller, Get } from '@midwayjs/decorator';
 import { InjectDataSource } from '@midwayjs/typeorm';
 import { DataSource } from 'typeorm';
 
