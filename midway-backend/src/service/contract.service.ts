@@ -82,7 +82,7 @@ export class ContractService {
   async getContractById(id: number): Promise<any | null> {
     const contract = await this.contractRepository.findOne({
       where: { id },
-      relations: ['customer', 'invoices']
+      relations: ['customer', 'invoices', 'invoices.payments']
     });
 
     if (!contract) {

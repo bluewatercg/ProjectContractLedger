@@ -100,12 +100,12 @@ const formatCurrency = (amount: number) => {
 // 获取状态类型
 const getStatusType = (status: string) => {
   const statusMap = {
-    draft: '',
+    draft: 'info',
     active: 'success',
-    completed: 'info',
+    completed: 'primary',
     cancelled: 'danger'
   }
-  return statusMap[status] || ''
+  return statusMap[status] || 'info'
 }
 
 // 获取状态文本

@@ -95,7 +95,7 @@ const getStatusType = (status: string) => {
     completed: 'success',
     failed: 'danger'
   }
-  return statusMap[status] || ''
+  return statusMap[status] || 'info'
 }
 
 // 获取支付状态文本
@@ -111,13 +111,13 @@ const getStatusText = (status: string) => {
 // 获取发票状态类型
 const getInvoiceStatusType = (status: string) => {
   const statusMap = {
-    draft: '',
+    draft: 'info',
     sent: 'warning',
     paid: 'success',
     overdue: 'danger',
-    cancelled: 'info'
+    cancelled: 'primary'
   }
-  return statusMap[status] || ''
+  return statusMap[status] || 'info'
 }
 
 // 获取发票状态文本

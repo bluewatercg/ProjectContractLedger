@@ -1,7 +1,8 @@
 import { Provide } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
+import { Contract } from '../entity/contract.entity';
 import { CreateInvoiceDto, UpdateInvoiceDto, PaginationQuery, PaginationResult } from '../interface';
 import { DateUtil } from '../utils/date.util';
 
@@ -9,6 +10,11 @@ import { DateUtil } from '../utils/date.util';
 export class InvoiceService {
   @InjectEntityModel(Invoice)
   invoiceRepository: Repository<Invoice>;
+
+  @InjectEntityModel(Contract)
+  contractRepository: Repository<Contract>;
+
+  constructor(private dataSource: DataSource) {}
 
   /**
    * 格式化发票数据，处理日期字段
@@ -21,26 +27,31 @@ export class InvoiceService {
    * 创建发票
    */
   async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<any> {
-    // 生成发票编号
-    const invoiceNumber = await this.generateInvoiceNumber();
+    return await this.dataSource.transaction(async manager => {
+      // 检查并更新合同状态
+      await this.checkAndUpdateContractStatusOnInvoiceCreate(manager, createInvoiceDto.contract_id);
 
-    // 计算税额和总额
-    const { amount, tax_rate = 0 } = createInvoiceDto;
-    const tax_amount = amount * (tax_rate / 100);
-    const total_amount = amount + tax_amount;
+      // 生成发票编号
+      const invoiceNumber = await this.generateInvoiceNumber();
 
-    const invoice = this.invoiceRepository.create({
-      ...createInvoiceDto,
-      invoice_number: invoiceNumber,
-      tax_amount,
-      total_amount,
-      issue_date: DateUtil.parseDate(createInvoiceDto.issue_date)
+      // 计算税额和总额
+      const { amount, tax_rate = 0 } = createInvoiceDto;
+      const tax_amount = amount * (tax_rate / 100);
+      const total_amount = amount + tax_amount;
+
+      const invoice = this.invoiceRepository.create({
+        ...createInvoiceDto,
+        invoice_number: invoiceNumber,
+        tax_amount,
+        total_amount,
+        issue_date: DateUtil.parseDate(createInvoiceDto.issue_date)
+      });
+
+      const savedInvoice = await manager.save(invoice);
+
+      // 格式化返回数据，处理日期字段
+      return this.formatInvoiceResponse(savedInvoice);
     });
-
-    const savedInvoice = await this.invoiceRepository.save(invoice);
-
-    // 格式化返回数据，处理日期字段
-    return this.formatInvoiceResponse(savedInvoice);
   }
 
   /**
@@ -210,5 +221,21 @@ export class InvoiceService {
       .andWhere('invoice.status IN (:...statuses)', { statuses: ['sent', 'overdue'] })
       .orderBy('invoice.due_date', 'ASC')
       .getMany();
+  }
+
+  /**
+   * 创建发票时检查并更新合同状态
+   */
+  private async checkAndUpdateContractStatusOnInvoiceCreate(manager: any, contractId: number): Promise<void> {
+    const contract = await manager.findOne(Contract, { where: { id: contractId } });
+
+    if (!contract) {
+      return;
+    }
+
+    // 如果合同状态为草稿，创建发票时自动将其更新为执行中
+    if (contract.status === 'draft') {
+      await manager.update(Contract, contractId, { status: 'active' });
+    }
   }
 }

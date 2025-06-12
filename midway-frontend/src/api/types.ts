@@ -101,6 +101,7 @@ export interface Contract {
   created_at: string
   updated_at: string
   customer?: Customer
+  invoices?: Invoice[]
 }
 
 export interface CreateContractDto {
@@ -134,6 +135,7 @@ export interface Invoice {
   created_at: string
   updated_at: string
   contract?: Contract
+  payments?: Payment[]
 }
 
 export interface CreateInvoiceDto {
