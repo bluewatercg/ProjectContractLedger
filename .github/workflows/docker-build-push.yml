@@ -35,17 +35,12 @@ jobs:
     - name: Install backend dependencies
       run: |
         cd midway-backend
-        yarn install --frozen-lockfile
+        yarn install --frozen-lockfile --network-timeout 100000
 
     - name: Install frontend dependencies
       run: |
         cd midway-frontend
-        yarn install --frozen-lockfile
-
-    - name: Run backend tests
-      run: |
-        cd midway-backend
-        yarn test
+        yarn install --frozen-lockfile --network-timeout 100000
 
     - name: Run backend linting
       run: |
@@ -61,6 +56,11 @@ jobs:
       run: |
         cd midway-frontend
         yarn build
+
+    - name: Run backend tests
+      run: |
+        cd midway-backend
+        yarn test
 
   # 构建和推送镜像作业
   build-and-push:

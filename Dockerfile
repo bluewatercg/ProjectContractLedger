@@ -3,11 +3,14 @@ FROM node:18-alpine AS backend-build
 
 WORKDIR /app/backend
 
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+
 # 复制后端package.json和yarn.lock
 COPY midway-backend/package.json midway-backend/yarn.lock ./
 
 # 安装后端依赖
-RUN yarn install --frozen-lockfile --production=false
+RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 
 # 复制后端源代码
 COPY midway-backend/ ./
@@ -20,11 +23,14 @@ FROM node:18-alpine AS frontend-build
 
 WORKDIR /app/frontend
 
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+
 # 复制前端package.json和yarn.lock
 COPY midway-frontend/package.json midway-frontend/yarn.lock ./
 
 # 安装前端依赖
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --network-timeout 100000
 
 # 复制前端源代码
 COPY midway-frontend/ ./
