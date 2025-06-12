@@ -12,9 +12,18 @@
         label-width="100px"
         v-loading="loading"
       >
+        <el-form-item label="客户" prop="customer_id">
+          <CustomerSelect
+            v-model="selectedCustomerId"
+            placeholder="请选择客户（支持搜索）"
+            @change="handleCustomerChange"
+          />
+        </el-form-item>
+
         <el-form-item label="合同" prop="contract_id">
           <ContractSelect
             v-model="form.contract_id"
+            :customer-id="selectedCustomerId"
             placeholder="请选择合同（支持搜索）"
             @change="handleContractChange"
           />
@@ -104,8 +113,9 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { invoiceApi } from '@/api'
-import type { CreateInvoiceDto, UpdateInvoiceDto, Contract } from '@/api/types'
+import type { CreateInvoiceDto, UpdateInvoiceDto, Contract, Customer } from '@/api/types'
 import ContractSelect from '@/components/ContractSelect.vue'
+import CustomerSelect from '@/components/CustomerSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -116,6 +126,7 @@ const formRef = ref<FormInstance>()
 // 状态
 const loading = ref(false)
 const submitting = ref(false)
+const selectedCustomerId = ref<number | null>(null)
 
 // 计算属性
 const isEdit = computed(() => !!route.params.id)
@@ -153,9 +164,21 @@ const rules: FormRules = {
   ]
 }
 
+// 处理客户选择变化
+const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
+  selectedCustomerId.value = customerId
+  // 当客户变化时，重置合同选择
+  form.contract_id = 0
+  console.log('Selected customer:', customer)
+}
+
 // 处理合同选择变化
-const handleContractChange = (contractId: number | null, contract: any) => {
+const handleContractChange = (contractId: number | null, contract: Contract | null) => {
   form.contract_id = contractId || 0
+  // 如果选择了合同，自动设置客户
+  if (contract && contract.customer) {
+    selectedCustomerId.value = contract.customer.id
+  }
   console.log('Selected contract:', contract)
 }
 
@@ -206,6 +229,11 @@ const fetchInvoice = async () => {
         ...invoiceData,
         issue_date: parseDate(invoiceData.issue_date)
       })
+
+      // 设置客户信息
+      if (invoiceData.contract && invoiceData.contract.customer) {
+        selectedCustomerId.value = invoiceData.contract.customer.id
+      }
     }
   } catch (error) {
     console.error('Failed to fetch invoice:', error)
