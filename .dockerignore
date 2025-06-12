@@ -109,11 +109,9 @@ temp
 .parcel-cache
 .vite
 
-# 锁文件（会在Docker内重新生成）
+# 锁文件（保留yarn.lock用于确保依赖版本一致性）
 package-lock.json
-yarn.lock
 */package-lock.json
-*/yarn.lock
 
 # 备份文件
 *.bak
