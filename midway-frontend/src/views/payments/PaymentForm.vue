@@ -219,6 +219,12 @@ const goBack = () => {
 onMounted(() => {
   if (isEdit.value) {
     fetchPayment()
+  } else {
+    // 检查URL参数，预填充发票信息
+    const invoiceId = route.query.invoiceId
+    if (invoiceId) {
+      form.invoice_id = Number(invoiceId)
+    }
   }
 })
 </script>
