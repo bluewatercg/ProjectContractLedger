@@ -10,7 +10,7 @@ RUN apk add --no-cache python3 make g++
 COPY midway-backend/package.json midway-backend/yarn.lock ./
 
 # 安装后端依赖
-RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
+RUN yarn install --production=false --network-timeout 100000
 
 # 复制后端源代码
 COPY midway-backend/ ./
@@ -30,7 +30,7 @@ RUN apk add --no-cache python3 make g++
 COPY midway-frontend/package.json midway-frontend/yarn.lock ./
 
 # 安装前端依赖
-RUN yarn install --frozen-lockfile --network-timeout 100000
+RUN yarn install --network-timeout 100000
 
 # 复制前端源代码
 COPY midway-frontend/ ./
