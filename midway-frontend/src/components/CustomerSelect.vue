@@ -60,12 +60,16 @@ interface Props {
   placeholder?: string
   width?: string
   disabled?: boolean
+  onlyWithUnpaidInvoices?: boolean // 只显示有未完全收款发票的客户
+  onlyWithActiveContracts?: boolean // 只显示有活跃合同的客户
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '请选择客户',
   width: '100%',
-  disabled: false
+  disabled: false,
+  onlyWithUnpaidInvoices: false,
+  onlyWithActiveContracts: false
 })
 
 // Emits
@@ -130,13 +134,25 @@ const searchCustomers = async (keyword: string = '', page: number = 1, append: b
       loadingMore.value = true
     }
 
-    const response = await customerApi.getCustomers({
+    const params: any = {
       page,
       limit: pageSize,
       search: keyword.trim(),
       sortBy: 'name',
       sortOrder: 'ASC'
-    })
+    }
+
+    // 如果只显示有未完全收款发票的客户
+    if (props.onlyWithUnpaidInvoices) {
+      params.hasUnpaidInvoices = true
+    }
+
+    // 如果只显示有活跃合同的客户
+    if (props.onlyWithActiveContracts) {
+      params.hasActiveContracts = true
+    }
+
+    const response = await customerApi.getCustomers(params)
 
     if (response.success && response.data) {
       const newCustomers = response.data.items

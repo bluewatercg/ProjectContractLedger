@@ -16,6 +16,7 @@
           <CustomerSelect
             v-model="selectedCustomerId"
             placeholder="请选择客户（支持搜索）"
+            :only-with-active-contracts="true"
             @change="handleCustomerChange"
           />
         </el-form-item>

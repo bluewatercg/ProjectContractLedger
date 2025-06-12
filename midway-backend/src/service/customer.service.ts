@@ -20,28 +20,49 @@ export class CustomerService {
   /**
    * 获取客户列表（分页）
    */
-  async getCustomers(query: PaginationQuery & { search?: string }): Promise<PaginationResult<Customer>> {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', search } = query;
-    
+  async getCustomers(query: PaginationQuery & { search?: string; hasUnpaidInvoices?: boolean; hasActiveContracts?: boolean }): Promise<PaginationResult<Customer>> {
+    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', search, hasUnpaidInvoices, hasActiveContracts } = query;
+
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
-    
+
+    // 如果需要筛选有未完全收款发票的客户
+    if (hasUnpaidInvoices) {
+      queryBuilder
+        .innerJoin('customer.contracts', 'contract')
+        .innerJoin('contract.invoices', 'invoice')
+        .leftJoin('invoice.payments', 'payment', 'payment.status = :paymentStatus', { paymentStatus: 'completed' })
+        .where('invoice.status IN (:...invoiceStatuses)', { invoiceStatuses: ['sent', 'overdue'] })
+        .groupBy('customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at')
+        .having('COALESCE(SUM(payment.amount), 0) < SUM(invoice.total_amount)');
+    }
+
+    // 如果需要筛选有活跃合同的客户
+    if (hasActiveContracts && !hasUnpaidInvoices) {
+      queryBuilder
+        .innerJoin('customer.contracts', 'contract')
+        .where('contract.status IN (:...contractStatuses)', { contractStatuses: ['active', 'signed'] })
+        .groupBy('customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at');
+    }
+
     // 搜索条件
     if (search) {
-      queryBuilder.where(
-        'customer.name LIKE :search OR customer.contact_person LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search',
-        { search: `%${search}%` }
-      );
+      const searchCondition = 'customer.name LIKE :search OR customer.contact_person LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search';
+      if (hasUnpaidInvoices || hasActiveContracts) {
+        queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
+      } else {
+        queryBuilder.where(searchCondition, { search: `%${search}%` });
+      }
     }
-    
+
     // 排序
     queryBuilder.orderBy(`customer.${sortBy}`, sortOrder);
-    
+
     // 分页
     const offset = (page - 1) * limit;
     queryBuilder.skip(offset).take(limit);
-    
+
     const [items, total] = await queryBuilder.getManyAndCount();
-    
+
     return {
       items,
       total,

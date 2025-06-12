@@ -72,7 +72,11 @@
                 ¥{{ formatCurrency(row.amount) }}
               </template>
             </el-table-column>
-            <el-table-column prop="payment_date" label="支付日期" width="120" />
+            <el-table-column prop="payment_date" label="支付日期" width="120">
+              <template #default="{ row }">
+                {{ formatDate(row.payment_date) }}
+              </template>
+            </el-table-column>
             <el-table-column prop="payment_method" label="支付方式" width="120">
               <template #default="{ row }">
                 {{ getPaymentMethodText(row.payment_method) }}

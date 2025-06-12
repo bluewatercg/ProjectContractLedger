@@ -61,6 +61,7 @@ interface Props {
   width?: string
   disabled?: boolean
   contractId?: number // 可选的合同ID筛选
+  customerId?: number // 可选的客户ID筛选
   status?: string // 可选的状态筛选
 }
 
@@ -160,6 +161,11 @@ const searchInvoices = async (keyword: string = '', page: number = 1, append: bo
     // 如果指定了合同ID，添加筛选条件
     if (props.contractId) {
       params.contractId = props.contractId
+    }
+
+    // 如果指定了客户ID，添加筛选条件
+    if (props.customerId) {
+      params.customerId = props.customerId
     }
 
     // 如果指定了状态，添加筛选条件

@@ -57,20 +57,27 @@ export class InvoiceService {
   /**
    * 获取发票列表（分页）
    */
-  async getInvoices(query: PaginationQuery & { contractId?: number; status?: string }): Promise<PaginationResult<any>> {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', contractId, status } = query;
+  async getInvoices(query: PaginationQuery & { contractId?: number; customerId?: number; status?: string }): Promise<PaginationResult<any>> {
+    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', contractId, customerId, status } = query;
 
     const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
-      .leftJoinAndSelect('contract.customer', 'customer');
+      .leftJoinAndSelect('contract.customer', 'customer')
+      .leftJoinAndSelect('invoice.payments', 'payments');
 
     // 过滤条件
     if (contractId) {
       queryBuilder.andWhere('invoice.contract_id = :contractId', { contractId });
     }
 
+    if (customerId) {
+      queryBuilder.andWhere('contract.customer_id = :customerId', { customerId });
+    }
+
     if (status) {
-      queryBuilder.andWhere('invoice.status = :status', { status });
+      // 支持多个状态，用逗号分隔
+      const statuses = status.split(',').map(s => s.trim());
+      queryBuilder.andWhere('invoice.status IN (:...statuses)', { statuses });
     }
 
     // 排序

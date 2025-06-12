@@ -12,9 +12,19 @@
         label-width="100px"
         v-loading="loading"
       >
+        <el-form-item label="客户" prop="customer_id">
+          <CustomerSelect
+            v-model="selectedCustomerId"
+            placeholder="请选择客户（支持搜索）"
+            :only-with-unpaid-invoices="true"
+            @change="handleCustomerChange"
+          />
+        </el-form-item>
+
         <el-form-item label="发票" prop="invoice_id">
           <InvoiceSelect
             v-model="form.invoice_id"
+            :customer-id="selectedCustomerId"
             placeholder="请选择发票（支持搜索）"
             @change="handleInvoiceChange"
           />
@@ -78,8 +88,9 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { paymentApi } from '@/api'
-import type { CreatePaymentDto, UpdatePaymentDto, Invoice } from '@/api/types'
+import type { CreatePaymentDto, UpdatePaymentDto, Invoice, Customer } from '@/api/types'
 import InvoiceSelect from '@/components/InvoiceSelect.vue'
+import CustomerSelect from '@/components/CustomerSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -90,6 +101,7 @@ const formRef = ref<FormInstance>()
 // 状态
 const loading = ref(false)
 const submitting = ref(false)
+const selectedCustomerId = ref<number | null>(null)
 
 // 计算属性
 const isEdit = computed(() => !!route.params.id)
@@ -121,9 +133,21 @@ const rules: FormRules = {
   ]
 }
 
+// 处理客户选择变化
+const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
+  selectedCustomerId.value = customerId
+  // 当客户变化时，重置发票选择
+  form.invoice_id = 0
+  console.log('Selected customer:', customer)
+}
+
 // 处理发票选择变化
-const handleInvoiceChange = (invoiceId: number | null, invoice: any) => {
+const handleInvoiceChange = (invoiceId: number | null, invoice: Invoice | null) => {
   form.invoice_id = invoiceId || 0
+  // 如果选择了发票，自动设置客户
+  if (invoice && invoice.contract && invoice.contract.customer) {
+    selectedCustomerId.value = invoice.contract.customer.id
+  }
   console.log('Selected invoice:', invoice)
 }
 
@@ -169,6 +193,11 @@ const fetchPayment = async () => {
         ...paymentData,
         payment_date: parseDate(paymentData.payment_date)
       })
+
+      // 设置客户信息
+      if (paymentData.invoice && paymentData.invoice.contract && paymentData.invoice.contract.customer) {
+        selectedCustomerId.value = paymentData.invoice.contract.customer.id
+      }
     }
   } catch (error) {
     console.error('Failed to fetch payment:', error)
