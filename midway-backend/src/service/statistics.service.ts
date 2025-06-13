@@ -132,6 +132,46 @@ export class StatisticsService {
   }
 
   /**
+   * 清除仪表板相关缓存（当数据变更时调用）
+   */
+  invalidateDashboardCache(): void {
+    this.cache.delete('dashboard_stats');
+    console.log('Dashboard cache invalidated due to data changes');
+  }
+
+  /**
+   * 当客户数据变更时清除相关缓存
+   */
+  invalidateCustomerCache(): void {
+    this.invalidateDashboardCache();
+    console.log('Customer-related cache invalidated');
+  }
+
+  /**
+   * 当合同数据变更时清除相关缓存
+   */
+  invalidateContractCache(): void {
+    this.invalidateDashboardCache();
+    console.log('Contract-related cache invalidated');
+  }
+
+  /**
+   * 当发票数据变更时清除相关缓存
+   */
+  invalidateInvoiceCache(): void {
+    this.invalidateDashboardCache();
+    console.log('Invoice-related cache invalidated');
+  }
+
+  /**
+   * 当支付数据变更时清除相关缓存
+   */
+  invalidatePaymentCache(): void {
+    this.invalidateDashboardCache();
+    console.log('Payment-related cache invalidated');
+  }
+
+  /**
    * 获取月度收入趋势
    */
   async getMonthlyRevenueTrend(months = 12): Promise<any[]> {

@@ -1,5 +1,5 @@
-import { Provide } from '@midwayjs/core';
-import { InjectEntityModel } from '@midwayjs/typeorm';
+import { Provide, Inject } from '@midwayjs/core';
+import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
@@ -19,7 +19,11 @@ export class InvoiceService {
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
 
-  constructor(private dataSource: DataSource) {}
+  @InjectDataSource()
+  dataSource: DataSource;
+
+  @Inject()
+  statisticsService: any; // 延迟注入避免循环依赖
 
   /**
    * 格式化发票数据，处理日期字段
@@ -56,6 +60,11 @@ export class InvoiceService {
       });
 
       const savedInvoice = await manager.save(invoice);
+
+      // 清除相关缓存
+      if (this.statisticsService?.invalidateInvoiceCache) {
+        this.statisticsService.invalidateInvoiceCache();
+      }
 
       // 格式化返回数据，处理日期字段
       return this.formatInvoiceResponse(savedInvoice);
@@ -178,6 +187,11 @@ export class InvoiceService {
     Object.assign(invoice, updateData);
     const savedInvoice = await this.invoiceRepository.save(invoice);
 
+    // 清除相关缓存
+    if (this.statisticsService?.invalidateInvoiceCache) {
+      this.statisticsService.invalidateInvoiceCache();
+    }
+
     // 格式化返回数据，处理日期字段
     return this.formatInvoiceResponse(savedInvoice);
   }
@@ -187,6 +201,12 @@ export class InvoiceService {
    */
   async deleteInvoice(id: number): Promise<boolean> {
     const result = await this.invoiceRepository.delete(id);
+
+    // 清除相关缓存
+    if (result.affected > 0 && this.statisticsService?.invalidateInvoiceCache) {
+      this.statisticsService.invalidateInvoiceCache();
+    }
+
     return result.affected > 0;
   }
 

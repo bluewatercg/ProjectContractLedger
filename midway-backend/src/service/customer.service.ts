@@ -1,4 +1,4 @@
-import { Provide } from '@midwayjs/core';
+import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Customer } from '../entity/customer.entity';
@@ -14,6 +14,9 @@ export class CustomerService {
   @InjectEntityModel(Customer)
   customerRepository: Repository<Customer>;
 
+  @Inject()
+  statisticsService: any; // 延迟注入避免循环依赖
+
   /**
    * 创建客户
    */
@@ -21,7 +24,14 @@ export class CustomerService {
     createCustomerDto: CreateCustomerDto
   ): Promise<Customer> {
     const customer = this.customerRepository.create(createCustomerDto);
-    return await this.customerRepository.save(customer);
+    const savedCustomer = await this.customerRepository.save(customer);
+
+    // 清除相关缓存
+    if (this.statisticsService?.invalidateCustomerCache) {
+      this.statisticsService.invalidateCustomerCache();
+    }
+
+    return savedCustomer;
   }
 
   /**
@@ -58,7 +68,7 @@ export class CustomerService {
           { paymentStatus: 'completed' }
         )
         .where('invoice.status IN (:...invoiceStatuses)', {
-          invoiceStatuses: ['sent', 'overdue'],
+          invoiceStatuses: ['draft', 'sent', 'overdue'],
         })
         .groupBy(
           'customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
@@ -71,7 +81,7 @@ export class CustomerService {
       queryBuilder
         .innerJoin('customer.contracts', 'contract')
         .where('contract.status IN (:...contractStatuses)', {
-          contractStatuses: ['active', 'signed'],
+          contractStatuses: ['draft', 'active', 'signed'],
         })
         .groupBy(
           'customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
@@ -131,7 +141,14 @@ export class CustomerService {
     }
 
     Object.assign(customer, updateCustomerDto);
-    return await this.customerRepository.save(customer);
+    const savedCustomer = await this.customerRepository.save(customer);
+
+    // 清除相关缓存
+    if (this.statisticsService?.invalidateCustomerCache) {
+      this.statisticsService.invalidateCustomerCache();
+    }
+
+    return savedCustomer;
   }
 
   /**

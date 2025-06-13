@@ -1,5 +1,5 @@
-import { Provide } from '@midwayjs/core';
-import { InjectEntityModel } from '@midwayjs/typeorm';
+import { Provide, Inject } from '@midwayjs/core';
+import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Payment } from '../entity/payment.entity';
 import { Invoice } from '../entity/invoice.entity';
@@ -23,7 +23,11 @@ export class PaymentService {
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
 
-  constructor(private dataSource: DataSource) {}
+  @InjectDataSource()
+  dataSource: DataSource;
+
+  @Inject()
+  statisticsService: any; // 延迟注入避免循环依赖
 
   /**
    * 格式化支付数据，处理日期字段
@@ -54,6 +58,11 @@ export class PaymentService {
         manager,
         createPaymentDto.invoice_id
       );
+
+      // 清除相关缓存
+      if (this.statisticsService?.invalidatePaymentCache) {
+        this.statisticsService.invalidatePaymentCache();
+      }
 
       // 格式化返回数据，处理日期字段
       return this.formatPaymentResponse(savedPayment);
@@ -145,6 +154,11 @@ export class PaymentService {
         );
       }
 
+      // 清除相关缓存
+      if (this.statisticsService?.invalidatePaymentCache) {
+        this.statisticsService.invalidatePaymentCache();
+      }
+
       return updatedPayment;
     });
   }
@@ -169,6 +183,11 @@ export class PaymentService {
           manager,
           payment.invoice_id
         );
+
+        // 清除相关缓存
+        if (this.statisticsService?.invalidatePaymentCache) {
+          this.statisticsService.invalidatePaymentCache();
+        }
       }
 
       return result.affected > 0;

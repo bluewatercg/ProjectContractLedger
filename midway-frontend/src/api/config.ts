@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 // API基础配置
 // 在同一个镜像中，前后端使用相同的域名，通过nginx代理到后端
 export const API_CONFIG = {
-  baseURL: '/api',  // 使用相对路径，通过nginx代理到后端服务
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',  // 使用环境变量，开发环境为/api/v1，生产环境通过nginx代理
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'

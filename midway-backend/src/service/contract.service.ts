@@ -1,4 +1,4 @@
-import { Provide } from '@midwayjs/core';
+import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contract } from '../entity/contract.entity';
@@ -14,6 +14,9 @@ import { DateUtil } from '../utils/date.util';
 export class ContractService {
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
+
+  @Inject()
+  statisticsService: any; // 延迟注入避免循环依赖
 
   /**
    * 格式化合同数据，处理日期字段
@@ -37,6 +40,11 @@ export class ContractService {
     });
 
     const savedContract = await this.contractRepository.save(contract);
+
+    // 清除相关缓存
+    if (this.statisticsService?.invalidateContractCache) {
+      this.statisticsService.invalidateContractCache();
+    }
 
     // 格式化返回数据，处理日期字段
     return this.formatContractResponse(savedContract);
@@ -134,6 +142,11 @@ export class ContractService {
 
     Object.assign(contract, updateData);
     const savedContract = await this.contractRepository.save(contract);
+
+    // 清除相关缓存
+    if (this.statisticsService?.invalidateContractCache) {
+      this.statisticsService.invalidateContractCache();
+    }
 
     // 格式化返回数据，处理日期字段
     return this.formatContractResponse(savedContract);

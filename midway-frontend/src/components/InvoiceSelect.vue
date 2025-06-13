@@ -15,12 +15,12 @@
     <el-option
       v-for="invoice in invoices"
       :key="invoice.id"
-      :label="invoice.invoice_number"
+      :label="`${formatDate(invoice.issue_date)} | ¥${formatCurrency(invoice.amount)}`"
       :value="invoice.id"
     >
       <div class="invoice-option">
-        <div class="invoice-number">{{ invoice.invoice_number }}</div>
-        <div class="invoice-info">¥{{ formatCurrency(invoice.amount) }} | {{ getStatusText(invoice.status) }}</div>
+        <div class="invoice-number">{{ formatDate(invoice.issue_date) }} | ¥{{ formatCurrency(invoice.amount) }}</div>
+        <div class="invoice-info">{{ invoice.invoice_number }}</div>
       </div>
     </el-option>
     
@@ -93,6 +93,17 @@ let searchTimer: number | null = null
 // 格式化货币
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('zh-CN').format(amount)
+}
+
+// 格式化日期
+const formatDate = (dateString: string) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
 }
 
 // 获取状态文本
