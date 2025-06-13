@@ -77,7 +77,7 @@ COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
 COPY tools/nginx/nginx.conf /etc/nginx/nginx.conf
 
 # 复制启动脚本
-COPY scripts/dev/start.sh /start.sh
+COPY ../scripts/dev/start.sh /start.sh
 RUN chmod +x /start.sh
 
 # 更改文件所有权
