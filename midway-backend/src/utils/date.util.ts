@@ -9,7 +9,7 @@ export class DateUtil {
   static parseDate(dateStr: string | Date): Date | null {
     if (!dateStr) return null;
     if (dateStr instanceof Date) return dateStr;
-    
+
     // 处理各种日期格式
     const date = new Date(dateStr);
     return isNaN(date.getTime()) ? null : date;
@@ -20,12 +20,12 @@ export class DateUtil {
    */
   static formatDateForResponse(date: Date): string | null {
     if (!date) return null;
-    
+
     // 获取本地时间的年月日，格式化为 yyyy-MM-dd
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    
+
     return `${year}-${month}-${day}`;
   }
 

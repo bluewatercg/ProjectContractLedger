@@ -15,8 +15,8 @@ export default {
         logging: false,
         entities: ['**/entity/*.entity{.ts,.js}'],
         timezone: '+08:00',
-      }
-    }
+      },
+    },
   },
   jwt: {
     secret: process.env.JWT_SECRET,

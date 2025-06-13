@@ -30,11 +30,7 @@ export class MainConfiguration {
 
   async onReady() {
     // add middleware (注意顺序很重要)
-    this.app.useMiddleware([
-      CorsMiddleware,
-      ReportMiddleware,
-      AuthMiddleware
-    ]);
+    this.app.useMiddleware([CorsMiddleware, ReportMiddleware, AuthMiddleware]);
 
     // add filter
     this.app.useFilter([NotFoundFilter, DefaultErrorFilter]);

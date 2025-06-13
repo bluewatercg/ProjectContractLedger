@@ -15,8 +15,8 @@ export default {
         logging: true,
         entities: ['**/entity/*.entity{.ts,.js}'],
         timezone: '+08:00',
-      }
-    }
+      },
+    },
   },
   jwt: {
     secret: 'local-development-secret-key',

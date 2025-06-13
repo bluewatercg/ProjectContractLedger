@@ -19,13 +19,13 @@ export class AuthController {
       return {
         success: true,
         data: result,
-        message: '登录成功'
+        message: '登录成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '登录失败',
-        code: 401
+        code: 401,
       };
     }
   }
@@ -41,13 +41,13 @@ export class AuthController {
       return {
         success: true,
         data: user,
-        message: '注册成功'
+        message: '注册成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '注册失败',
-        code: 400
+        code: 400,
       };
     }
   }
@@ -60,31 +60,31 @@ export class AuthController {
     try {
       const decoded = await this.authService.verifyToken(token);
       const user = await this.authService.getUserById(decoded.id);
-      
+
       if (!user) {
         return {
           success: false,
           message: '用户不存在',
-          code: 404
+          code: 404,
         };
       }
 
       // 生成新的token
       const newResult = await this.authService.login({
         username: user.username,
-        password: '' // 这里需要优化，不应该重新验证密码
+        password: '', // 这里需要优化，不应该重新验证密码
       });
 
       return {
         success: true,
         data: newResult,
-        message: 'Token刷新成功'
+        message: 'Token刷新成功',
       };
     } catch (error) {
       return {
         success: false,
         message: 'Token无效',
-        code: 401
+        code: 401,
       };
     }
   }

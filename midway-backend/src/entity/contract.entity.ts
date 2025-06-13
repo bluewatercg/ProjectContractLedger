@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { Customer } from './customer.entity';
 import { Invoice } from './invoice.entity';
 
@@ -28,10 +37,10 @@ export class Contract {
   @Column({ type: 'datetime', nullable: true })
   end_date: Date;
 
-  @Column({ 
-    type: 'enum', 
-    enum: ['draft', 'active', 'completed', 'cancelled'], 
-    default: 'draft' 
+  @Column({
+    type: 'enum',
+    enum: ['draft', 'active', 'completed', 'cancelled'],
+    default: 'draft',
   })
   status: string;
 

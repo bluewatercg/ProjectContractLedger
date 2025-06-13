@@ -5,10 +5,10 @@ console.log('🔧 开始编译测试...\n');
 
 const compile = spawn('npm', ['run', 'build'], {
   stdio: 'inherit',
-  shell: true
+  shell: true,
 });
 
-compile.on('close', (code) => {
+compile.on('close', code => {
   if (code === 0) {
     console.log('\n✅ 编译成功！');
   } else {

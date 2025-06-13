@@ -21,7 +21,7 @@ export class InitService {
     try {
       // 检查是否已存在管理员账户
       const existingAdmin = await this.userRepository.findOne({
-        where: { username: 'admin' }
+        where: { username: 'admin' },
       });
 
       if (existingAdmin) {
@@ -31,7 +31,7 @@ export class InitService {
 
       // 创建默认管理员账户
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      
+
       const adminUser = this.userRepository.create({
         username: 'admin',
         email: 'admin@example.com',
@@ -39,7 +39,7 @@ export class InitService {
         full_name: '系统管理员',
         phone: '13800138000',
         role: 'admin',
-        status: 'active'
+        status: 'active',
       });
 
       await this.userRepository.save(adminUser);
@@ -60,33 +60,35 @@ export class InitService {
           email: 'user1@example.com',
           password: 'user123',
           full_name: '测试用户1',
-          role: 'user'
+          role: 'user',
         },
         {
           username: 'user2',
           email: 'user2@example.com',
           password: 'user123',
           full_name: '测试用户2',
-          role: 'user'
-        }
+          role: 'user',
+        },
       ];
 
       for (const userData of testUsers) {
         const existingUser = await this.userRepository.findOne({
-          where: { username: userData.username }
+          where: { username: userData.username },
         });
 
         if (!existingUser) {
           const hashedPassword = await bcrypt.hash(userData.password, 10);
-          
+
           const user = this.userRepository.create({
             ...userData,
             password: hashedPassword,
-            status: 'active'
+            status: 'active',
           });
 
           await this.userRepository.save(user);
-          console.log(`测试用户创建成功: ${userData.username} / ${userData.password}`);
+          console.log(
+            `测试用户创建成功: ${userData.username} / ${userData.password}`
+          );
         }
       }
     } catch (error) {

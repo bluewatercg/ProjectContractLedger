@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Contract } from './contract.entity';
 
 @Entity('customers')
@@ -30,10 +37,10 @@ export class Customer {
   @Column({ length: 100, nullable: true })
   bank_name: string;
 
-  @Column({ 
-    type: 'enum', 
-    enum: ['active', 'inactive'], 
-    default: 'active' 
+  @Column({
+    type: 'enum',
+    enum: ['active', 'inactive'],
+    default: 'active',
   })
   status: string;
 

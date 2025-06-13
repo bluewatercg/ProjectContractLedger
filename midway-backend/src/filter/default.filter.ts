@@ -45,7 +45,7 @@ export class DefaultErrorFilter {
       success: false,
       message: process.env.NODE_ENV === 'production' ? message : err.message,
       code,
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
     };
   }
 }

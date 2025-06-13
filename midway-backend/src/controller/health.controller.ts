@@ -20,8 +20,8 @@ export class HealthController {
       environment: process.env.NODE_ENV || 'development',
       checks: {
         database: 'unknown',
-        memory: 'ok'
-      }
+        memory: 'ok',
+      },
     };
 
     // 检查数据库连接
@@ -41,8 +41,9 @@ export class HealthController {
     // 检查内存使用情况
     const memoryUsage = process.memoryUsage();
     const memoryUsageMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
-    
-    if (memoryUsageMB > 500) { // 如果内存使用超过500MB
+
+    if (memoryUsageMB > 500) {
+      // 如果内存使用超过500MB
       healthStatus.checks.memory = 'high';
       if (healthStatus.status === 'ok') {
         healthStatus.status = 'degraded';
@@ -53,7 +54,7 @@ export class HealthController {
     healthStatus['memory'] = {
       heapUsed: `${memoryUsageMB}MB`,
       heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
-      external: `${Math.round(memoryUsage.external / 1024 / 1024)}MB`
+      external: `${Math.round(memoryUsage.external / 1024 / 1024)}MB`,
     };
 
     return healthStatus;
@@ -81,9 +82,9 @@ export class HealthController {
         throw new Error('Database not ready');
       }
     } catch (error) {
-      return { 
-        status: 'not ready', 
-        error: error.message 
+      return {
+        status: 'not ready',
+        error: error.message,
       };
     }
   }
@@ -93,10 +94,10 @@ export class HealthController {
    */
   @Get('/live')
   async live() {
-    return { 
+    return {
       status: 'alive',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime()
+      uptime: process.uptime(),
     };
   }
 }

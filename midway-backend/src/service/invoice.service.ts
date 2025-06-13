@@ -3,7 +3,12 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
-import { CreateInvoiceDto, UpdateInvoiceDto, PaginationQuery, PaginationResult } from '../interface';
+import {
+  CreateInvoiceDto,
+  UpdateInvoiceDto,
+  PaginationQuery,
+  PaginationResult,
+} from '../interface';
 import { DateUtil } from '../utils/date.util';
 
 @Provide()
@@ -29,7 +34,10 @@ export class InvoiceService {
   async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<any> {
     return await this.dataSource.transaction(async manager => {
       // 检查并更新合同状态
-      await this.checkAndUpdateContractStatusOnInvoiceCreate(manager, createInvoiceDto.contract_id);
+      await this.checkAndUpdateContractStatusOnInvoiceCreate(
+        manager,
+        createInvoiceDto.contract_id
+      );
 
       // 生成发票编号
       const invoiceNumber = await this.generateInvoiceNumber();
@@ -44,7 +52,7 @@ export class InvoiceService {
         invoice_number: invoiceNumber,
         tax_amount,
         total_amount,
-        issue_date: DateUtil.parseDate(createInvoiceDto.issue_date)
+        issue_date: DateUtil.parseDate(createInvoiceDto.issue_date),
       });
 
       const savedInvoice = await manager.save(invoice);
@@ -57,21 +65,40 @@ export class InvoiceService {
   /**
    * 获取发票列表（分页）
    */
-  async getInvoices(query: PaginationQuery & { contractId?: number; customerId?: number; status?: string }): Promise<PaginationResult<any>> {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', contractId, customerId, status } = query;
+  async getInvoices(
+    query: PaginationQuery & {
+      contractId?: number;
+      customerId?: number;
+      status?: string;
+    }
+  ): Promise<PaginationResult<any>> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'DESC',
+      contractId,
+      customerId,
+      status,
+    } = query;
 
-    const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice')
+    const queryBuilder = this.invoiceRepository
+      .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('invoice.payments', 'payments');
 
     // 过滤条件
     if (contractId) {
-      queryBuilder.andWhere('invoice.contract_id = :contractId', { contractId });
+      queryBuilder.andWhere('invoice.contract_id = :contractId', {
+        contractId,
+      });
     }
 
     if (customerId) {
-      queryBuilder.andWhere('contract.customer_id = :customerId', { customerId });
+      queryBuilder.andWhere('contract.customer_id = :customerId', {
+        customerId,
+      });
     }
 
     if (status) {
@@ -97,7 +124,7 @@ export class InvoiceService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -107,7 +134,7 @@ export class InvoiceService {
   async getInvoiceById(id: number): Promise<any | null> {
     const invoice = await this.invoiceRepository.findOne({
       where: { id },
-      relations: ['contract', 'contract.customer', 'payments']
+      relations: ['contract', 'contract.customer', 'payments'],
     });
 
     if (!invoice) {
@@ -121,7 +148,10 @@ export class InvoiceService {
   /**
    * 更新发票
    */
-  async updateInvoice(id: number, updateInvoiceDto: UpdateInvoiceDto): Promise<any | null> {
+  async updateInvoice(
+    id: number,
+    updateInvoiceDto: UpdateInvoiceDto
+  ): Promise<any | null> {
     const invoice = await this.invoiceRepository.findOne({ where: { id } });
 
     if (!invoice) {
@@ -167,7 +197,7 @@ export class InvoiceService {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    
+
     // 查找当月最大编号
     const prefix = `INV${year}${month}`;
     const lastInvoice = await this.invoiceRepository
@@ -175,13 +205,13 @@ export class InvoiceService {
       .where('invoice.invoice_number LIKE :prefix', { prefix: `${prefix}%` })
       .orderBy('invoice.invoice_number', 'DESC')
       .getOne();
-    
+
     let sequence = 1;
     if (lastInvoice) {
       const lastNumber = lastInvoice.invoice_number.substring(prefix.length);
       sequence = parseInt(lastNumber) + 1;
     }
-    
+
     return `${prefix}${String(sequence).padStart(4, '0')}`;
   }
 
@@ -193,13 +223,13 @@ export class InvoiceService {
       .createQueryBuilder('invoice')
       .select([
         'COUNT(*) as total',
-        'SUM(CASE WHEN invoice.status = \'draft\' THEN 1 ELSE 0 END) as draft',
-        'SUM(CASE WHEN invoice.status = \'sent\' THEN 1 ELSE 0 END) as sent',
-        'SUM(CASE WHEN invoice.status = \'paid\' THEN 1 ELSE 0 END) as paid',
-        'SUM(CASE WHEN invoice.status = \'overdue\' THEN 1 ELSE 0 END) as overdue',
+        "SUM(CASE WHEN invoice.status = 'draft' THEN 1 ELSE 0 END) as draft",
+        "SUM(CASE WHEN invoice.status = 'sent' THEN 1 ELSE 0 END) as sent",
+        "SUM(CASE WHEN invoice.status = 'paid' THEN 1 ELSE 0 END) as paid",
+        "SUM(CASE WHEN invoice.status = 'overdue' THEN 1 ELSE 0 END) as overdue",
         'SUM(invoice.total_amount) as totalAmount',
-        'SUM(CASE WHEN invoice.status = \'paid\' THEN invoice.total_amount ELSE 0 END) as paidAmount',
-        'SUM(CASE WHEN invoice.status IN (\'sent\', \'overdue\') THEN invoice.total_amount ELSE 0 END) as unpaidAmount'
+        "SUM(CASE WHEN invoice.status = 'paid' THEN invoice.total_amount ELSE 0 END) as paidAmount",
+        "SUM(CASE WHEN invoice.status IN ('sent', 'overdue') THEN invoice.total_amount ELSE 0 END) as unpaidAmount",
       ])
       .getRawOne();
 
@@ -211,7 +241,7 @@ export class InvoiceService {
       overdue: parseInt(result.overdue) || 0,
       totalAmount: parseFloat(result.totalAmount) || 0,
       paidAmount: parseFloat(result.paidAmount) || 0,
-      unpaidAmount: parseFloat(result.unpaidAmount) || 0
+      unpaidAmount: parseFloat(result.unpaidAmount) || 0,
     };
   }
 
@@ -225,7 +255,9 @@ export class InvoiceService {
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .where('invoice.due_date < :today', { today })
-      .andWhere('invoice.status IN (:...statuses)', { statuses: ['sent', 'overdue'] })
+      .andWhere('invoice.status IN (:...statuses)', {
+        statuses: ['sent', 'overdue'],
+      })
       .orderBy('invoice.due_date', 'ASC')
       .getMany();
   }
@@ -233,8 +265,13 @@ export class InvoiceService {
   /**
    * 创建发票时检查并更新合同状态
    */
-  private async checkAndUpdateContractStatusOnInvoiceCreate(manager: any, contractId: number): Promise<void> {
-    const contract = await manager.findOne(Contract, { where: { id: contractId } });
+  private async checkAndUpdateContractStatusOnInvoiceCreate(
+    manager: any,
+    contractId: number
+  ): Promise<void> {
+    const contract = await manager.findOne(Contract, {
+      where: { id: contractId },
+    });
 
     if (!contract) {
       return;

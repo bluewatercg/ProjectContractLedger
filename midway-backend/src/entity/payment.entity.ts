@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Invoice } from './invoice.entity';
 
 @Entity('payments')
@@ -14,14 +22,14 @@ export class Payment {
 
   @Column({
     type: 'datetime',
-    nullable: true
-   })
+    nullable: true,
+  })
   payment_date: Date;
 
-  @Column({ 
-    type: 'enum', 
-    enum: ['cash', 'bank_transfer', 'check', 'credit_card', 'other'], 
-    default: 'bank_transfer' 
+  @Column({
+    type: 'enum',
+    enum: ['cash', 'bank_transfer', 'check', 'credit_card', 'other'],
+    default: 'bank_transfer',
   })
   payment_method: string;
 
@@ -31,10 +39,10 @@ export class Payment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ 
-    type: 'enum', 
-    enum: ['pending', 'completed', 'failed'], 
-    default: 'completed' 
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'completed', 'failed'],
+    default: 'completed',
   })
   status: string;
 

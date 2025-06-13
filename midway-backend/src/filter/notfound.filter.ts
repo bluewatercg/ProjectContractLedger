@@ -10,7 +10,7 @@ export class NotFoundFilter {
       success: false,
       message: '请求的资源不存在',
       code: 404,
-      path: ctx.path
+      path: ctx.path,
     };
   }
 }

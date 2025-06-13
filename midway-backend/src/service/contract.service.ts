@@ -2,7 +2,12 @@ import { Provide } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contract } from '../entity/contract.entity';
-import { CreateContractDto, UpdateContractDto, PaginationQuery, PaginationResult } from '../interface';
+import {
+  CreateContractDto,
+  UpdateContractDto,
+  PaginationQuery,
+  PaginationResult,
+} from '../interface';
 import { DateUtil } from '../utils/date.util';
 
 @Provide()
@@ -28,7 +33,7 @@ export class ContractService {
       ...createContractDto,
       contract_number: contractNumber,
       start_date: DateUtil.parseDate(createContractDto.start_date),
-      end_date: DateUtil.parseDate(createContractDto.end_date)
+      end_date: DateUtil.parseDate(createContractDto.end_date),
     });
 
     const savedContract = await this.contractRepository.save(contract);
@@ -40,15 +45,27 @@ export class ContractService {
   /**
    * 获取合同列表（分页）
    */
-  async getContracts(query: PaginationQuery & { customerId?: number; status?: string }): Promise<PaginationResult<any>> {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', customerId, status } = query;
+  async getContracts(
+    query: PaginationQuery & { customerId?: number; status?: string }
+  ): Promise<PaginationResult<any>> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'DESC',
+      customerId,
+      status,
+    } = query;
 
-    const queryBuilder = this.contractRepository.createQueryBuilder('contract')
+    const queryBuilder = this.contractRepository
+      .createQueryBuilder('contract')
       .leftJoinAndSelect('contract.customer', 'customer');
 
     // 过滤条件
     if (customerId) {
-      queryBuilder.andWhere('contract.customer_id = :customerId', { customerId });
+      queryBuilder.andWhere('contract.customer_id = :customerId', {
+        customerId,
+      });
     }
 
     if (status) {
@@ -72,7 +89,7 @@ export class ContractService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -82,7 +99,7 @@ export class ContractService {
   async getContractById(id: number): Promise<any | null> {
     const contract = await this.contractRepository.findOne({
       where: { id },
-      relations: ['customer', 'invoices', 'invoices.payments']
+      relations: ['customer', 'invoices', 'invoices.payments'],
     });
 
     if (!contract) {
@@ -96,7 +113,10 @@ export class ContractService {
   /**
    * 更新合同
    */
-  async updateContract(id: number, updateContractDto: UpdateContractDto): Promise<any | null> {
+  async updateContract(
+    id: number,
+    updateContractDto: UpdateContractDto
+  ): Promise<any | null> {
     const contract = await this.contractRepository.findOne({ where: { id } });
 
     if (!contract) {
@@ -134,7 +154,7 @@ export class ContractService {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    
+
     // 查找当月最大编号
     const prefix = `CT${year}${month}`;
     const lastContract = await this.contractRepository
@@ -142,13 +162,13 @@ export class ContractService {
       .where('contract.contract_number LIKE :prefix', { prefix: `${prefix}%` })
       .orderBy('contract.contract_number', 'DESC')
       .getOne();
-    
+
     let sequence = 1;
     if (lastContract) {
       const lastNumber = lastContract.contract_number.substring(prefix.length);
       sequence = parseInt(lastNumber) + 1;
     }
-    
+
     return `${prefix}${String(sequence).padStart(4, '0')}`;
   }
 
@@ -160,10 +180,10 @@ export class ContractService {
       .createQueryBuilder('contract')
       .select([
         'COUNT(*) as total',
-        'SUM(CASE WHEN contract.status = \'active\' THEN 1 ELSE 0 END) as active',
-        'SUM(CASE WHEN contract.status = \'completed\' THEN 1 ELSE 0 END) as completed',
-        'SUM(CASE WHEN contract.status = \'draft\' THEN 1 ELSE 0 END) as draft',
-        'SUM(CASE WHEN contract.status IN (\'active\', \'completed\') THEN contract.total_amount ELSE 0 END) as totalAmount'
+        "SUM(CASE WHEN contract.status = 'active' THEN 1 ELSE 0 END) as active",
+        "SUM(CASE WHEN contract.status = 'completed' THEN 1 ELSE 0 END) as completed",
+        "SUM(CASE WHEN contract.status = 'draft' THEN 1 ELSE 0 END) as draft",
+        "SUM(CASE WHEN contract.status IN ('active', 'completed') THEN contract.total_amount ELSE 0 END) as totalAmount",
       ])
       .getRawOne();
 
@@ -172,7 +192,7 @@ export class ContractService {
       active: parseInt(result.active) || 0,
       completed: parseInt(result.completed) || 0,
       draft: parseInt(result.draft) || 0,
-      totalAmount: parseFloat(result.totalAmount) || 0
+      totalAmount: parseFloat(result.totalAmount) || 0,
     };
   }
 }

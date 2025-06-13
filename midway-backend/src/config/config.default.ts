@@ -13,12 +13,12 @@ export default {
         'http://127.0.0.1:8000',
         'http://localhost:8080',
         'http://127.0.0.1:8080',
-        'http://192.168.1.31:8000'
+        'http://192.168.1.31:8000',
       ],
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization']
-    }
+      allowHeaders: ['Content-Type', 'Authorization'],
+    },
   },
   // TypeORM 数据库配置
   typeorm: {
@@ -35,8 +35,8 @@ export default {
         logging: process.env.NODE_ENV === 'local',
         entities: ['**/entity/*.entity{.ts,.js}'],
         timezone: '+08:00',
-      }
-    }
+      },
+    },
   },
   // JWT 配置
   jwt: {

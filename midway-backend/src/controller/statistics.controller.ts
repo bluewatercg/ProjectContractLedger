@@ -17,13 +17,13 @@ export class StatisticsController {
       return {
         success: true,
         data: stats,
-        message: '获取仪表板统计数据成功'
+        message: '获取仪表板统计数据成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取仪表板统计数据失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -32,19 +32,23 @@ export class StatisticsController {
    * 获取月度收入趋势
    */
   @Get('/revenue/trend')
-  async getMonthlyRevenueTrend(@Query('months') months?: number): Promise<ApiResponse> {
+  async getMonthlyRevenueTrend(
+    @Query('months') months?: number
+  ): Promise<ApiResponse> {
     try {
-      const trend = await this.statisticsService.getMonthlyRevenueTrend(months || 12);
+      const trend = await this.statisticsService.getMonthlyRevenueTrend(
+        months || 12
+      );
       return {
         success: true,
         data: trend,
-        message: '获取月度收入趋势成功'
+        message: '获取月度收入趋势成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取月度收入趋势失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -55,17 +59,18 @@ export class StatisticsController {
   @Get('/customers/distribution')
   async getCustomerDistribution(): Promise<ApiResponse> {
     try {
-      const distribution = await this.statisticsService.getCustomerDistribution();
+      const distribution =
+        await this.statisticsService.getCustomerDistribution();
       return {
         success: true,
         data: distribution,
-        message: '获取客户分布统计成功'
+        message: '获取客户分布统计成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取客户分布统计失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -76,17 +81,18 @@ export class StatisticsController {
   @Get('/contracts/status')
   async getContractStatusDistribution(): Promise<ApiResponse> {
     try {
-      const distribution = await this.statisticsService.getContractStatusDistribution();
+      const distribution =
+        await this.statisticsService.getContractStatusDistribution();
       return {
         success: true,
         data: distribution,
-        message: '获取合同状态分布成功'
+        message: '获取合同状态分布成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取合同状态分布失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -97,17 +103,18 @@ export class StatisticsController {
   @Get('/invoices/status')
   async getInvoiceStatusDistribution(): Promise<ApiResponse> {
     try {
-      const distribution = await this.statisticsService.getInvoiceStatusDistribution();
+      const distribution =
+        await this.statisticsService.getInvoiceStatusDistribution();
       return {
         success: true,
         data: distribution,
-        message: '获取发票状态分布成功'
+        message: '获取发票状态分布成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取发票状态分布失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -122,13 +129,13 @@ export class StatisticsController {
       return {
         success: true,
         data: stats,
-        message: '获取支付方式统计成功'
+        message: '获取支付方式统计成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取支付方式统计失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -143,13 +150,13 @@ export class StatisticsController {
       return {
         success: true,
         data: alert,
-        message: '获取逾期发票提醒成功'
+        message: '获取逾期发票提醒成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取逾期发票提醒失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -163,13 +170,13 @@ export class StatisticsController {
       this.statisticsService.clearCache();
       return {
         success: true,
-        message: '缓存清除成功'
+        message: '缓存清除成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '缓存清除失败',
-        code: 500
+        code: 500,
       };
     }
   }

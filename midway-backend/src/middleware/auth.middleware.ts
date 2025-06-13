@@ -17,7 +17,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         '/health',
         '/health/simple',
         '/health/ready',
-        '/health/live'
+        '/health/live',
       ];
 
       const path = ctx.path;
@@ -33,7 +33,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         ctx.body = {
           success: false,
           message: '缺少认证token',
-          code: 401
+          code: 401,
         };
         return;
       }
@@ -44,14 +44,17 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         ctx.body = {
           success: false,
           message: '无效的token格式',
-          code: 401
+          code: 401,
         };
         return;
       }
 
       try {
         // 验证token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET || 'your-secret-key'
+        );
         ctx.state.user = decoded;
         await next();
       } catch (error) {
@@ -59,7 +62,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         ctx.body = {
           success: false,
           message: 'token已过期或无效',
-          code: 401
+          code: 401,
         };
         return;
       }

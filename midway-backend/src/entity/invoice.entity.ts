@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { Contract } from './contract.entity';
 import { Payment } from './payment.entity';
 
@@ -28,10 +37,10 @@ export class Invoice {
   @Column({ type: 'datetime', nullable: true })
   issue_date: Date;
 
-  @Column({ 
-    type: 'enum', 
-    enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'], 
-    default: 'draft' 
+  @Column({
+    type: 'enum',
+    enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
+    default: 'draft',
   })
   status: string;
 

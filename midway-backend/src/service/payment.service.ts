@@ -4,7 +4,12 @@ import { Repository, DataSource } from 'typeorm';
 import { Payment } from '../entity/payment.entity';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
-import { CreatePaymentDto, UpdatePaymentDto, PaginationQuery, PaginationResult } from '../interface';
+import {
+  CreatePaymentDto,
+  UpdatePaymentDto,
+  PaginationQuery,
+  PaginationResult,
+} from '../interface';
 import { DateUtil } from '../utils/date.util';
 
 @Provide()
@@ -34,15 +39,21 @@ export class PaymentService {
     return await this.dataSource.transaction(async manager => {
       const payment = this.paymentRepository.create({
         ...createPaymentDto,
-        payment_date: DateUtil.parseDate(createPaymentDto.payment_date)
+        payment_date: DateUtil.parseDate(createPaymentDto.payment_date),
       });
       const savedPayment = await manager.save(payment);
 
       // 更新发票状态
-      await this.updateInvoiceStatusWithManager(manager, createPaymentDto.invoice_id);
+      await this.updateInvoiceStatusWithManager(
+        manager,
+        createPaymentDto.invoice_id
+      );
 
       // 检查并更新合同状态
-      await this.checkAndUpdateContractStatusWithManager(manager, createPaymentDto.invoice_id);
+      await this.checkAndUpdateContractStatusWithManager(
+        manager,
+        createPaymentDto.invoice_id
+      );
 
       // 格式化返回数据，处理日期字段
       return this.formatPaymentResponse(savedPayment);
@@ -52,38 +63,48 @@ export class PaymentService {
   /**
    * 获取支付记录列表（分页）
    */
-  async getPayments(query: PaginationQuery & { invoiceId?: number; status?: string }): Promise<PaginationResult<Payment>> {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', invoiceId, status } = query;
-    
-    const queryBuilder = this.paymentRepository.createQueryBuilder('payment')
+  async getPayments(
+    query: PaginationQuery & { invoiceId?: number; status?: string }
+  ): Promise<PaginationResult<Payment>> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'DESC',
+      invoiceId,
+      status,
+    } = query;
+
+    const queryBuilder = this.paymentRepository
+      .createQueryBuilder('payment')
       .leftJoinAndSelect('payment.invoice', 'invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer');
-    
+
     // 过滤条件
     if (invoiceId) {
       queryBuilder.andWhere('payment.invoice_id = :invoiceId', { invoiceId });
     }
-    
+
     if (status) {
       queryBuilder.andWhere('payment.status = :status', { status });
     }
-    
+
     // 排序
     queryBuilder.orderBy(`payment.${sortBy}`, sortOrder);
-    
+
     // 分页
     const offset = (page - 1) * limit;
     queryBuilder.skip(offset).take(limit);
-    
+
     const [items, total] = await queryBuilder.getManyAndCount();
-    
+
     return {
       items,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -93,14 +114,17 @@ export class PaymentService {
   async getPaymentById(id: number): Promise<Payment | null> {
     return await this.paymentRepository.findOne({
       where: { id },
-      relations: ['invoice', 'invoice.contract', 'invoice.contract.customer']
+      relations: ['invoice', 'invoice.contract', 'invoice.contract.customer'],
     });
   }
 
   /**
    * 更新支付记录
    */
-  async updatePayment(id: number, updatePaymentDto: UpdatePaymentDto): Promise<Payment | null> {
+  async updatePayment(
+    id: number,
+    updatePaymentDto: UpdatePaymentDto
+  ): Promise<Payment | null> {
     return await this.dataSource.transaction(async manager => {
       const payment = await manager.findOne(Payment, { where: { id } });
 
@@ -115,7 +139,10 @@ export class PaymentService {
       if (updatePaymentDto.amount !== undefined) {
         await this.updateInvoiceStatusWithManager(manager, payment.invoice_id);
         // 检查并更新合同状态
-        await this.checkAndUpdateContractStatusWithManager(manager, payment.invoice_id);
+        await this.checkAndUpdateContractStatusWithManager(
+          manager,
+          payment.invoice_id
+        );
       }
 
       return updatedPayment;
@@ -138,7 +165,10 @@ export class PaymentService {
       if (result.affected > 0) {
         await this.updateInvoiceStatusWithManager(manager, payment.invoice_id);
         // 检查并更新合同状态
-        await this.checkAndUpdateContractStatusWithManager(manager, payment.invoice_id);
+        await this.checkAndUpdateContractStatusWithManager(
+          manager,
+          payment.invoice_id
+        );
       }
 
       return result.affected > 0;
@@ -151,18 +181,19 @@ export class PaymentService {
   async getPaymentsByInvoiceId(invoiceId: number): Promise<Payment[]> {
     return await this.paymentRepository.find({
       where: { invoice_id: invoiceId },
-      order: { payment_date: 'DESC' }
+      order: { payment_date: 'DESC' },
     });
   }
-
-
 
   /**
    * 更新发票支付状态（带事务管理器）
    */
-  private async updateInvoiceStatusWithManager(manager: any, invoiceId: number): Promise<void> {
+  private async updateInvoiceStatusWithManager(
+    manager: any,
+    invoiceId: number
+  ): Promise<void> {
     const invoice = await manager.findOne(Invoice, {
-      where: { id: invoiceId }
+      where: { id: invoiceId },
     });
 
     if (!invoice) {
@@ -192,16 +223,17 @@ export class PaymentService {
     }
   }
 
-
-
   /**
    * 检查并更新合同状态（带事务管理器）
    */
-  private async checkAndUpdateContractStatusWithManager(manager: any, invoiceId: number): Promise<void> {
+  private async checkAndUpdateContractStatusWithManager(
+    manager: any,
+    invoiceId: number
+  ): Promise<void> {
     // 获取发票信息
     const invoice = await manager.findOne(Invoice, {
       where: { id: invoiceId },
-      relations: ['contract']
+      relations: ['contract'],
     });
 
     if (!invoice || !invoice.contract) {
@@ -215,31 +247,40 @@ export class PaymentService {
     if (currentStatus === 'draft') {
       await manager.update(Contract, contractId, { status: 'active' });
       // 重新获取更新后的合同信息
-      const updatedContract = await manager.findOne(Contract, { where: { id: contractId } });
+      const updatedContract = await manager.findOne(Contract, {
+        where: { id: contractId },
+      });
       if (updatedContract) {
         invoice.contract.status = updatedContract.status;
       }
     }
 
     // 检查合同是否应该完成
-    const shouldComplete = await this.shouldCompleteContractWithManager(manager, contractId);
+    const shouldComplete = await this.shouldCompleteContractWithManager(
+      manager,
+      contractId
+    );
 
-    if (shouldComplete && (invoice.contract.status === 'active' || currentStatus === 'draft')) {
+    if (
+      shouldComplete &&
+      (invoice.contract.status === 'active' || currentStatus === 'draft')
+    ) {
       await manager.update(Contract, contractId, { status: 'completed' });
     }
   }
-
-
 
   /**
    * 判断合同是否应该完成（带事务管理器）
    * 完成条件：合同下所有发票都为paid状态 且 发票总额达到或超过合同金额
    */
-  private async shouldCompleteContractWithManager(manager: any, contractId: number): Promise<boolean> {
+  private async shouldCompleteContractWithManager(
+    manager: any,
+    contractId: number
+  ): Promise<boolean> {
     // 获取合同信息
     const contract = await manager.findOne(Contract, {
       where: { id: contractId },
-      relations: ['invoices']
+      relations: ['invoices'],
     });
 
     if (!contract || !contract.invoices || contract.invoices.length === 0) {
@@ -247,7 +288,9 @@ export class PaymentService {
     }
 
     // 检查所有发票是否都已付款
-    const allInvoicesPaid = contract.invoices.every(invoice => invoice.status === 'paid');
+    const allInvoicesPaid = contract.invoices.every(
+      invoice => invoice.status === 'paid'
+    );
 
     if (!allInvoicesPaid) {
       return false;
@@ -273,10 +316,10 @@ export class PaymentService {
       .createQueryBuilder('payment')
       .select([
         'COUNT(*) as total',
-        'SUM(CASE WHEN payment.status = \'completed\' THEN 1 ELSE 0 END) as completed',
-        'SUM(CASE WHEN payment.status = \'pending\' THEN 1 ELSE 0 END) as pending',
-        'SUM(CASE WHEN payment.status = \'failed\' THEN 1 ELSE 0 END) as failed',
-        'SUM(CASE WHEN payment.status = \'completed\' THEN payment.amount ELSE 0 END) as totalAmount'
+        "SUM(CASE WHEN payment.status = 'completed' THEN 1 ELSE 0 END) as completed",
+        "SUM(CASE WHEN payment.status = 'pending' THEN 1 ELSE 0 END) as pending",
+        "SUM(CASE WHEN payment.status = 'failed' THEN 1 ELSE 0 END) as failed",
+        "SUM(CASE WHEN payment.status = 'completed' THEN payment.amount ELSE 0 END) as totalAmount",
       ])
       .getRawOne();
 
@@ -296,7 +339,7 @@ export class PaymentService {
       pending: parseInt(basicStats.pending) || 0,
       failed: parseInt(basicStats.failed) || 0,
       totalAmount: parseFloat(basicStats.totalAmount) || 0,
-      paymentMethodStats
+      paymentMethodStats,
     };
   }
 }

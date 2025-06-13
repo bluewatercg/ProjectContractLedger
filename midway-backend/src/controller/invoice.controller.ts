@@ -1,7 +1,22 @@
-import { Controller, Get, Post, Put, Del, Body, Param, Query, Inject } from '@midwayjs/decorator';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Del,
+  Body,
+  Param,
+  Query,
+  Inject,
+} from '@midwayjs/decorator';
 import { Validate } from '@midwayjs/validate';
 import { InvoiceService } from '../service/invoice.service';
-import { CreateInvoiceDto, UpdateInvoiceDto, PaginationQuery, ApiResponse } from '../interface';
+import {
+  CreateInvoiceDto,
+  UpdateInvoiceDto,
+  PaginationQuery,
+  ApiResponse,
+} from '../interface';
 
 @Controller('/api/v1/invoices')
 export class InvoiceController {
@@ -13,19 +28,21 @@ export class InvoiceController {
    */
   @Post('/')
   @Validate()
-  async createInvoice(@Body() createInvoiceDto: CreateInvoiceDto): Promise<ApiResponse> {
+  async createInvoice(
+    @Body() createInvoiceDto: CreateInvoiceDto
+  ): Promise<ApiResponse> {
     try {
       const invoice = await this.invoiceService.createInvoice(createInvoiceDto);
       return {
         success: true,
         data: invoice,
-        message: '发票创建成功'
+        message: '发票创建成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '发票创建失败',
-        code: 400
+        code: 400,
       };
     }
   }
@@ -34,19 +51,21 @@ export class InvoiceController {
    * 获取发票列表
    */
   @Get('/')
-  async getInvoices(@Query() query: PaginationQuery & { contractId?: number; status?: string }): Promise<ApiResponse> {
+  async getInvoices(
+    @Query() query: PaginationQuery & { contractId?: number; status?: string }
+  ): Promise<ApiResponse> {
     try {
       const result = await this.invoiceService.getInvoices(query);
       return {
         success: true,
         data: result,
-        message: '获取发票列表成功'
+        message: '获取发票列表成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取发票列表失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -62,19 +81,19 @@ export class InvoiceController {
         return {
           success: false,
           message: '发票不存在',
-          code: 404
+          code: 404,
         };
       }
       return {
         success: true,
         data: invoice,
-        message: '获取发票详情成功'
+        message: '获取发票详情成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取发票详情失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -89,24 +108,27 @@ export class InvoiceController {
     @Body() updateInvoiceDto: UpdateInvoiceDto
   ): Promise<ApiResponse> {
     try {
-      const invoice = await this.invoiceService.updateInvoice(id, updateInvoiceDto);
+      const invoice = await this.invoiceService.updateInvoice(
+        id,
+        updateInvoiceDto
+      );
       if (!invoice) {
         return {
           success: false,
           message: '发票不存在',
-          code: 404
+          code: 404,
         };
       }
       return {
         success: true,
         data: invoice,
-        message: '发票信息更新成功'
+        message: '发票信息更新成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '发票信息更新失败',
-        code: 400
+        code: 400,
       };
     }
   }
@@ -122,18 +144,18 @@ export class InvoiceController {
         return {
           success: false,
           message: '发票不存在',
-          code: 404
+          code: 404,
         };
       }
       return {
         success: true,
-        message: '发票删除成功'
+        message: '发票删除成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '发票删除失败',
-        code: 400
+        code: 400,
       };
     }
   }
@@ -148,13 +170,13 @@ export class InvoiceController {
       return {
         success: true,
         data: stats,
-        message: '获取发票统计成功'
+        message: '获取发票统计成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取发票统计失败',
-        code: 500
+        code: 500,
       };
     }
   }
@@ -169,13 +191,13 @@ export class InvoiceController {
       return {
         success: true,
         data: invoices,
-        message: '获取逾期发票成功'
+        message: '获取逾期发票成功',
       };
     } catch (error) {
       return {
         success: false,
         message: error.message || '获取逾期发票失败',
-        code: 500
+        code: 500,
       };
     }
   }

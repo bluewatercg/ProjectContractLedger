@@ -2,7 +2,12 @@ import { Provide } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Customer } from '../entity/customer.entity';
-import { CreateCustomerDto, UpdateCustomerDto, PaginationQuery, PaginationResult } from '../interface';
+import {
+  CreateCustomerDto,
+  UpdateCustomerDto,
+  PaginationQuery,
+  PaginationResult,
+} from '../interface';
 
 @Provide()
 export class CustomerService {
@@ -12,7 +17,9 @@ export class CustomerService {
   /**
    * 创建客户
    */
-  async createCustomer(createCustomerDto: CreateCustomerDto): Promise<Customer> {
+  async createCustomer(
+    createCustomerDto: CreateCustomerDto
+  ): Promise<Customer> {
     const customer = this.customerRepository.create(createCustomerDto);
     return await this.customerRepository.save(customer);
   }
@@ -20,8 +27,22 @@ export class CustomerService {
   /**
    * 获取客户列表（分页）
    */
-  async getCustomers(query: PaginationQuery & { search?: string; hasUnpaidInvoices?: boolean; hasActiveContracts?: boolean }): Promise<PaginationResult<Customer>> {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', search, hasUnpaidInvoices, hasActiveContracts } = query;
+  async getCustomers(
+    query: PaginationQuery & {
+      search?: string;
+      hasUnpaidInvoices?: boolean;
+      hasActiveContracts?: boolean;
+    }
+  ): Promise<PaginationResult<Customer>> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortOrder = 'DESC',
+      search,
+      hasUnpaidInvoices,
+      hasActiveContracts,
+    } = query;
 
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
 
@@ -30,9 +51,18 @@ export class CustomerService {
       queryBuilder
         .innerJoin('customer.contracts', 'contract')
         .innerJoin('contract.invoices', 'invoice')
-        .leftJoin('invoice.payments', 'payment', 'payment.status = :paymentStatus', { paymentStatus: 'completed' })
-        .where('invoice.status IN (:...invoiceStatuses)', { invoiceStatuses: ['sent', 'overdue'] })
-        .groupBy('customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at')
+        .leftJoin(
+          'invoice.payments',
+          'payment',
+          'payment.status = :paymentStatus',
+          { paymentStatus: 'completed' }
+        )
+        .where('invoice.status IN (:...invoiceStatuses)', {
+          invoiceStatuses: ['sent', 'overdue'],
+        })
+        .groupBy(
+          'customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
+        )
         .having('COALESCE(SUM(payment.amount), 0) < SUM(invoice.total_amount)');
     }
 
@@ -40,13 +70,18 @@ export class CustomerService {
     if (hasActiveContracts && !hasUnpaidInvoices) {
       queryBuilder
         .innerJoin('customer.contracts', 'contract')
-        .where('contract.status IN (:...contractStatuses)', { contractStatuses: ['active', 'signed'] })
-        .groupBy('customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at');
+        .where('contract.status IN (:...contractStatuses)', {
+          contractStatuses: ['active', 'signed'],
+        })
+        .groupBy(
+          'customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
+        );
     }
 
     // 搜索条件
     if (search) {
-      const searchCondition = 'customer.name LIKE :search OR customer.contact_person LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search';
+      const searchCondition =
+        'customer.name LIKE :search OR customer.contact_person LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search';
       if (hasUnpaidInvoices || hasActiveContracts) {
         queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
       } else {
@@ -68,7 +103,7 @@ export class CustomerService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -78,20 +113,23 @@ export class CustomerService {
   async getCustomerById(id: number): Promise<Customer | null> {
     return await this.customerRepository.findOne({
       where: { id },
-      relations: ['contracts']
+      relations: ['contracts'],
     });
   }
 
   /**
    * 更新客户
    */
-  async updateCustomer(id: number, updateCustomerDto: UpdateCustomerDto): Promise<Customer | null> {
+  async updateCustomer(
+    id: number,
+    updateCustomerDto: UpdateCustomerDto
+  ): Promise<Customer | null> {
     const customer = await this.customerRepository.findOne({ where: { id } });
-    
+
     if (!customer) {
       return null;
     }
-    
+
     Object.assign(customer, updateCustomerDto);
     return await this.customerRepository.save(customer);
   }
@@ -109,7 +147,7 @@ export class CustomerService {
    */
   async getActiveCustomersCount(): Promise<number> {
     return await this.customerRepository.count({
-      where: { status: 'active' }
+      where: { status: 'active' },
     });
   }
 
@@ -119,7 +157,7 @@ export class CustomerService {
   async getCustomersByStatus(status: string): Promise<Customer[]> {
     return await this.customerRepository.find({
       where: { status },
-      order: { created_at: 'DESC' }
+      order: { created_at: 'DESC' },
     });
   }
 
@@ -131,15 +169,15 @@ export class CustomerService {
       .createQueryBuilder('customer')
       .select([
         'COUNT(*) as total',
-        'SUM(CASE WHEN customer.status = \'active\' THEN 1 ELSE 0 END) as active',
-        'SUM(CASE WHEN customer.status = \'inactive\' THEN 1 ELSE 0 END) as inactive'
+        "SUM(CASE WHEN customer.status = 'active' THEN 1 ELSE 0 END) as active",
+        "SUM(CASE WHEN customer.status = 'inactive' THEN 1 ELSE 0 END) as inactive",
       ])
       .getRawOne();
 
     return {
       total: parseInt(result.total) || 0,
       active: parseInt(result.active) || 0,
-      inactive: parseInt(result.inactive) || 0
+      inactive: parseInt(result.inactive) || 0,
     };
   }
 }

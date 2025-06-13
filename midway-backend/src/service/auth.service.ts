@@ -16,10 +16,10 @@ export class AuthService {
    */
   async login(loginDto: LoginDto): Promise<{ token: string; user: UserInfo }> {
     const { username, password } = loginDto;
-    
+
     // 查找用户
     const user = await this.userRepository.findOne({
-      where: { username }
+      where: { username },
     });
 
     if (!user) {
@@ -45,7 +45,7 @@ export class AuthService {
       {
         id: user.id,
         username: user.username,
-        role: user.role
+        role: user.role,
       },
       jwtSecret,
       { expiresIn } as jwt.SignOptions
@@ -59,7 +59,7 @@ export class AuthService {
       full_name: user.full_name,
       phone: user.phone,
       role: user.role,
-      status: user.status
+      status: user.status,
     };
 
     return { token, user: userInfo };
@@ -73,7 +73,7 @@ export class AuthService {
 
     // 检查用户名是否已存在
     const existingUser = await this.userRepository.findOne({
-      where: [{ username }, { email }]
+      where: [{ username }, { email }],
     });
 
     if (existingUser) {
@@ -91,7 +91,7 @@ export class AuthService {
       full_name,
       phone,
       role: 'user',
-      status: 'active'
+      status: 'active',
     });
 
     const savedUser = await this.userRepository.save(newUser);
@@ -104,7 +104,7 @@ export class AuthService {
       full_name: savedUser.full_name,
       phone: savedUser.phone,
       role: savedUser.role,
-      status: savedUser.status
+      status: savedUser.status,
     };
   }
 
@@ -124,7 +124,7 @@ export class AuthService {
    */
   async getUserById(id: number): Promise<UserInfo | null> {
     const user = await this.userRepository.findOne({
-      where: { id }
+      where: { id },
     });
 
     if (!user) {
@@ -138,7 +138,7 @@ export class AuthService {
       full_name: user.full_name,
       phone: user.phone,
       role: user.role,
-      status: user.status
+      status: user.status,
     };
   }
 }
