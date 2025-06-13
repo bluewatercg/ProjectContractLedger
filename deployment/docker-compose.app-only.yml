@@ -24,27 +24,8 @@ services:
       # JWT配置
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
-      # 应用配置
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - PORT=8080
-      # 文件存储配置
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - MINIO_BUCKET=${MINIO_BUCKET:-contract-ledger}
-      # 性能配置
-      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
-      - CACHE_TTL=${CACHE_TTL:-3600}
-      # 安全配置
-      - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-5}
-      - ACCOUNT_LOCKOUT_DURATION=${ACCOUNT_LOCKOUT_DURATION:-30}
-      - PASSWORD_MIN_LENGTH=${PASSWORD_MIN_LENGTH:-8}
       # 时区配置
       - TZ=${TZ:-Asia/Shanghai}
-      # 反向代理相关配置
-      - TRUST_PROXY=${TRUST_PROXY:-true}
-      - PROXY_TIMEOUT=${PROXY_TIMEOUT:-30000}
     restart: unless-stopped
     volumes:
       - app_logs:/app/logs
@@ -81,3 +62,7 @@ volumes:
 # networks:
 #   contract-ledger-network:
 #     driver: bridge
+
+
+
+
