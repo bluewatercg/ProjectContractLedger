@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build and Push Docker Images (External Services)
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main, master, midwayjs ]
+  workflow_dispatch:  # 允许手动触发
 
 env:
   REGISTRY: ghcr.io
@@ -111,7 +112,24 @@ jobs:
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
 
-    - name: Image digest
+    - name: Image digest and deployment info
       run: |
         echo "Application image digest: ${{ steps.build.outputs.digest }}"
         echo "Image tags: ${{ steps.meta.outputs.tags }}"
+        echo ""
+        echo "=== 部署信息 ==="
+        echo "镜像已推送到 GitHub Container Registry"
+        echo "使用以下命令部署到生产环境："
+        echo ""
+        echo "1. 下载部署文件："
+        echo "   wget https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.external-simple.yml"
+        echo "   wget https://raw.githubusercontent.com/${{ github.repository }}/main/.env.external-simple.template"
+        echo ""
+        echo "2. 配置环境变量："
+        echo "   cp .env.external-simple.template .env.external-simple"
+        echo "   # 编辑 .env.external-simple 文件，填写MySQL和Redis配置"
+        echo ""
+        echo "3. 启动服务："
+        echo "   docker-compose -f docker-compose.external-simple.yml --env-file .env.external-simple up -d"
+        echo ""
+        echo "镜像标签: ${{ steps.meta.outputs.tags }}"

@@ -3,8 +3,9 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 // API基础配置
+// 在同一个镜像中，前后端使用相同的域名，通过nginx代理到后端
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+  baseURL: '/api',  // 使用相对路径，通过nginx代理到后端服务
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'

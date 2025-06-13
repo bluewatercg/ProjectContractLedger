@@ -2,6 +2,32 @@
 
 基于Midway框架重构的现代化客户合同管理系统，采用前后端分离架构。
 
+## 🚀 快速部署 (推荐)
+
+**使用GitHub Actions自动构建的Docker镜像，支持外部MySQL和Redis的一键部署方案。**
+
+### 生产环境快速部署
+```bash
+# 1. 下载部署脚本
+wget https://raw.githubusercontent.com/bluewatercg/projectcontractledger/main/deploy-simple.sh
+chmod +x deploy-simple.sh
+
+# 2. 初始化部署环境
+./deploy-simple.sh --init
+
+# 3. 配置数据库信息（编辑 .env.external-simple 文件）
+# 填写MySQL和Redis连接信息
+
+# 4. 启动服务
+./deploy-simple.sh
+```
+
+**访问地址**: http://your-server-ip
+
+详细部署指南: [快速部署指南.md](./快速部署指南.md) | [GitHub Actions部署指南](./docs/GitHub_Actions_部署指南.md)
+
+---
+
 ## 技术栈
 
 ### 后端 (midway-backend)
