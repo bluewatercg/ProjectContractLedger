@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户合同管理系统 - 客户详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex">
+        <!-- 侧边栏 -->
+        <aside class="w-64 bg-blue-800 text-white p-4 hidden md:block">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold">合同管理系统</h1>
+                <p class="text-sm text-blue-200">单用户版</p>
+            </div>
+            
+            <nav>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="customers.html" class="flex items-center p-2 rounded bg-blue-700">
+                            <i class="fas fa-users mr-3"></i>
+                            <span>客户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="contracts.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-file-contract mr-3"></i>
+                            <span>合同管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="invoices.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-file-invoice mr-3"></i>
+                            <span>开票管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="payments.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-money-bill-wave mr-3"></i>
+                            <span>到款管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="notifications.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-bell mr-3"></i>
+                            <span>提醒中心</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航 -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between p-4">
+                    <div class="flex items-center md:hidden">
+                        <button class="text-gray-500 focus:outline-none">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="relative">
+                            <button class="flex items-center text-gray-500 focus:outline-none">
+                                <i class="fas fa-bell mr-1"></i>
+                                <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        <div class="ml-4 relative">
+                            <div class="flex items-center">
+                                <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                <!-- 图片来源: Unsplash -->
+                                <span class="ml-2 text-gray-700">John Doe</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <div>
+                        <div class="flex items-center">
+                            <a href="customers.html" class="text-blue-600 hover:text-blue-800 mr-2">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-800">上海科技有限公司</h1>
+                        </div>
+                        <p class="text-gray-600">客户详细信息</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <a href="customer-edit.html" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-edit mr-2"></i>
+                            <span>编辑客户</span>
+                        </a>
+                        <a href="contract-create.html" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-file-signature mr-2"></i>
+                            <span>创建合同</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 客户信息卡片 -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                    <div class="p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">基本信息</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">客户名称</p>
+                                <p class="text-gray-800">上海科技有限公司</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">联系人</p>
+                                <p class="text-gray-800">张三</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">联系电话</p>
+                                <p class="text-gray-800">13800138000</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">电子邮箱</p>
+                                <p class="text-gray-800">zhangsan@example.com</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">地址</p>
+                                <p class="text-gray-800">上海市浦东新区张江高科技园区科苑路88号</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">客户类型</p>
+                                <p class="text-gray-800">企业客户</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-800">开票信息</h2>
+                            <a href="customer-invoice-info.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                                <i class="fas fa-edit mr-1"></i>
+                                <span>管理开票信息</span>
+                            </a>
+                        </div>
+                        <!-- 默认开票信息 -->
+                        <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
+                            <div class="flex items-center mb-2">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 mr-2">默认</span>
+                                <h3 class="font-medium text-gray-900">上海科技有限公司</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <span class="text-gray-500">纳税人识别号：</span>
+                                    <span class="text-gray-800 font-medium">91310000XXXXXXXX3B</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">开户行及账号：</span>
+                                    <span class="text-gray-800">中国银行上海分行 622848XXXXXXXXXX</span>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <span class="text-gray-500">地址电话：</span>
+                                    <span class="text-gray-800">上海市浦东新区张江高科技园区科苑路88号 021-88889999</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 其他开票信息 -->
+                        <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
+                            <h3 class="font-medium text-gray-900 mb-2">上海科技有限公司上海分公司</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <span class="text-gray-500">纳税人识别号：</span>
+                                    <span class="text-gray-800">91310000XXXXXXXX4C</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">开户行及账号：</span>
+                                    <span class="text-gray-800">工商银行上海分行 621226XXXXXXXXXX</span>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <span class="text-gray-500">地址电话：</span>
+                                    <span class="text-gray-800">上海市静安区南京西路1266号 021-66667777</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2 flex items-center justify-between">
+                            <div>
+                                <i class="fas fa-info-circle mr-1"></i> 共有 3 条开票信息
+                            </div>
+                            <a href="customer-invoice-info.html" class="text-sm text-blue-600 hover:text-blue-800">
+                                查看全部 <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">附加信息</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">创建时间</p>
+                                <p class="text-gray-800">2023-01-15</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">最近更新</p>
+                                <p class="text-gray-800">2023-05-20</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">合同数量</p>
+                                <p class="text-gray-800">3</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">备注</h2>
+                        <p class="text-gray-800">该客户是我们的长期合作伙伴，主要从事软件开发和技术服务。客户对服务质量要求较高，注重交付时效。</p>
+                    </div>
+                </div>
+
+                <!-- 关联合同 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">关联合同</h2>
+                        <a href="contract-create.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                            <i class="fas fa-plus mr-1"></i>
+                            <span>新建合同</span>
+                        </a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合同编号</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">合同名称</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金额</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">签订日期</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">到期日期</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            <a href="contract-detail.html">HT-2023-0015</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">技术服务合同</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥120,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-01-20</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-06-15</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">履行中</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex space-x-2">
+                                                <a href="contract-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            <a href="contract-detail.html">HT-2022-0042</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">软件开发合同</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥200,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2022-08-15</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-02-15</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">已完成</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex space-x-2">
+                                                <a href="contract-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                            <a href="contract-detail.html">HT-2022-0028</a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">咨询服务合同</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥80,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2022-05-10</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2022-11-10</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">已归档</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex space-x-2">
+                                                <a href="contract-detail.html" class="text-blue-600 hover:text-blue-900">查看</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 联系记录 -->
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">联系记录</h2>
+                        <button class="text-blue-600 hover:text-blue-800 flex items-center">
+                            <i class="fas fa-plus mr-1"></i>
+                            <span>添加记录</span>
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <ul class="divide-y divide-gray-200">
+                            <li class="p-4 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                        <!-- 图片来源: Unsplash -->
+                                    </div>
+                                    <div class="ml-3 flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm font-medium text-gray-900">电话沟通</p>
+                                            <p class="text-sm text-gray-500">2023-05-20</p>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">与张三讨论了合同续签事宜，对方表示有意向继续合作，但希望调整部分服务内容。</p>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="p-4 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                        <!-- 图片来源: Unsplash -->
+                                    </div>
+                                    <div class="ml-3 flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm font-medium text-gray-900">邮件沟通</p>
+                                            <p class="text-sm text-gray-500">2023-04-15</p>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">发送了项目进度报告，客户对当前进展表示满意。</p>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="p-4 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                        <!-- 图片来源: Unsplash -->
+                                    </div>
+                                    <div class="ml-3 flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm font-medium text-gray-900">现场会议</p>
+                                            <p class="text-sm text-gray-500">2023-03-10</p>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">拜访客户公司，与技术团队讨论了项目实施方案，确定了关键里程碑。</p>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
