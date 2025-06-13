@@ -29,11 +29,15 @@ COPY midway-frontend/yarn.lock ./frontend/
 
 # 安装后端依赖
 WORKDIR /app/backend
-RUN yarn install --network-timeout 100000 || npm install
+RUN echo "Installing backend dependencies..." && \
+    yarn install --network-timeout 100000 --verbose || \
+    (echo "Yarn failed, trying npm..." && npm install --verbose)
 
 # 安装前端依赖
 WORKDIR /app/frontend
-RUN yarn install --network-timeout 100000 || npm install
+RUN echo "Installing frontend dependencies..." && \
+    yarn install --network-timeout 100000 --verbose || \
+    (echo "Yarn failed, trying npm..." && npm install --verbose)
 
 # 复制源代码
 WORKDIR /app
