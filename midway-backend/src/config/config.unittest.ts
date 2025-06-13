@@ -18,24 +18,11 @@ export default {
   typeorm: {
     dataSource: {
       default: {
-        type: 'mysql',
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        username: process.env.DB_USERNAME || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_DATABASE || 'contract_ledger',
-        synchronize: false,
-        migrationsRun: false,
-        logging: process.env.NODE_ENV === 'local', // 根据环境变量决定是否记录日志
+        type: 'sqlite',
+        database: ':memory:', // 使用内存数据库
+        synchronize: true, // 单元测试时自动同步实体
+        logging: false,
         entities: ['**/entity/*.entity{.ts,.js}'],
-        timezone: '+08:00',
-        // 连接池配置
-        extra: {
-          connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10'),
-          queueLimit: 0,
-          reconnect: true,
-          connectTimeout: 60000,
-        },
       },
     },
   },
