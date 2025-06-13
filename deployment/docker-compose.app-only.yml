@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # 应用服务 - 仅应用容器，使用外部MySQL、Redis和反向代理
+  app:
+    image: ghcr.io/bluewatercg/projectcontractledger:latest
+    container_name: contract-ledger-app
+    ports:
+      - "${APP_HTTP_PORT:-8000}:80"      # 前端端口
+      - "${APP_API_PORT:-8080}:8080"     # API端口
+    environment:
+      - NODE_ENV=production
+      # 外部MySQL数据库配置
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      # 外部Redis配置
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-0}
+      # JWT配置
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      # 应用配置
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PORT=8080
+      # 文件存储配置
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=${MINIO_BUCKET:-contract-ledger}
+      # 性能配置
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      # 安全配置
+      - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-5}
+      - ACCOUNT_LOCKOUT_DURATION=${ACCOUNT_LOCKOUT_DURATION:-30}
+      - PASSWORD_MIN_LENGTH=${PASSWORD_MIN_LENGTH:-8}
+      # 时区配置
+      - TZ=${TZ:-Asia/Shanghai}
+      # 反向代理相关配置
+      - TRUST_PROXY=${TRUST_PROXY:-true}
+      - PROXY_TIMEOUT=${PROXY_TIMEOUT:-30000}
+    restart: unless-stopped
+    volumes:
+      - app_logs:/app/logs
+      - app_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # 网络模式：使用主机网络或桥接网络
+    network_mode: ${NETWORK_MODE:-bridge}
+    # 如果使用桥接网络，可以指定网络
+    # networks:
+    #   - contract-ledger-network
+
+# 数据卷
+volumes:
+  app_logs:
+    driver: local
+  app_uploads:
+    driver: local
+
+# 网络配置（如果需要）
+# networks:
+#   contract-ledger-network:
+#     driver: bridge
