@@ -33,6 +33,13 @@ else
     echo "❌ 后端代码格式仍有问题，请手动检查"
 fi
 
+echo "运行简单测试..."
+if yarn jest test/controller/simple.test.ts; then
+    echo "✅ 后端简单测试通过"
+else
+    echo "❌ 后端测试失败，请检查代码"
+fi
+
 cd ..
 
 # 修复前端代码格式

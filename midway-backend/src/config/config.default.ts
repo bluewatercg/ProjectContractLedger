@@ -32,8 +32,9 @@ export default {
         // 连接池配置
         extra: {
           connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10'),
-          acquireTimeout: 60000,
-          timeout: 60000,
+          queueLimit: 0,
+          reconnect: true,
+          connectTimeout: 60000,
         },
       },
     },

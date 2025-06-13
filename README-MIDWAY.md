@@ -182,15 +182,52 @@ yarn install
 - **用户**: millerchen
 - **密码**: c3TyBrus2OmLeeIu
 
-如需修改数据库配置，请编辑 `midway-backend/.env` 文件：
+### 环境配置说明
+
+系统支持多环境配置，根据不同环境使用不同的配置文件：
+
+#### 开发环境 (NODE_ENV=local)
+```bash
+cp .env.local.template .env.local
+```
+
+#### 测试环境 (NODE_ENV=unittest)
+```bash
+cp .env.unittest.template .env.unittest
+```
+
+#### 生产环境 (NODE_ENV=production)
+```bash
+cp .env.external-simple.template .env.external-simple
+```
+
+编辑对应的环境配置文件：
 ```env
+# 环境标识
+NODE_ENV=local
+
+# 数据库配置
 DB_HOST=mysql.sqlpub.com
 DB_PORT=3306
 DB_USERNAME=millerchen
 DB_PASSWORD=c3TyBrus2OmLeeIu
 DB_DATABASE=procontractledger
+
+# Redis配置
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# JWT配置
 JWT_SECRET=your-super-secret-jwt-key
 ```
+
+**配置说明**：
+- 不同环境使用相同的配置结构
+- 只需要修改数据库连接信息和环境标志
+- 测试环境建议使用独立的数据库名称（如 `contract_ledger_test`）
+- 测试环境可以使用不同的Redis数据库编号（如 `REDIS_DB=1`）
 
 ### 3. 启动服务
 

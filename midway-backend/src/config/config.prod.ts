@@ -21,9 +21,9 @@ export default {
         // 生产环境连接池配置
         extra: {
           connectionLimit: parseInt(process.env.DB_POOL_SIZE || '20'),
-          acquireTimeout: 60000,
-          timeout: 60000,
+          queueLimit: 0,
           reconnect: true,
+          connectTimeout: 60000,
         },
       },
     },
@@ -42,6 +42,7 @@ export default {
       // 生产环境连接配置
       connectTimeout: 10000,
       lazyConnect: true,
+      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
     },
   },
