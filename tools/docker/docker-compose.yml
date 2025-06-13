@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: contract-ledger-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: contract_ledger
+      MYSQL_USER: contract_user
+      MYSQL_PASSWORD: contract_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/scripts:/docker-entrypoint-initdb.d
+    networks:
+      - contract-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 应用服务（前后端合并）
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: contract-ledger-app
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=contract_user
+      - DB_PASSWORD=contract_pass
+      - DB_DATABASE=contract_ledger
+      - BACKEND_PORT=8080
+    ports:
+      - "80:80"
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - contract-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_data:
+
+networks:
+  contract-network:
+    driver: bridge

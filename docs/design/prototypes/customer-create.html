@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户合同管理系统 - 新增客户</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex">
+        <!-- 侧边栏 -->
+        <aside class="w-64 bg-blue-800 text-white p-4 hidden md:block">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold">合同管理系统</h1>
+                <p class="text-sm text-blue-200">单用户版</p>
+            </div>
+            
+            <nav>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="customers.html" class="flex items-center p-2 rounded bg-blue-700">
+                            <i class="fas fa-users mr-3"></i>
+                            <span>客户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="contracts.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-file-contract mr-3"></i>
+                            <span>合同管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="invoices.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-file-invoice mr-3"></i>
+                            <span>开票管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="payments.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-money-bill-wave mr-3"></i>
+                            <span>到款管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="notifications.html" class="flex items-center p-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-bell mr-3"></i>
+                            <span>提醒中心</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航 -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between p-4">
+                    <div class="flex items-center md:hidden">
+                        <button class="text-gray-500 focus:outline-none">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="relative">
+                            <button class="flex items-center text-gray-500 focus:outline-none">
+                                <i class="fas fa-bell mr-1"></i>
+                                <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        <div class="ml-4 relative">
+                            <div class="flex items-center">
+                                <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="用户头像">
+                                <!-- 图片来源: Unsplash -->
+                                <span class="ml-2 text-gray-700">John Doe</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">新增客户</h1>
+                    <p class="text-gray-600">添加新的客户信息到系统</p>
+                </div>
+
+                <!-- 表单 -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden p-6">
+                    <form>
+                        <!-- 基本信息 -->
+                        <div class="mb-6">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">基本信息</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">客户名称 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="customer-name" name="customer-name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                </div>
+                                <div>
+                                    <label for="customer-type" class="block text-sm font-medium text-gray-700 mb-1">客户类型</label>
+                                    <select id="customer-type" name="customer-type" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">请选择类型</option>
+                                        <option value="1">企业客户</option>
+                                        <option value="2">个人客户</option>
+                                        <option value="3">政府/事业单位</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="contact-person" class="block text-sm font-medium text-gray-700 mb-1">联系人</label>
+                                    <input type="text" id="contact-person" name="contact-person" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="contact-phone" class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+                                    <input type="tel" id="contact-phone" name="contact-phone" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="contact-email" class="block text-sm font-medium text-gray-700 mb-1">电子邮箱</label>
+                                    <input type="email" id="contact-email" name="contact-email" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="address" class="block text-sm font-medium text-gray-700 mb-1">地址</label>
+                                    <input type="text" id="address" name="address" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 联系人信息 -->
+                        <div class="mb-6">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">主要联系人</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="contact-name" class="block text-sm font-medium text-gray-700 mb-1">姓名 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="contact-name" name="contact-name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                </div>
+                                <div>
+                                    <label for="contact-position" class="block text-sm font-medium text-gray-700 mb-1">职位</label>
+                                    <input type="text" id="contact-position" name="contact-position" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="contact-phone" class="block text-sm font-medium text-gray-700 mb-1">电话 <span class="text-red-500">*</span></label>
+                                    <input type="tel" id="contact-phone" name="contact-phone" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                </div>
+                                <div>
+                                    <label for="contact-email" class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                                    <input type="email" id="contact-email" name="contact-email" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="contact-wechat" class="block text-sm font-medium text-gray-700 mb-1">微信</label>
+                                    <input type="text" id="contact-wechat" name="contact-wechat" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="contact-birthday" class="block text-sm font-medium text-gray-700 mb-1">生日</label>
+                                    <input type="date" id="contact-birthday" name="contact-birthday" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 财务信息 -->
+                        <div class="mb-6">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">财务信息</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="bank-name" class="block text-sm font-medium text-gray-700 mb-1">开户银行</label>
+                                    <input type="text" id="bank-name" name="bank-name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="bank-account" class="block text-sm font-medium text-gray-700 mb-1">银行账号</label>
+                                    <input type="text" id="bank-account" name="bank-account" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="tax-number" class="block text-sm font-medium text-gray-700 mb-1">税号</label>
+                                    <input type="text" id="tax-number" name="tax-number" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="invoice-title" class="block text-sm font-medium text-gray-700 mb-1">发票抬头</label>
+                                    <input type="text" id="invoice-title" name="invoice-title" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 备注 -->
+                        <div class="mb-6">
+                            <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                            <textarea id="notes" name="notes" rows="4" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+
+                        <!-- 按钮 -->
+                        <div class="flex justify-end space-x-4">
+                            <a href="customers.html" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                取消
+                            </a>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
