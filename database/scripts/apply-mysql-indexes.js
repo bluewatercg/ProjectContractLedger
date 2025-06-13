@@ -29,7 +29,7 @@ async function applyIndexes() {
     console.log('✅ 数据库连接成功');
 
     // 读取索引SQL文件
-    const sqlFile = path.join(__dirname, '../database/migrations/add_performance_indexes.sql');
+    const sqlFile = path.join(__dirname, '../migrations/add_performance_indexes.sql');
     
     if (!fs.existsSync(sqlFile)) {
       throw new Error(`索引文件不存在: ${sqlFile}`);
