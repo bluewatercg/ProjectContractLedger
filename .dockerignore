@@ -80,11 +80,17 @@ docker-compose*.yml
 # GitHub Actions
 .github
 
-# 开发脚本
-scripts
+# 开发脚本（排除大部分，但保留Docker需要的启动脚本）
+scripts/build
+scripts/utils
+scripts/dev/start-dev.bat
+scripts/dev/start-dev.ps1
+scripts/dev/start-dev.sh
+scripts/dev/start-simple.bat
+# 保留Docker需要的启动脚本
+# scripts/dev/start.sh
 start-*.bat
 start-*.ps1
-start-*.sh
 
 # 数据库相关
 database
