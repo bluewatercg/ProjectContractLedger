@@ -43,10 +43,10 @@
 ## 部署准备
 
 ### 1. 环境要求
-- Docker 和 Docker Compose
-- 外部MySQL服务器
-- 外部Redis服务器
-- 网络连接到GitHub Container Registry
+- **生产服务器**: Docker 和 Docker Compose
+- **外部MySQL服务器**: 已配置并可访问
+- **外部Redis服务器**: 已配置并可访问
+- **网络连接**: 能够访问GitHub Container Registry (ghcr.io)
 
 ### 2. 获取部署文件
 

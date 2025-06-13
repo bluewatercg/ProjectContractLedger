@@ -111,6 +111,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
+        # 添加构建参数用于调试
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
 
     - name: Image digest and deployment info
       run: |

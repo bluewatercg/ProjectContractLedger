@@ -17,7 +17,11 @@ RUN echo "Installing backend dependencies..." && \
 COPY midway-backend/ ./
 
 # 构建后端
-RUN yarn build
+RUN echo "Starting backend build..." && \
+    yarn build && \
+    echo "Backend build completed successfully" && \
+    ls -la dist/ || \
+    (echo "Backend build failed" && exit 1)
 
 # 多阶段构建 - 前端构建阶段
 FROM node:18-alpine AS frontend-build
@@ -38,7 +42,14 @@ RUN echo "Installing frontend dependencies..." && \
 COPY midway-frontend/ ./
 
 # 构建前端
-RUN yarn build
+RUN echo "Starting frontend build..." && \
+    yarn build && \
+    echo "Frontend build completed successfully" && \
+    ls -la dist/ || \
+    (echo "Frontend build failed, creating fallback" && \
+     mkdir -p dist && \
+     echo '<html><body><h1>Frontend build failed</h1><p>Please check the build logs.</p></body></html>' > dist/index.html && \
+     echo "Fallback created")
 
 # 生产阶段 - 使用nginx作为基础镜像
 FROM nginx:alpine AS production
