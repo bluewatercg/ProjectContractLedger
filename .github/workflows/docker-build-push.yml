@@ -43,6 +43,11 @@ jobs:
         cd midway-frontend
         yarn install --network-timeout 100000
 
+    - name: Fix backend code formatting
+      run: |
+        cd midway-backend
+        yarn lint:fix
+
     - name: Run backend linting
       run: |
         cd midway-backend

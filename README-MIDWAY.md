@@ -236,7 +236,19 @@ yarn dev
 - **密码**: admin123
 - **角色**: 管理员
 
-### 6. 测试API
+### 6. 代码格式化
+
+在提交代码前，建议运行格式化脚本：
+```bash
+# Linux/Mac
+chmod +x fix-format.sh
+./fix-format.sh
+
+# Windows
+fix-format.bat
+```
+
+### 7. 测试API
 
 运行API测试脚本验证后端服务：
 ```bash

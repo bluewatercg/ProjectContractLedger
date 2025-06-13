@@ -6,7 +6,9 @@ export default {
   koa: {
     port: parseInt(process.env.BACKEND_PORT || '8080'),
     cors: {
-      origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+      origin: process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',')
+        : '*',
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
@@ -36,6 +38,7 @@ export default {
       },
     },
   },
+
   // JWT 配置
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
