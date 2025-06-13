@@ -44,7 +44,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile.simple
+        file: ./tools/docker/Dockerfile
         push: false  # 只构建不推送，用于测试
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -56,7 +56,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile
+        file: ./tools/docker/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

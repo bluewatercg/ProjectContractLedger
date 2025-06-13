@@ -66,21 +66,24 @@ chmod +x deploy-simple.sh
 
 ```
 ProjectContractLedger/
-├── midway-backend/          # 后端服务 (端口: 8080)
-│   ├── src/
-│   │   ├── controller/      # API控制器
-│   │   ├── service/         # 业务逻辑层
-│   │   ├── entity/          # 数据实体
-│   │   ├── middleware/      # 中间件
-│   │   └── config/          # 配置文件
-├── midway-frontend/         # 前端应用 (端口: 8000)
-│   ├── src/
-│   │   ├── views/           # 页面组件
-│   │   ├── components/      # 通用组件
-│   │   ├── api/             # API接口
-│   │   └── stores/          # 状态管理
+├── apps/                    # 应用程序
+│   ├── backend/             # 后端服务 (端口: 8080)
+│   │   ├── src/
+│   │   │   ├── controller/  # API控制器
+│   │   │   ├── service/     # 业务逻辑层
+│   │   │   ├── entity/      # 数据实体
+│   │   │   ├── middleware/  # 中间件
+│   │   │   └── config/      # 配置文件
+│   └── frontend/            # 前端应用 (端口: 8000)
+│       ├── src/
+│       │   ├── views/       # 页面组件
+│       │   ├── components/  # 通用组件
+│       │   ├── api/         # API接口
+│       │   └── stores/      # 状态管理
 ├── database/               # 数据库相关
 ├── docs/                   # 项目文档
+├── scripts/                # 项目脚本
+├── tools/                  # 工具和配置
 └── deployment/             # 部署配置
 ```
 
@@ -106,18 +109,20 @@ yarn install-all
 ### 3. 配置环境
 ```bash
 # 复制环境配置文件
-cp midway-backend/.env.local.template midway-backend/.env.local
+cp apps/backend/.env.local.template apps/backend/.env.local
 # 编辑配置文件，填写数据库信息
 ```
 
 ### 4. 启动服务
 ```bash
 # Windows
-start-dev.bat
+scripts/dev/start-simple.bat
+
+# Windows PowerShell (推荐)
+yarn start-ps
 
 # Linux/Mac
-chmod +x start-dev.sh
-./start-dev.sh
+yarn start-sh
 ```
 
 ### 5. 访问应用
@@ -208,15 +213,17 @@ curl http://localhost:8080/api/v1/statistics/dashboard
 curl -X DELETE http://localhost:8080/api/v1/statistics/cache/clear
 
 # 查看日志
-tail -f midway-backend/logs/midway-core.log
+tail -f apps/backend/logs/midway-core.log
 ```
 
 ## 📚 文档链接
 
-- [API开发指南](./docs/API_Development_Guide.md)
-- [数据库设计](./docs/Database_Design.md)
-- [部署指南](./docs/Docker_Deployment.md)
-- [业务状态说明](./docs/业务状态关系说明.md)
+- [API开发指南](./docs/development/API_Development_Guide.md)
+- [数据库设计](./docs/development/Database_Design.md)
+- [部署指南](./docs/development/Docker_Deployment.md)
+- [业务状态说明](./docs/user-guide/业务状态关系说明.md)
+- [启动指南](./docs/user-guide/启动指南.md)
+- [项目结构说明](./docs/user-guide/项目结构说明-新版.md)
 
 ## 🤝 贡献指南
 
@@ -284,13 +291,13 @@ MINIO_BUCKET=qiji/ProjectContractLedger
 ### 日志管理
 ```bash
 # 查看应用日志
-tail -f midway-backend/logs/midway-core.log
+tail -f apps/backend/logs/midway-core.log
 
 # 查看错误日志
-tail -f midway-backend/logs/common-error.log
+tail -f apps/backend/logs/common-error.log
 
 # 查看访问日志
-tail -f midway-backend/logs/midway-web.log
+tail -f apps/backend/logs/midway-web.log
 ```
 
 ### 健康检查
@@ -372,13 +379,13 @@ curl http://localhost:8080/api/v1/statistics/cache/status
 - 💬 [讨论区](https://github.com/bluewatercg/projectcontractledger/discussions)
 
 ### 贡献代码
-- 🔧 [开发指南](./docs/API_Development_Guide.md)
-- 📋 [代码规范](./docs/Code_Standards.md)
+- 🔧 [开发指南](./docs/development/API_Development_Guide.md)
+- 📋 [代码规范](./docs/development/Code_Standards.md)
 - 🧪 [测试指南](./testing/docs/Testing_Guide.md)
 
 ### 版本发布
 - 📦 [发布说明](https://github.com/bluewatercg/projectcontractledger/releases)
-- 🗺️ [开发路线图](./docs/Roadmap.md)
+- 🗺️ [开发路线图](./docs/user-guide/Roadmap.md)
 - 📊 [更新日志](./CHANGELOG.md)
 
 ---
