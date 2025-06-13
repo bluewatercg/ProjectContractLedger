@@ -25,8 +25,8 @@ services:
   # 应用服务（前后端合并）
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../../ # 设置构建上下文为项目根目录
+      dockerfile: apps/backend/Dockerfile # 指向后端应用的Dockerfile
     container_name: contract-ledger-app
     environment:
       - NODE_ENV=production
