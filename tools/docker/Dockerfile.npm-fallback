@@ -23,7 +23,7 @@ RUN echo "Starting backend build..." && \
     ls -la dist/ || \
     (echo "Backend build failed" && exit 1)
 
-# 多阶段构建 - 前端构建阶段
+# 多阶段构建 - 前端构建阶段（使用npm避免权限问题）
 FROM node:18-alpine AS frontend-build
 
 WORKDIR /app/frontend
@@ -31,7 +31,7 @@ WORKDIR /app/frontend
 # 安装必要的构建工具
 RUN apk add --no-cache python3 make g++
 
-# 复制前端package.json（优先使用npm避免权限问题）
+# 复制前端package.json
 COPY apps/frontend/package.json ./
 
 # 使用npm安装依赖（避免yarn权限问题）
