@@ -45,24 +45,7 @@ RUN echo "Installing frontend dependencies..." && \
 COPY apps/frontend/ ./
 
 # 构建前端
-RUN echo "Starting frontend build..." && \
-    yarn build && \
-    echo "Frontend build completed successfully" && \
-    echo "Checking build output..." && \
-    ls -la dist/ && \
-    if [ ! -f "dist/index.html" ]; then \
-        echo "ERROR: Frontend build failed - index.html not found"; \
-        echo "Creating fallback..."; \
-        mkdir -p dist; \
-        echo '<html><body><h1>Frontend build failed</h1><p>Please check the build logs.</p></body></html>' > dist/index.html; \
-        echo "Fallback created"; \
-    else \
-        echo "Frontend build verification successful"; \
-        echo "Build output size:"; \
-        du -sh dist/; \
-        echo "Main files:"; \
-        ls -la dist/*.html dist/assets/ 2>/dev/null || true; \
-    fi
+RUN yarn build
 
 # 生产阶段 - 使用nginx作为基础镜像
 FROM nginx:alpine AS production
