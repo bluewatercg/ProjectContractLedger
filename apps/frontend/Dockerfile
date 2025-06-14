@@ -14,10 +14,11 @@ RUN yarn install --frozen-lockfile
 COPY . .
 
 # 构建应用
-# 调试：检查vite的权限和路径
-RUN ls -l node_modules/.bin/vite \
-    && which vite \
-    && echo $PATH
+# 显式添加vite执行权限
+RUN chmod +x node_modules/.bin/vite
+
+# 调试：检查vite的权限和路径 (单独的RUN命令以确保输出)
+RUN ls -l node_modules/.bin/vite && which vite && echo $PATH
 
 # 构建应用
 RUN yarn build
