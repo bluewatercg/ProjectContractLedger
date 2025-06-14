@@ -23,7 +23,7 @@ RUN echo "Starting backend build..." && \
     ls -la dist/ || \
     (echo "Backend build failed" && exit 1)
 
-# 多阶段构建 - 前端构建阶段
+# 多阶段构建 - 前端构建阶段（使用node直接调用，避免权限问题）
 FROM node:18-alpine AS frontend-build
 
 WORKDIR /app/frontend
@@ -31,25 +31,29 @@ WORKDIR /app/frontend
 # 安装必要的构建工具
 RUN apk add --no-cache python3 make g++
 
-# 复制前端package.json（优先使用npm避免权限问题）
+# 复制前端package.json
 COPY apps/frontend/package.json ./
 
-# 使用npm安装依赖（避免yarn权限问题）
+# 使用npm安装依赖
 RUN echo "Installing frontend dependencies with npm..." && \
     npm install --verbose && \
-    echo "Frontend dependencies installed successfully" && \
-    echo "Checking installed packages..." && \
-    npm list --depth=0 | head -20
+    echo "Frontend dependencies installed successfully"
 
 # 复制前端源代码
 COPY apps/frontend/ ./
 
-# 使用node直接调用vite（完全绕过权限问题）
-RUN echo "Starting frontend build with node..." && \
+# 创建构建脚本（避免权限问题）
+RUN echo '#!/bin/sh' > build.sh && \
+    echo 'echo "Starting Vite build..."' >> build.sh && \
+    echo 'NODE_ENV=production node node_modules/vite/bin/vite.js build' >> build.sh && \
+    chmod +x build.sh
+
+# 使用构建脚本进行构建
+RUN echo "Starting frontend build..." && \
     echo "Checking vite installation..." && \
     ls -la node_modules/vite/bin/ && \
-    echo "Starting build process..." && \
-    NODE_ENV=production node node_modules/vite/bin/vite.js build && \
+    echo "Running build script..." && \
+    ./build.sh && \
     echo "Frontend build completed successfully" && \
     echo "Checking build output..." && \
     ls -la dist/ && \
