@@ -56,6 +56,18 @@ cd /app/backend
 export NODE_ENV=${NODE_ENV:-production}
 export PORT=${BACKEND_PORT:-8080}
 
+# 注入前端环境变量
+echo "注入前端环境变量..."
+if [ -f "/app/scripts/utils/inject-env-vars.sh" ]; then
+    chmod +x /app/scripts/utils/inject-env-vars.sh
+    /app/scripts/utils/inject-env-vars.sh
+elif [ -f "scripts/utils/inject-env-vars.sh" ]; then
+    chmod +x scripts/utils/inject-env-vars.sh
+    ./scripts/utils/inject-env-vars.sh
+else
+    echo "⚠️  环境变量注入脚本未找到，使用默认配置"
+fi
+
 # 显示配置信息（不显示敏感信息）
 echo "Configuration:"
 echo "  NODE_ENV: $NODE_ENV"

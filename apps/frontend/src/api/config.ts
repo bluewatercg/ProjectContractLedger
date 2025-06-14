@@ -2,10 +2,50 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
+// 运行时配置接口
+interface AppConfig {
+  API_BASE_URL?: string
+  APP_TITLE?: string
+  APP_VERSION?: string
+  BACKEND_PORT?: string
+  NODE_ENV?: string
+}
+
+// 获取运行时配置
+const getRuntimeConfig = (): AppConfig => {
+  // 尝试获取运行时注入的配置
+  if (typeof window !== 'undefined' && (window as any).__APP_CONFIG__) {
+    return (window as any).__APP_CONFIG__
+  }
+  return {}
+}
+
 // API基础配置
-// 在同一个镜像中，前后端使用相同的域名，通过nginx代理到后端
+// 支持多种部署方式的动态配置
+const getApiBaseUrl = () => {
+  const runtimeConfig = getRuntimeConfig()
+
+  // 1. 优先使用运行时配置（容器启动时注入）
+  if (runtimeConfig.API_BASE_URL) {
+    return runtimeConfig.API_BASE_URL
+  }
+
+  // 2. 使用构建时环境变量
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+
+  // 3. 在容器化部署中，前后端在同一个镜像中，通过nginx代理
+  if (import.meta.env.PROD) {
+    return '/api'  // 生产环境通过nginx代理到后端
+  }
+
+  // 4. 开发环境默认配置
+  return '/api/v1'
+}
+
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',  // 使用环境变量，开发环境为/api/v1，生产环境通过nginx代理
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
