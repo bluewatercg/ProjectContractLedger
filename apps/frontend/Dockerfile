@@ -14,6 +14,12 @@ RUN yarn install --frozen-lockfile
 COPY . .
 
 # 构建应用
+# 调试：检查vite的权限和路径
+RUN ls -l node_modules/.bin/vite \
+    && which vite \
+    && echo $PATH
+
+# 构建应用
 RUN yarn build
 
 # 生产阶段 - 使用nginx提供静态文件服务
