@@ -36,7 +36,10 @@ COPY apps/frontend/package.json apps/frontend/yarn.lock ./
 
 # 安装前端依赖
 RUN echo "Installing frontend dependencies..." && \
-    yarn install --network-timeout 100000 --verbose
+    yarn install --network-timeout 100000 --verbose && \
+    echo "Frontend dependencies installed successfully" && \
+    echo "Checking installed packages..." && \
+    yarn list --depth=0 | head -20
 
 # 复制前端源代码
 COPY apps/frontend/ ./
@@ -45,11 +48,21 @@ COPY apps/frontend/ ./
 RUN echo "Starting frontend build..." && \
     yarn build && \
     echo "Frontend build completed successfully" && \
-    ls -la dist/ || \
-    (echo "Frontend build failed, creating fallback" && \
-     mkdir -p dist && \
-     echo '<html><body><h1>Frontend build failed</h1><p>Please check the build logs.</p></body></html>' > dist/index.html && \
-     echo "Fallback created")
+    echo "Checking build output..." && \
+    ls -la dist/ && \
+    if [ ! -f "dist/index.html" ]; then \
+        echo "ERROR: Frontend build failed - index.html not found"; \
+        echo "Creating fallback..."; \
+        mkdir -p dist; \
+        echo '<html><body><h1>Frontend build failed</h1><p>Please check the build logs.</p></body></html>' > dist/index.html; \
+        echo "Fallback created"; \
+    else \
+        echo "Frontend build verification successful"; \
+        echo "Build output size:"; \
+        du -sh dist/; \
+        echo "Main files:"; \
+        ls -la dist/*.html dist/assets/ 2>/dev/null || true; \
+    fi
 
 # 生产阶段 - 使用nginx作为基础镜像
 FROM nginx:alpine AS production
@@ -72,6 +85,18 @@ COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
 
 # 复制前端构建产物
 COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
+
+# 验证前端文件复制
+RUN echo "Verifying frontend files..." && \
+    ls -la /usr/share/nginx/html/ && \
+    if [ ! -f "/usr/share/nginx/html/index.html" ]; then \
+        echo "ERROR: Frontend index.html not found after copy"; \
+        exit 1; \
+    else \
+        echo "Frontend files copied successfully"; \
+        echo "Frontend directory size:"; \
+        du -sh /usr/share/nginx/html/; \
+    fi
 
 # 复制nginx配置
 COPY tools/nginx/nginx.conf /etc/nginx/nginx.conf
