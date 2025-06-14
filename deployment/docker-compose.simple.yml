@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # 应用服务（前后端合并，使用外部MySQL和Redis）
+  app:
+    image: ghcr.io/bluewatercg/projectcontractledger:latest
+    container_name: contract-ledger-app
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "80:80"      # 前端HTTP端口
+      - "8080:8080"  # 后端API端口
+    
+    # 环境变量配置（从.env文件读取）
+    environment:
+      # 基础配置
+      - NODE_ENV=${NODE_ENV:-production}
+      - BACKEND_PORT=${BACKEND_PORT:-8080}
+      - FRONTEND_HTTP_PORT=${FRONTEND_HTTP_PORT:-80}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      
+      # 数据库配置（外部MySQL）
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-20}
+      
+      # Redis配置（外部Redis）
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-13}
+      
+      # JWT配置
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+    
+    # 数据卷（持久化日志和上传文件）
+    volumes:
+      - app_logs:/var/log/app
+      - app_uploads:/app/uploads
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # 资源限制（可根据服务器配置调整）
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+# 数据卷
+volumes:
+  app_logs:
+    driver: local
+  app_uploads:
+    driver: local
+
+# 使用说明：
+# 1. 将您的环境配置保存为 .env 文件
+# 2. 运行命令：docker-compose -f deployment/docker-compose.simple.yml up -d
+# 3. 查看日志：docker-compose -f deployment/docker-compose.simple.yml logs -f app
+# 4. 停止服务：docker-compose -f deployment/docker-compose.simple.yml down
+# 5. 访问应用：
+#    - 前端：http://您的服务器IP
+#    - 后端API：http://您的服务器IP:8080
+#    - 健康检查：http://您的服务器IP/health

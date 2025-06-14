@@ -1,37 +1,55 @@
 version: '3.8'
 
 services:
-  # 应用服务
+  # 应用服务 - 仅应用容器，使用外部MySQL、Redis和反向代理
   app:
-    image: ghcr.io/bluewatercg/projectcontractledger:latest
+    image: ghcr.milu.moe/bluewatercg/projectcontractledger:latest
     container_name: contract-ledger-app
+    restart: unless-stopped
+
+    # 端口映射（支持环境变量配置）
     ports:
-      - "80:80"
-      - "8080:8080"
+      - "${APP_HTTP_PORT:-8000}:80"
+      - "${APP_API_PORT:-8080}:8080"
+
+    # 环境变量配置
     environment:
+      # 基础配置
       - NODE_ENV=production
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_USERNAME=${DB_USERNAME:-contract_user}
+
+      # 外部MySQL数据库配置
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_DATABASE=${DB_DATABASE:-contract_ledger}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-20}
+
+      # 外部Redis配置
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-13}
+
+      # JWT配置
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+
+      # 应用配置
+      - BACKEND_PORT=${APP_API_PORT:-8080}
+      - FRONTEND_HTTP_PORT=${APP_HTTP_PORT:-8000}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      # 文件存储配置
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - MINIO_BUCKET=${MINIO_BUCKET:-contract-ledger}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - contract-ledger-network
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+
+      # 时区配置
+      - TZ=${TZ:-Asia/Shanghai}
+
+    # 数据卷（匹配生产环境配置）
     volumes:
       - app_logs:/app/logs
+      - app_uploads:/app/uploads
+
+    # 健康检查
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
@@ -39,53 +57,20 @@ services:
       retries: 3
       start_period: 40s
 
-  # 数据库服务
-  db:
-    image: mysql:8.0
-    container_name: contract-ledger-db
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${DB_DATABASE:-contract_ledger}
-      - MYSQL_USER=${DB_USERNAME:-contract_user}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-      - MYSQL_CHARSET=utf8mb4
-      - MYSQL_COLLATION=utf8mb4_unicode_ci
-    volumes:
-      - db_data:/var/lib/mysql
-      - db_logs:/var/log/mysql
-      - ./database/scripts:/docker-entrypoint-initdb.d:ro
-      - ./database/config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
-    ports:
-      - "3306:3306"
-    restart: unless-stopped
-    networks:
-      - contract-ledger-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    command: --default-authentication-plugin=mysql_native_password
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
-  # Redis缓存服务（可选）
-  redis:
-    image: redis:7-alpine
-    container_name: contract-ledger-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    restart: unless-stopped
-    networks:
-      - contract-ledger-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    command: redis-server /usr/local/etc/redis/redis.conf
+    # 网络模式：使用主机网络或桥接网络
+    network_mode: ${NETWORK_MODE:-bridge}
+
+  # 注意：使用外部MySQL和Redis服务器，不需要容器化数据库服务
 
   # Nginx反向代理（可选）
   nginx:
@@ -149,13 +134,9 @@ services:
 
 # 数据卷
 volumes:
-  db_data:
-    driver: local
-  db_logs:
-    driver: local
-  redis_data:
-    driver: local
   app_logs:
+    driver: local
+  app_uploads:
     driver: local
   nginx_logs:
     driver: local

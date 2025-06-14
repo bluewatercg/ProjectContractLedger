@@ -8,8 +8,12 @@ echo "=== Contract Ledger Application Starting ==="
 echo "Environment: ${NODE_ENV:-development}"
 echo "Timestamp: $(date)"
 
-# 创建日志目录
-mkdir -p /var/log/app
+# 创建日志目录（支持多个日志路径）
+mkdir -p /var/log/app /app/logs
+# 确保日志目录链接正确
+if [ ! -L /var/log/app/app ] && [ -d /app/logs ]; then
+    ln -sf /app/logs /var/log/app/app
+fi
 
 # 函数：优雅关闭
 cleanup() {
@@ -51,6 +55,15 @@ cd /app/backend
 # 设置后端环境变量
 export NODE_ENV=${NODE_ENV:-production}
 export PORT=${BACKEND_PORT:-8080}
+
+# 显示配置信息（不显示敏感信息）
+echo "Configuration:"
+echo "  NODE_ENV: $NODE_ENV"
+echo "  BACKEND_PORT: $PORT"
+echo "  DB_HOST: ${DB_HOST:-not_set}"
+echo "  DB_PORT: ${DB_PORT:-not_set}"
+echo "  REDIS_HOST: ${REDIS_HOST:-not_set}"
+echo "  REDIS_PORT: ${REDIS_PORT:-not_set}"
 
 # 启动后端服务（后台运行）
 node bootstrap.js > /var/log/app/backend.log 2>&1 &

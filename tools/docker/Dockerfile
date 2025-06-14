@@ -112,11 +112,20 @@ RUN chmod +x /start.sh
 RUN chown -R appuser:nodejs /app && \
     chown appuser:nodejs /start.sh
 
-# 创建日志目录
-RUN mkdir -p /var/log/app && \
-    chown -R appuser:nodejs /var/log/app
+# 创建日志目录和上传目录（匹配生产环境配置）
+RUN mkdir -p /app/logs /var/log/app /app/uploads && \
+    chown -R appuser:nodejs /app/logs /var/log/app /app/uploads && \
+    ln -sf /app/logs /var/log/app/app
 
-# 暴露端口
+# 设置默认环境变量（可通过docker run -e 或 .env文件覆盖）
+ENV NODE_ENV=production \
+    BACKEND_PORT=8080 \
+    FRONTEND_HTTP_PORT=80 \
+    LOG_LEVEL=info \
+    CORS_ORIGINS=* \
+    JWT_EXPIRES_IN=7d
+
+# 暴露端口（支持环境变量配置）
 EXPOSE 80 8080
 
 # 健康检查
