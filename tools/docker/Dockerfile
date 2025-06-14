@@ -38,6 +38,8 @@ COPY apps/frontend/package.json apps/frontend/yarn.lock ./
 RUN echo "Installing frontend dependencies..." && \
     yarn install --network-timeout 100000 --verbose && \
     echo "Frontend dependencies installed successfully" && \
+    echo "Fixing node_modules permissions..." && \
+    chmod -R +x node_modules/.bin/ && \
     echo "Checking installed packages..." && \
     yarn list --depth=0 | head -20
 
@@ -46,7 +48,12 @@ COPY apps/frontend/ ./
 
 # 构建前端
 RUN echo "Starting frontend build..." && \
-    yarn build && \
+    echo "Checking vite executable..." && \
+    ls -la node_modules/.bin/vite && \
+    echo "Starting build process..." && \
+    (NODE_ENV=production yarn build || \
+     echo "Yarn build failed, trying direct vite..." && \
+     NODE_ENV=production ./node_modules/.bin/vite build) && \
     echo "Frontend build completed successfully" && \
     echo "Checking build output..." && \
     ls -la dist/ && \
