@@ -9,16 +9,21 @@ COPY package.json yarn.lock ./
 
 # 安装依赖
 RUN yarn install --frozen-lockfile
+RUN npm rebuild
 
 # 复制源代码
 COPY . .
 
 # 构建应用
-# 显式添加vite执行权限
-RUN chmod +x node_modules/.bin/vite
+# 调试：列出node_modules/.bin目录内容
+RUN ls -F node_modules/.bin/
 
-# 调试：检查vite的权限和路径 (单独的RUN命令以确保输出)
-RUN ls -l node_modules/.bin/vite && which vite && echo $PATH
+# 确保node_modules/.bin在PATH中
+ENV PATH="/app/node_modules/.bin:$PATH"
+
+# 调试：检查yarn命令是否存在
+# 调试：检查vite的权限和路径
+RUN ls -l /app/node_modules/.bin/vite && which vite
 
 # 构建应用
 RUN yarn build
