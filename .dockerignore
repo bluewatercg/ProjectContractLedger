@@ -80,15 +80,22 @@ docker-compose*.yml
 # GitHub Actions
 .github
 
-# 开发脚本（排除大部分，但保留Docker需要的启动脚本）
+# 开发脚本（排除大部分，但保留Docker需要的脚本）
 scripts/build
-scripts/utils
+scripts/utils/test-*
+scripts/utils/*-test*
+scripts/utils/*-fix*
+scripts/utils/check-*
+scripts/utils/frontend-*
+scripts/utils/vite-*
+scripts/utils/npm-*
 scripts/dev/start-dev.bat
 scripts/dev/start-dev.ps1
 scripts/dev/start-dev.sh
 scripts/dev/start-simple.bat
-# 保留Docker需要的启动脚本
+# 保留Docker需要的脚本
 # scripts/dev/start.sh
+# scripts/utils/inject-env-vars.sh
 start-*.bat
 start-*.ps1
 

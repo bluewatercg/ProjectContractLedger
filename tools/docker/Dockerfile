@@ -104,10 +104,9 @@ RUN echo "Verifying frontend files..." && \
 # 复制nginx配置
 COPY tools/nginx/nginx.conf /etc/nginx/nginx.conf
 
-# 复制启动脚本和工具脚本
+# 复制启动脚本
 COPY scripts/dev/start.sh /start.sh
-COPY scripts/utils/inject-env-vars.sh /app/scripts/utils/inject-env-vars.sh
-RUN chmod +x /start.sh /app/scripts/utils/inject-env-vars.sh
+RUN chmod +x /start.sh
 
 # 更改文件所有权
 RUN chown -R appuser:nodejs /app && \

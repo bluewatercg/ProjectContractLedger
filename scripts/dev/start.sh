@@ -58,14 +58,61 @@ export PORT=${BACKEND_PORT:-8080}
 
 # 注入前端环境变量
 echo "注入前端环境变量..."
-if [ -f "/app/scripts/utils/inject-env-vars.sh" ]; then
-    chmod +x /app/scripts/utils/inject-env-vars.sh
-    /app/scripts/utils/inject-env-vars.sh
-elif [ -f "scripts/utils/inject-env-vars.sh" ]; then
-    chmod +x scripts/utils/inject-env-vars.sh
-    ./scripts/utils/inject-env-vars.sh
+
+# 前端静态文件目录
+FRONTEND_DIR="/usr/share/nginx/html"
+CONFIG_FILE="$FRONTEND_DIR/config.js"
+
+# 检查前端目录是否存在
+if [ -d "$FRONTEND_DIR" ]; then
+    echo "生成前端配置文件: $CONFIG_FILE"
+
+    # 生成前端配置文件
+    cat > "$CONFIG_FILE" << EOF
+// 运行时环境配置
+window.__APP_CONFIG__ = {
+  // API配置
+  API_BASE_URL: '${FRONTEND_API_BASE_URL:-/api}',
+
+  // 应用配置
+  APP_TITLE: '${APP_TITLE:-客户合同管理系统}',
+  APP_VERSION: '${APP_VERSION:-1.0.0}',
+
+  // 后端配置
+  BACKEND_PORT: '${BACKEND_PORT:-8080}',
+
+  // 其他配置
+  NODE_ENV: '${NODE_ENV:-production}',
+
+  // 调试信息
+  BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")',
+  CONTAINER_ID: '$(hostname)'
+};
+
+console.log('App Config Loaded:', window.__APP_CONFIG__);
+EOF
+
+    # 在index.html中注入配置脚本
+    INDEX_FILE="$FRONTEND_DIR/index.html"
+
+    if [ -f "$INDEX_FILE" ]; then
+        echo "在index.html中注入配置脚本..."
+
+        # 检查是否已经注入过
+        if ! grep -q "config.js" "$INDEX_FILE"; then
+            # 在head标签中注入配置脚本
+            sed -i 's|</head>|  <script src="/config.js"></script>\n</head>|' "$INDEX_FILE"
+            echo "✅ 配置脚本注入完成"
+        else
+            echo "✅ 配置脚本已存在"
+        fi
+    else
+        echo "⚠️  index.html文件不存在，跳过脚本注入"
+    fi
+
+    echo "✅ 前端环境变量注入完成"
 else
-    echo "⚠️  环境变量注入脚本未找到，使用默认配置"
+    echo "⚠️  前端目录不存在，跳过环境变量注入"
 fi
 
 # 显示配置信息（不显示敏感信息）
