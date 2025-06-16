@@ -45,7 +45,7 @@ export class AttachmentController {
       }
 
       const file = files[0];
-      
+
       // 验证文件类型
       if (!this.contractAttachmentService.validateFileType(file.filename)) {
         return {
@@ -110,9 +110,10 @@ export class AttachmentController {
     @Param('contractId') contractId: number
   ): Promise<ApiResponse> {
     try {
-      const attachments = await this.contractAttachmentService.getAttachmentsByContractId(
-        contractId
-      );
+      const attachments =
+        await this.contractAttachmentService.getAttachmentsByContractId(
+          contractId
+        );
 
       return {
         success: true,
@@ -178,7 +179,7 @@ export class AttachmentController {
       }
 
       const file = files[0];
-      
+
       // 验证文件类型
       if (!this.invoiceAttachmentService.validateFileType(file.filename)) {
         return {
@@ -243,9 +244,10 @@ export class AttachmentController {
     @Param('invoiceId') invoiceId: number
   ): Promise<ApiResponse> {
     try {
-      const attachments = await this.invoiceAttachmentService.getAttachmentsByInvoiceId(
-        invoiceId
-      );
+      const attachments =
+        await this.invoiceAttachmentService.getAttachmentsByInvoiceId(
+          invoiceId
+        );
 
       return {
         success: true,
@@ -321,7 +323,7 @@ export class AttachmentController {
       // 暂时跳过详细验证，实际项目中应该验证token有效性
 
       // 先尝试从合同附件中查找
-      let attachment = await this.contractAttachmentService.getAttachmentById(
+      const attachment = await this.contractAttachmentService.getAttachmentById(
         attachmentId
       );
       let fileName = '';
@@ -332,9 +334,8 @@ export class AttachmentController {
         filePath = attachment.file_path;
       } else {
         // 如果没找到，再从发票附件中查找
-        const invoiceAttachment = await this.invoiceAttachmentService.getAttachmentById(
-          attachmentId
-        );
+        const invoiceAttachment =
+          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
         if (invoiceAttachment) {
           fileName = invoiceAttachment.file_name;
           filePath = invoiceAttachment.file_path;

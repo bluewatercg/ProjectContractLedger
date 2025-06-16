@@ -36,7 +36,9 @@ export class InvoiceAttachmentService {
       ...attachmentData,
     });
 
-    const savedAttachment = await this.invoiceAttachmentRepository.save(attachment);
+    const savedAttachment = await this.invoiceAttachmentRepository.save(
+      attachment
+    );
 
     return {
       attachment_id: savedAttachment.attachment_id,
@@ -51,7 +53,9 @@ export class InvoiceAttachmentService {
   /**
    * 获取发票的所有附件
    */
-  async getAttachmentsByInvoiceId(invoiceId: number): Promise<AttachmentResponse[]> {
+  async getAttachmentsByInvoiceId(
+    invoiceId: number
+  ): Promise<AttachmentResponse[]> {
     const attachments = await this.invoiceAttachmentRepository.find({
       where: { invoice_id: invoiceId },
       order: { uploaded_at: 'DESC' },
@@ -70,7 +74,9 @@ export class InvoiceAttachmentService {
   /**
    * 根据ID获取附件
    */
-  async getAttachmentById(attachmentId: number): Promise<InvoiceAttachment | null> {
+  async getAttachmentById(
+    attachmentId: number
+  ): Promise<InvoiceAttachment | null> {
     return await this.invoiceAttachmentRepository.findOne({
       where: { attachment_id: attachmentId },
     });
@@ -106,8 +112,13 @@ export class InvoiceAttachmentService {
    * 生成文件存储路径
    */
   generateFilePath(invoiceId: number, originalName: string): string {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'invoices', invoiceId.toString());
-    
+    const uploadDir = path.join(
+      process.cwd(),
+      'uploads',
+      'invoices',
+      invoiceId.toString()
+    );
+
     // 确保目录存在
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -118,7 +129,7 @@ export class InvoiceAttachmentService {
     const ext = path.extname(originalName);
     const baseName = path.basename(originalName, ext);
     const fileName = `${baseName}_${timestamp}${ext}`;
-    
+
     return path.join(uploadDir, fileName);
   }
 

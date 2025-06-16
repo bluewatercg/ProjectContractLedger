@@ -36,7 +36,9 @@ export class ContractAttachmentService {
       ...attachmentData,
     });
 
-    const savedAttachment = await this.contractAttachmentRepository.save(attachment);
+    const savedAttachment = await this.contractAttachmentRepository.save(
+      attachment
+    );
 
     return {
       attachment_id: savedAttachment.attachment_id,
@@ -51,7 +53,9 @@ export class ContractAttachmentService {
   /**
    * 获取合同的所有附件
    */
-  async getAttachmentsByContractId(contractId: number): Promise<AttachmentResponse[]> {
+  async getAttachmentsByContractId(
+    contractId: number
+  ): Promise<AttachmentResponse[]> {
     const attachments = await this.contractAttachmentRepository.find({
       where: { contract_id: contractId },
       order: { uploaded_at: 'DESC' },
@@ -70,7 +74,9 @@ export class ContractAttachmentService {
   /**
    * 根据ID获取附件
    */
-  async getAttachmentById(attachmentId: number): Promise<ContractAttachment | null> {
+  async getAttachmentById(
+    attachmentId: number
+  ): Promise<ContractAttachment | null> {
     return await this.contractAttachmentRepository.findOne({
       where: { attachment_id: attachmentId },
     });
@@ -106,8 +112,13 @@ export class ContractAttachmentService {
    * 生成文件存储路径
    */
   generateFilePath(contractId: number, originalName: string): string {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'contracts', contractId.toString());
-    
+    const uploadDir = path.join(
+      process.cwd(),
+      'uploads',
+      'contracts',
+      contractId.toString()
+    );
+
     // 确保目录存在
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -118,7 +129,7 @@ export class ContractAttachmentService {
     const ext = path.extname(originalName);
     const baseName = path.basename(originalName, ext);
     const fileName = `${baseName}_${timestamp}${ext}`;
-    
+
     return path.join(uploadDir, fileName);
   }
 
