@@ -1,3 +1,4 @@
+
 <template>
   <div class="page-container">
     <div class="page-header">
@@ -46,6 +47,16 @@
           <div class="stat-card stat-card-purple">
             <div class="stat-label">未开票总额</div>
             <div class="stat-value">¥{{ formatCurrency(invoiceStats.uninvoicedAmount) }}</div>
+            <div v-if="invoiceStats.uninvoicedAmount > 0" class="stat-action">
+              <el-button 
+                type="primary" 
+                size="small" 
+                @click="goToCreateInvoice"
+                class="action-button"
+              >
+                去开票
+              </el-button>
+            </div>
           </div>
           <div class="stat-card stat-card-orange">
             <div class="stat-label">已收款</div>
@@ -79,32 +90,46 @@
           </el-table-column>
           <el-table-column label="收款情况" min-width="300">
             <template #default="scope">
-              <div v-if="scope.row.payments && scope.row.payments.length > 0">
-                <div v-for="payment in scope.row.payments" :key="payment.id" class="payment-item">
-                  <div class="payment-header">
-                    <div class="payment-amount">
-                      <span class="amount-text">¥{{ formatCurrency(payment.amount) }}</span>
-                      <span class="date-text">{{ formatDate(payment.payment_date) }}</span>
+              <div>
+                <!-- 收款记录列表 -->
+                <div v-if="scope.row.payments && scope.row.payments.length > 0">
+                  <div v-for="payment in scope.row.payments" :key="payment.id" class="payment-item">
+                    <div class="payment-header">
+                      <div class="payment-amount">
+                        <span class="amount-text">¥{{ formatCurrency(payment.amount) }}</span>
+                        <span class="date-text">{{ formatDate(payment.payment_date) }}</span>
+                      </div>
+                      <div class="payment-tags">
+                        <el-tag size="small" :type="getPaymentStatusType(payment.status)">
+                          {{ getPaymentStatusText(payment.status) }}
+                        </el-tag>
+                        <el-tag size="small" type="info">
+                          {{ getPaymentMethodText(payment.payment_method) }}
+                        </el-tag>
+                      </div>
                     </div>
-                    <div class="payment-tags">
-                      <el-tag size="small" :type="getPaymentStatusType(payment.status)">
-                        {{ getPaymentStatusText(payment.status) }}
-                      </el-tag>
-                      <el-tag size="small" type="info">
-                        {{ getPaymentMethodText(payment.payment_method) }}
-                      </el-tag>
+                    <div v-if="payment.reference_number" class="reference-number">
+                      参考号: {{ payment.reference_number }}
                     </div>
-                  </div>
-                  <div v-if="payment.reference_number" class="reference-number">
-                    参考号: {{ payment.reference_number }}
                   </div>
                 </div>
+                <div v-else class="text-gray-500 text-sm mb-2">暂无收款记录</div>
+
+                <!-- 收款汇总和操作按钮 -->
                 <div class="payment-summary">
                   已收: ¥{{ formatCurrency(getInvoicePaidAmount(scope.row)) }} /
                   未收: ¥{{ formatCurrency(scope.row.total_amount - getInvoicePaidAmount(scope.row)) }}
+                  <el-button
+                    v-if="scope.row.total_amount - getInvoicePaidAmount(scope.row) > 0"
+                    type="primary"
+                    size="small"
+                    @click="goToCreatePayment(scope.row.id)"
+                    class="ml-2"
+                  >
+                    去收款
+                  </el-button>
                 </div>
               </div>
-              <div v-else class="text-gray-500 text-sm">暂无收款记录</div>
             </template>
           </el-table-column>
         </el-table>
@@ -115,6 +140,13 @@
         <h3 class="text-lg font-semibold mb-4">关联发票及收款情况</h3>
         <div class="text-center py-8 text-gray-500">
           <p>该合同暂无关联发票</p>
+          <el-button
+            type="primary"
+            @click="goToCreateInvoice"
+            class="mt-4"
+          >
+            立即开票
+          </el-button>
         </div>
       </div>
     </div>
@@ -300,6 +332,16 @@ const editContract = () => {
   router.push(`/contracts/${contractId.value}/edit`)
 }
 
+// 跳转到开票页面
+const goToCreateInvoice = () => {
+  router.push(`/invoices/create?contractId=${contractId.value}`)
+}
+
+// 跳转到收款页面
+const goToCreatePayment = (invoiceId: number) => {
+  router.push(`/payments/create?invoiceId=${invoiceId}`)
+}
+
 // 返回上一页
 const goBack = () => {
   router.go(-1)
@@ -385,6 +427,14 @@ onMounted(() => {
 
 .stat-card-red .stat-value {
   color: #f56c6c;
+}
+
+.stat-action {
+  margin-top: 12px;
+}
+
+.action-button {
+  width: 100%;
 }
 
 @media (max-width: 768px) {

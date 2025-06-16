@@ -285,6 +285,12 @@ const goBack = () => {
 onMounted(() => {
   if (isEdit.value) {
     fetchInvoice()
+  } else {
+    // 新建模式下，检查是否有预填的合同ID
+    const contractId = route.query.contractId
+    if (contractId) {
+      form.contract_id = Number(contractId)
+    }
   }
 })
 </script>
