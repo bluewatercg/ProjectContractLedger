@@ -57,6 +57,8 @@ export class InvoiceService {
         tax_amount,
         total_amount,
         issue_date: DateUtil.parseDate(createInvoiceDto.issue_date),
+        // 创建发票时自动设置为已发送状态，表示已开发票
+        status: 'sent',
       });
 
       const savedInvoice = await manager.save(invoice);

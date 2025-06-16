@@ -124,7 +124,7 @@ const getInvoiceStatusType = (status: string) => {
 const getInvoiceStatusText = (status: string) => {
   const statusMap = {
     draft: '草稿',
-    sent: '已发送',
+    sent: '已开票',
     paid: '已支付',
     overdue: '逾期',
     cancelled: '已取消'

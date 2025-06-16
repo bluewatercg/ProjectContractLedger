@@ -20,7 +20,7 @@
           <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
             <el-option label="全部" value="" />
             <el-option label="草稿" value="draft" />
-            <el-option label="已发送" value="sent" />
+            <el-option label="已开票" value="sent" />
             <el-option label="已支付" value="paid" />
             <el-option label="逾期" value="overdue" />
             <el-option label="已取消" value="cancelled" />
@@ -113,7 +113,7 @@ const getStatusType = (status: string) => {
 const getStatusText = (status: string) => {
   const statusMap = {
     draft: '草稿',
-    sent: '已发送',
+    sent: '已开票',
     paid: '已支付',
     overdue: '逾期',
     cancelled: '已取消'

@@ -229,12 +229,20 @@ export class PaymentService {
 
     const totalPaid = parseFloat(paymentsResult.total) || 0;
 
-    // 更新发票状态
+    // 更新发票状态逻辑
     let newStatus = invoice.status;
     if (totalPaid >= invoice.total_amount) {
+      // 全额支付，状态变为已付款
       newStatus = 'paid';
     } else if (totalPaid > 0) {
-      newStatus = 'sent'; // 部分支付
+      // 部分支付，状态保持为已发送
+      newStatus = 'sent';
+    } else {
+      // 无支付记录，如果当前是草稿状态则保持，否则保持为已发送
+      // 注意：正常情况下发票创建时就应该是sent状态，这里主要处理历史数据
+      if (invoice.status === 'draft') {
+        newStatus = 'sent'; // 将草稿状态的发票更新为已发送
+      }
     }
 
     if (newStatus !== invoice.status) {

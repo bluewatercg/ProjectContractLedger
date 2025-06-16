@@ -40,7 +40,7 @@ export class Invoice {
   @Column({
     type: 'enum',
     enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
-    default: 'draft',
+    default: 'sent',
   })
   status: string;
 
