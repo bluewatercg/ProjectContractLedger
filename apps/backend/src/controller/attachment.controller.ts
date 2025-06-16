@@ -16,7 +16,7 @@ import { ApiResponse } from '../interface';
 import * as fs from 'fs';
 import * as path from 'path';
 
-@Controller('/api/v1/attachments')
+@Controller('/api/v1')
 export class AttachmentController {
   @Inject()
   contractAttachmentService: ContractAttachmentService;
