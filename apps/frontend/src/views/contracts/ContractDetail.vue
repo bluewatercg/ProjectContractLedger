@@ -157,7 +157,7 @@
         <!-- 文件上传 -->
         <div class="mb-4">
           <FileUpload
-            :upload-url="`/api/v1/contracts/${contractId}/attachments`"
+            :upload-url="`/contracts/${contractId}/attachments`"
             @success="handleAttachmentUpload"
             @error="handleUploadError"
           />
