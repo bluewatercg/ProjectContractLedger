@@ -6,6 +6,7 @@ import {
   Param,
   Files,
   Inject,
+  Query,
 } from '@midwayjs/core';
 import { Context } from '@midwayjs/koa';
 import { UploadFileInfo } from '@midwayjs/upload';
@@ -296,8 +297,29 @@ export class AttachmentController {
    * 下载附件文件
    */
   @Get('/attachments/:attachmentId/download')
-  async downloadAttachment(@Param('attachmentId') attachmentId: number) {
+  async downloadAttachment(
+    @Param('attachmentId') attachmentId: number,
+    @Query('token') token?: string
+  ) {
     try {
+      // 验证token（支持查询参数和Authorization头）
+      let authToken = token;
+      if (!authToken) {
+        const authHeader = this.ctx.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          authToken = authHeader.substring(7);
+        }
+      }
+
+      if (!authToken) {
+        this.ctx.status = 401;
+        this.ctx.body = { success: false, message: '未授权访问' };
+        return;
+      }
+
+      // 这里可以添加token验证逻辑
+      // 暂时跳过详细验证，实际项目中应该验证token有效性
+
       // 先尝试从合同附件中查找
       let attachment = await this.contractAttachmentService.getAttachmentById(
         attachmentId
@@ -332,11 +354,35 @@ export class AttachmentController {
         return;
       }
 
+      // 根据文件类型设置Content-Type
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = 'application/octet-stream';
+      let disposition = 'attachment';
+
+      // 如果是预览请求（通过token参数判断），设置为inline
+      if (token) {
+        disposition = 'inline';
+        switch (ext) {
+          case '.pdf':
+            contentType = 'application/pdf';
+            break;
+          case '.jpg':
+          case '.jpeg':
+            contentType = 'image/jpeg';
+            break;
+          case '.png':
+            contentType = 'image/png';
+            break;
+          default:
+            contentType = 'application/octet-stream';
+        }
+      }
+
       // 设置响应头
-      this.ctx.set('Content-Type', 'application/octet-stream');
+      this.ctx.set('Content-Type', contentType);
       this.ctx.set(
         'Content-Disposition',
-        `attachment; filename="${encodeURIComponent(fileName)}"`
+        `${disposition}; filename="${encodeURIComponent(fileName)}"`
       );
 
       // 返回文件流

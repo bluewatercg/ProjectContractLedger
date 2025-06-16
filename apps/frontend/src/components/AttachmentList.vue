@@ -190,7 +190,10 @@ const downloadFile = async (attachment: Attachment) => {
 const previewFile = (attachment: Attachment) => {
   previewFileData.value = attachment
   previewType.value = isPdf(attachment.file_name) ? 'pdf' : 'image'
-  previewUrl.value = `/api/v1/attachments/${attachment.attachment_id}/download`
+
+  // 为预览URL添加认证token
+  const token = localStorage.getItem('token')
+  previewUrl.value = `/api/v1/attachments/${attachment.attachment_id}/download?token=${token}`
   previewVisible.value = true
 }
 
