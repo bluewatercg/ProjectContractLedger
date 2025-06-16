@@ -69,4 +69,56 @@ export default {
       url: 'https://opensource.org/licenses/MIT',
     },
   },
+
+  // 文件上传配置
+  upload: {
+    // 模式，默认为 file，即上传到服务器临时目录
+    mode: 'file',
+    // 上传的文件大小限制，默认为 10mb
+    fileSize: '10mb',
+    // 上传的文件白名单，只有这些类型的文件才能上传
+    whitelist: ['.pdf', '.jpg', '.jpeg', '.png'],
+    // 临时文件目录
+    tmpdir: '/tmp',
+    // 清理临时文件
+    cleanTimeout: 5 * 60 * 1000,
+  },
+
+  // 日志配置
+  midwayLogger: {
+    default: {
+      level: process.env.LOG_LEVEL || 'info',
+      consoleLevel: process.env.CONSOLE_LOG_LEVEL || 'info',
+      dir: process.env.LOG_DIR || '/app/logs',
+      fileLogName: 'app.log',
+      errorLogName: 'error.log',
+      format: (info: any) => {
+        return `${info.timestamp} [${info.level}] ${info.message}`;
+      },
+      // 日志轮转配置
+      maxFiles: '30d',
+      maxSize: '100m',
+      auditFile: 'audit.json',
+    },
+    categories: {
+      coreLogger: {
+        level: process.env.LOG_LEVEL || 'info',
+        consoleLevel: process.env.CONSOLE_LOG_LEVEL || 'info',
+        dir: process.env.LOG_DIR || '/app/logs',
+        fileLogName: 'core.log',
+        errorLogName: 'core-error.log',
+        maxFiles: '30d',
+        maxSize: '100m',
+      },
+      appLogger: {
+        level: process.env.LOG_LEVEL || 'info',
+        consoleLevel: process.env.CONSOLE_LOG_LEVEL || 'info',
+        dir: process.env.LOG_DIR || '/app/logs',
+        fileLogName: 'app.log',
+        errorLogName: 'app-error.log',
+        maxFiles: '30d',
+        maxSize: '100m',
+      },
+    },
+  },
 };

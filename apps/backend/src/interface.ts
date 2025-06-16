@@ -129,3 +129,20 @@ export interface CreatePaymentDto {
 export interface UpdatePaymentDto extends Partial<CreatePaymentDto> {
   status?: string;
 }
+
+// 附件相关接口
+export interface CreateAttachmentDto {
+  file_name: string;
+  file_path: string;
+  file_type?: string;
+  file_size?: number;
+}
+
+export interface AttachmentResponse {
+  attachment_id: number;
+  file_name: string;
+  file_path: string;
+  file_type?: string;
+  file_size?: number;
+  uploaded_at: Date;
+}

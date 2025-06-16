@@ -4,6 +4,7 @@ import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
 import * as typeorm from '@midwayjs/typeorm';
 import * as swagger from '@midwayjs/swagger';
+import * as upload from '@midwayjs/upload';
 import { join } from 'path';
 import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
@@ -17,6 +18,7 @@ import { AuthMiddleware } from './middleware/auth.middleware';
     validate,
     typeorm,
     swagger,
+    upload,
     {
       component: info,
       enabledEnvironment: ['local'],

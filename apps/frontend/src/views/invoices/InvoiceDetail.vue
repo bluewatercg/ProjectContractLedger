@@ -106,6 +106,28 @@
           <el-button type="primary" class="mt-4" @click="createPayment">添加支付记录</el-button>
         </div>
       </div>
+
+      <!-- 发票附件 -->
+      <div v-if="invoice" class="mt-6">
+        <h3 class="text-lg font-semibold mb-4">发票附件</h3>
+
+        <!-- 文件上传 -->
+        <div class="mb-4">
+          <FileUpload
+            :upload-url="`/api/v1/invoices/${invoiceId}/attachments`"
+            @success="handleAttachmentUpload"
+            @error="handleUploadError"
+          />
+        </div>
+
+        <!-- 附件列表 -->
+        <AttachmentList
+          :attachments="attachments"
+          :loading="attachmentsLoading"
+          @delete="handleDeleteAttachment"
+          @refresh="fetchAttachments"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -115,7 +137,11 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { invoiceApi } from '@/api'
+import { attachmentApi } from '@/api/attachment'
 import type { Invoice } from '@/api/types'
+import type { Attachment } from '@/api/attachment'
+import FileUpload from '@/components/FileUpload.vue'
+import AttachmentList from '@/components/AttachmentList.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -123,6 +149,8 @@ const route = useRoute()
 // 状态
 const loading = ref(false)
 const invoice = ref<Invoice>()
+const attachments = ref<Attachment[]>([])
+const attachmentsLoading = ref(false)
 
 // 计算属性
 const invoiceId = computed(() => Number(route.params.id))
@@ -251,9 +279,61 @@ const goBack = () => {
   router.go(-1)
 }
 
+// 获取附件列表
+const fetchAttachments = async () => {
+  try {
+    attachmentsLoading.value = true
+    const response = await attachmentApi.getInvoiceAttachments(invoiceId.value)
+
+    if (response.success && response.data) {
+      attachments.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch attachments:', error)
+    ElMessage.error('获取附件列表失败')
+  } finally {
+    attachmentsLoading.value = false
+  }
+}
+
+// 处理附件上传成功
+const handleAttachmentUpload = (attachment: Attachment) => {
+  attachments.value.unshift(attachment)
+  ElMessage.success('附件上传成功')
+}
+
+// 处理上传错误
+const handleUploadError = (error: any) => {
+  console.error('Upload error:', error)
+  ElMessage.error('附件上传失败')
+}
+
+// 删除附件
+const handleDeleteAttachment = async (attachmentId: number) => {
+  try {
+    const response = await attachmentApi.deleteInvoiceAttachment(
+      invoiceId.value,
+      attachmentId
+    )
+
+    if (response.success) {
+      attachments.value = attachments.value.filter(
+        item => item.attachment_id !== attachmentId
+      )
+      ElMessage.success('附件删除成功')
+    } else {
+      ElMessage.error(response.message || '删除失败')
+    }
+  } catch (error) {
+    console.error('Delete error:', error)
+    ElMessage.error('删除附件失败')
+  }
+}
+
 // 组件挂载时获取数据
 onMounted(() => {
   fetchInvoice()
+  fetchAttachments()
 })
 </script>
 

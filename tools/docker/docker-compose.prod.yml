@@ -68,8 +68,10 @@ services:
       # - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       # 如果需要SSL证书
       # - ./ssl:/etc/nginx/ssl:ro
-      # 应用日志
-      - app_logs:/var/log/app
+      # 应用日志映射到宿主机
+      - ./data/logs:/app/logs
+      # 附件存储映射到宿主机
+      - ./data/uploads:/app/uploads
 
   # Redis缓存（可选）
   redis:
@@ -101,8 +103,6 @@ volumes:
   mysql_data:
     driver: local
   redis_data:
-    driver: local
-  app_logs:
     driver: local
 
 networks:

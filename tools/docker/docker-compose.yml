@@ -39,6 +39,11 @@ services:
     ports:
       - "80:80"
       - "8080:8080"
+    volumes:
+      # 附件存储目录映射到宿主机
+      - ./data/uploads:/app/uploads
+      # 应用日志映射到宿主机
+      - ./data/logs:/app/logs
     depends_on:
       mysql:
         condition: service_healthy

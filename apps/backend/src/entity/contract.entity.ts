@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Customer } from './customer.entity';
 import { Invoice } from './invoice.entity';
+import { ContractAttachment } from './contract-attachment.entity';
 
 @Entity('contracts')
 export class Contract {
@@ -62,4 +63,7 @@ export class Contract {
 
   @OneToMany(() => Invoice, invoice => invoice.contract)
   invoices: Invoice[];
+
+  @OneToMany(() => ContractAttachment, attachment => attachment.contract)
+  attachments: ContractAttachment[];
 }
