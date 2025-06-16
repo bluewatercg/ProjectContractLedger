@@ -37,7 +37,6 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import type { UploadProps, UploadInstance } from 'element-plus'
-import { API_CONFIG } from '@/api/config'
 
 // Props
 interface Props {
@@ -74,11 +73,19 @@ const fullUploadUrl = computed(() => {
     return props.uploadUrl
   }
 
-  // 否则拼接baseURL
-  const baseURL = API_CONFIG.baseURL
-  const url = props.uploadUrl.startsWith('/') ? props.uploadUrl : `/${props.uploadUrl}`
+  // 检查当前是否在开发环境（localhost）
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
-  return `${baseURL}${url}`
+  if (isDev) {
+    // 开发环境：直接使用完整的localhost URL
+    const url = props.uploadUrl.startsWith('/') ? props.uploadUrl : `/${props.uploadUrl}`
+    return `http://localhost:8000/api/v1${url}`
+  } else {
+    // 生产环境：拼接baseURL
+    const baseURL = '/api'
+    const url = props.uploadUrl.startsWith('/') ? props.uploadUrl : `/${props.uploadUrl}`
+    return `${baseURL}${url}`
+  }
 })
 
 const progressStatus = computed(() => {
@@ -149,7 +156,7 @@ const handleError: UploadProps['onError'] = (error) => {
 defineExpose({
   clearFiles: () => uploadRef.value?.clearFiles(),
   submit: () => uploadRef.value?.submit(),
-  abort: () => uploadRef.value?.abort()
+  abort: (file?: any) => uploadRef.value?.abort(file)
 })
 </script>
 
