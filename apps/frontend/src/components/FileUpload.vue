@@ -2,7 +2,7 @@
   <div class="file-upload">
     <el-upload
       ref="uploadRef"
-      :action="uploadUrl"
+      :action="fullUploadUrl"
       :headers="uploadHeaders"
       :before-upload="beforeUpload"
       :on-success="handleSuccess"
@@ -37,6 +37,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import type { UploadProps, UploadInstance } from 'element-plus'
+import { API_CONFIG } from '@/api/config'
 
 // Props
 interface Props {
@@ -65,6 +66,19 @@ const uploadProgress = ref(0)
 const uploadHeaders = computed(() => {
   const token = localStorage.getItem('token')
   return token ? { Authorization: `Bearer ${token}` } : {}
+})
+
+const fullUploadUrl = computed(() => {
+  // 如果uploadUrl已经是完整URL，直接使用
+  if (props.uploadUrl.startsWith('http')) {
+    return props.uploadUrl
+  }
+
+  // 否则拼接baseURL
+  const baseURL = API_CONFIG.baseURL
+  const url = props.uploadUrl.startsWith('/') ? props.uploadUrl : `/${props.uploadUrl}`
+
+  return `${baseURL}${url}`
 })
 
 const progressStatus = computed(() => {
