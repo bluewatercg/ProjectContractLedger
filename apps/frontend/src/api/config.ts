@@ -21,7 +21,7 @@ const getRuntimeConfig = (): AppConfig => {
 }
 
 // API基础配置
-// 支持多种部署方式的动态配置
+// 支持多种部署方式的动态配置，特别适用于局域网IP部署（如192.168.1.115）
 const getApiBaseUrl = () => {
   const runtimeConfig = getRuntimeConfig()
 
@@ -35,9 +35,21 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_BASE_URL
   }
 
-  // 3. 在容器化部署中，前后端在同一个镜像中，通过nginx代理
+  // 3. 生产环境动态配置 - 适用于局域网IP部署
   if (import.meta.env.PROD) {
-    return '/api'  // 生产环境通过nginx代理到后端
+    const currentHost = window.location.hostname
+    const currentPort = window.location.port
+    const backendPort = runtimeConfig.BACKEND_PORT || '8080'
+
+    // 场景1: 前后端分离部署（不同端口）
+    // 例如：前端 http://192.168.1.115:8000，后端 http://192.168.1.115:8080
+    if (currentPort !== backendPort && backendPort !== '80') {
+      return `${window.location.protocol}//${currentHost}:${backendPort}/api/v1`
+    }
+
+    // 场景2: 前后端在同一容器，通过nginx代理
+    // 例如：访问 http://192.168.1.115:8000，nginx代理到内部8080端口
+    return '/api'
   }
 
   // 4. 开发环境默认配置

@@ -36,8 +36,13 @@ COPY --from=base /app/bootstrap.js ./
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S midway -u 1001
 
-# 更改文件所有权
-RUN chown -R midway:nodejs /app
+# 创建上传目录并设置权限
+RUN mkdir -p /app/uploads && \
+    mkdir -p /app/logs && \
+    chown -R midway:nodejs /app && \
+    chmod -R 755 /app/uploads && \
+    chmod -R 755 /app/logs
+
 USER midway
 
 # 暴露端口
