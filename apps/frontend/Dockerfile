@@ -34,6 +34,10 @@ FROM nginx:alpine AS production
 # 复制自定义nginx配置
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# 复制启动脚本
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 # 从构建阶段复制构建产物
 COPY --from=build /app/dist /usr/share/nginx/html
 
@@ -44,5 +48,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
-# 启动nginx
-CMD ["nginx", "-g", "daemon off;"]
+# 使用启动脚本启动nginx
+CMD ["/start.sh"]

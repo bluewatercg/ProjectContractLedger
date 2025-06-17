@@ -4,9 +4,32 @@
 
 ## 🚀 快速部署 (推荐)
 
-**使用GitHub Actions自动构建的Docker镜像，支持外部MySQL和Redis的一键部署方案。**
+**使用GitHub Actions自动构建的Docker镜像，支持分离式前后端部署和外部MySQL、Redis的一键部署方案。**
 
-### 生产环境快速部署
+### 🆕 分离式前后端部署 (推荐)
+```bash
+# 1. 下载分离部署配置
+git clone https://github.com/bluewatercg/projectcontractledger.git
+cd projectcontractledger/deployment
+
+# 2. 配置环境变量
+cp .env.separated.template .env.separated
+# 编辑 .env.separated 文件，填写数据库和服务器IP配置
+
+# 3. 启动分离服务
+# Linux/macOS
+./deploy-separated.sh
+
+# Windows
+.\deploy-separated.ps1
+```
+
+**访问地址**:
+- 前端: http://your-server-ip:80
+- 后端API: http://your-server-ip:8080
+- 统一入口(可选): http://your-server-ip:8000
+
+### 传统合并部署
 ```bash
 # 1. 下载部署脚本
 wget https://raw.githubusercontent.com/bluewatercg/projectcontractledger/main/deploy-simple.sh
@@ -22,9 +45,10 @@ chmod +x deploy-simple.sh
 ./deploy-simple.sh
 ```
 
-**访问地址**: http://your-server-ip
-
-详细部署指南: [快速部署指南.md](./快速部署指南.md) | [GitHub Actions部署指南](./docs/GitHub_Actions_部署指南.md)
+**详细部署指南**:
+- [分离式前后端部署指南](./docs/deployment/分离式前后端部署指南.md) ⭐ **推荐**
+- [快速部署指南.md](./快速部署指南.md)
+- [GitHub Actions部署指南](./docs/GitHub_Actions_部署指南.md)
 
 ---
 

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # 前端Web服务
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/bluewatercg/projectcontractledger-frontend:latest
+    container_name: contract-ledger-frontend
+    restart: unless-stopped
+
+    # 端口映射
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+    # 环境变量配置
+    environment:
+      # 后端服务配置 - 支持IP地址通讯
+      - BACKEND_HOST=${BACKEND_HOST:-192.168.1.115}
+      - BACKEND_PORT=${BACKEND_PORT:-8080}
+
+      # 时区配置
+      - TZ=${TZ:-Asia/Shanghai}
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+    # 使用主机网络模式，支持IP通讯
+    network_mode: ${NETWORK_MODE:-bridge}
+
+    # 依赖关系 - 可选，如果前后端在同一个compose文件中
+    # depends_on:
+    #   - backend
