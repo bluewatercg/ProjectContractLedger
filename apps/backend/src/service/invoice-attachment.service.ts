@@ -1,4 +1,4 @@
-import { Provide } from '@midwayjs/core';
+import { Provide, Config } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { InvoiceAttachment } from '../entity/invoice-attachment.entity';
@@ -14,6 +14,9 @@ export class InvoiceAttachmentService {
 
   @InjectEntityModel(Invoice)
   invoiceRepository: Repository<Invoice>;
+
+  @Config('upload')
+  uploadConfig: any;
 
   /**
    * 创建发票附件记录
@@ -112,9 +115,10 @@ export class InvoiceAttachmentService {
    * 生成文件存储路径
    */
   generateFilePath(invoiceId: number, originalName: string): string {
+    // 使用配置中的上传目录，确保在Docker容器中路径正确
+    const baseUploadDir = this.uploadConfig?.uploadDir || '/app/uploads';
     const uploadDir = path.join(
-      process.cwd(),
-      'uploads',
+      baseUploadDir,
       'invoices',
       invoiceId.toString()
     );

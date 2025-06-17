@@ -83,6 +83,8 @@ export default {
     tmpdir: '/tmp',
     // 清理临时文件
     cleanTimeout: 5 * 60 * 1000,
+    // 上传文件存储目录（支持环境变量配置）
+    uploadDir: process.env.UPLOAD_DIR || '/app/uploads',
   },
 
   // 日志配置

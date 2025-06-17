@@ -6,6 +6,7 @@ import { Contract } from '../entity/contract.entity';
 import { CreateAttachmentDto, AttachmentResponse } from '../interface';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Config } from '@midwayjs/core';
 
 @Provide()
 export class ContractAttachmentService {
@@ -14,6 +15,9 @@ export class ContractAttachmentService {
 
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
+
+  @Config('upload')
+  uploadConfig: any;
 
   /**
    * 创建合同附件记录
@@ -112,9 +116,10 @@ export class ContractAttachmentService {
    * 生成文件存储路径
    */
   generateFilePath(contractId: number, originalName: string): string {
+    // 使用配置中的上传目录，确保在Docker容器中路径正确
+    const baseUploadDir = this.uploadConfig?.uploadDir || '/app/uploads';
     const uploadDir = path.join(
-      process.cwd(),
-      'uploads',
+      baseUploadDir,
       'contracts',
       contractId.toString()
     );

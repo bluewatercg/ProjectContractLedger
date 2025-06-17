@@ -123,7 +123,8 @@ ENV NODE_ENV=production \
     FRONTEND_HTTP_PORT=80 \
     LOG_LEVEL=info \
     CORS_ORIGINS=* \
-    JWT_EXPIRES_IN=7d
+    JWT_EXPIRES_IN=7d \
+    UPLOAD_DIR=/app/uploads
 
 # 暴露端口（支持环境变量配置）
 EXPOSE 80 8080
