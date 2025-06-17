@@ -72,7 +72,7 @@ if [ -d "$FRONTEND_DIR" ]; then
 // 运行时环境配置
 window.__APP_CONFIG__ = {
   // API配置
-  API_BASE_URL: '${FRONTEND_API_BASE_URL:-/api}',
+  API_BASE_URL: '${FRONTEND_API_BASE_URL:-/api/v1}',
 
   // 应用配置
   APP_TITLE: '${APP_TITLE:-客户合同管理系统}',
