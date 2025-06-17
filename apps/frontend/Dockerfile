@@ -1,32 +1,38 @@
 # 构建阶段
 FROM node:18-alpine AS build
 
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+
 # 设置工作目录
 WORKDIR /app
 
-# 复制package.json和yarn.lock
-COPY package.json yarn.lock ./
+# 复制package.json和yarn.lock（如果存在）
+COPY package.json ./
+COPY yarn.lock* ./
 
 # 安装依赖
-RUN yarn install --frozen-lockfile
-RUN npm rebuild
+RUN echo "Installing frontend dependencies..." && \
+    yarn install --frozen-lockfile --network-timeout 100000 && \
+    echo "Frontend dependencies installed successfully"
 
-# 复制源代码
+# 复制源代码和配置文件
 COPY . .
 
-# 构建应用
-# 调试：列出node_modules/.bin目录内容
-RUN ls -F node_modules/.bin/
-
-# 确保node_modules/.bin在PATH中
-ENV PATH="/app/node_modules/.bin:$PATH"
-
-# 调试：检查yarn命令是否存在
-# 调试：检查vite的权限和路径
-RUN ls -l /app/node_modules/.bin/vite && which vite
+# 验证关键文件存在
+RUN echo "Verifying build files..." && \
+    ls -la package.json && \
+    ls -la vite.config.ts && \
+    ls -la tsconfig.json && \
+    ls -la src/
 
 # 构建应用
-RUN yarn build
+RUN echo "Building frontend application..." && \
+    yarn build && \
+    echo "Frontend build completed successfully" && \
+    ls -la dist/ && \
+    echo "Build output:" && \
+    find dist -type f | head -10
 
 # 生产阶段 - 使用nginx提供静态文件服务
 FROM nginx:alpine AS production

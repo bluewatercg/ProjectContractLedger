@@ -4,8 +4,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 构建产物
-dist
+# 构建产物（构建时会重新生成）
+# dist  # 不排除，因为Dockerfile需要检查
 build
 .next
 out
@@ -70,5 +70,5 @@ docker-compose*.yml
 # 其他
 .eslintrc*
 .prettierrc*
-jest.config.js
-tsconfig.json
+# jest.config.js  # 测试配置，可以排除
+# tsconfig.json  # 构建时需要，不能排除

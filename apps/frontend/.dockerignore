@@ -70,8 +70,8 @@ docker-compose*.yml
 # 其他
 .eslintrc*
 .prettierrc*
-vite.config.ts
-tsconfig*.json
+# vite.config.ts  # 构建时需要，不能排除
+# tsconfig*.json  # 构建时需要，不能排除
 
 # Vite开发文件
 .vite

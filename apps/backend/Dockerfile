@@ -1,6 +1,9 @@
 # 使用官方Node.js运行时作为基础镜像
 FROM node:18-alpine AS base
 
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+
 # 设置工作目录
 WORKDIR /app
 
@@ -8,13 +11,27 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 
 # 安装依赖
-RUN yarn install --frozen-lockfile --production=false
+RUN echo "Installing backend dependencies..." && \
+    yarn install --frozen-lockfile --production=false --network-timeout 100000 && \
+    echo "Backend dependencies installed successfully"
 
-# 复制源代码
+# 复制源代码和配置文件
 COPY . .
 
+# 验证关键文件存在
+RUN echo "Verifying build files..." && \
+    ls -la package.json && \
+    ls -la tsconfig.json && \
+    ls -la bootstrap.js && \
+    ls -la src/
+
 # 构建应用
-RUN yarn build
+RUN echo "Building backend application..." && \
+    yarn build && \
+    echo "Backend build completed successfully" && \
+    ls -la dist/ && \
+    echo "Build output:" && \
+    find dist -type f | head -10
 
 # 生产阶段
 FROM node:18-alpine AS production
@@ -30,7 +47,7 @@ RUN yarn install --frozen-lockfile --production=true && yarn cache clean
 
 # 从构建阶段复制构建产物
 COPY --from=base /app/dist ./dist
-COPY --from=base /app/bootstrap.js ./
+COPY --from=base /app/bootstrap.js ./bootstrap.js
 
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs
