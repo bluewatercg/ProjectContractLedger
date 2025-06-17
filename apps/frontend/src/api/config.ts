@@ -49,7 +49,7 @@ const getApiBaseUrl = () => {
 
     // 场景2: 前后端在同一容器，通过nginx代理
     // 例如：访问 http://192.168.1.115:8000，nginx代理到内部8080端口
-    return '/api'
+    return '/api/v1'
   }
 
   // 4. 开发环境默认配置
