@@ -124,7 +124,7 @@ docker run -d \
 docker ps
 
 # 检查服务健康
-curl http://192.168.1.115:8000/api/v1/health
+curl http://192.168.1.115:8000/api/health
 ```
 
 ### 2. 测试API路径
