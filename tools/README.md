@@ -1,29 +1,38 @@
-# Tools 文件夹说明
+# Tools 开发工具目录
 
-本文件夹包含项目的工具配置文件，包括Docker配置、Nginx配置和其他构建工具。
+本目录包含项目开发和部署过程中使用的各种工具、配置文件和辅助脚本，为开发和运维提供完整的工具链支持。
 
-## 📁 文件夹结构
+## 📁 目录结构
 
 ```
 tools/
-├── configs/          # 配置文件目录
-├── docker/           # Docker相关配置
-└── nginx/            # Nginx配置文件
+├── README.md                    # 本说明文件
+├── configs/                    # 配置文件模板（预留）
+├── docker/                     # Docker相关工具和配置
+│   ├── README.md               # Docker工具说明
+│   ├── DEPLOYMENT_CHECKLIST.md # 部署检查清单
+│   ├── docker-compose.yml      # 开发环境Docker编排
+│   ├── docker-compose.prod.yml # 生产环境Docker编排
+│   ├── start-dev.sh           # 开发环境启动脚本
+│   ├── start-prod.sh          # 生产环境启动脚本
+│   ├── backup.sh              # 数据备份脚本
+│   ├── monitor.sh             # 容器监控脚本
+│   └── data/                  # 数据目录
+│       ├── logs/              # 日志存储
+│       └── uploads/           # 文件上传存储
+└── nginx/                     # Nginx配置文件
+    └── nginx.conf             # Nginx主配置文件
 ```
 
-## 🔧 Configs 配置 (`tools/configs/`)
+## ⚙️ 配置模板 (`configs/`)
 
-### 配置文件
-| 目录状态 | 作用 | 维护状态 |
-|---------|------|----------|
-| `空目录` | 工具配置文件预留 | 🔄 待扩展 |
-
-**计划配置内容**：
-- ESLint配置文件
-- Prettier配置文件
-- TypeScript配置模板
-- 构建工具配置
-- 代码质量检查配置
+### 预留配置目录
+**计划内容：**
+- 🌍 多环境配置模板
+- 🗄️ 数据库配置模板
+- 📊 监控配置模板
+- 🔐 安全配置模板
+- 📝 日志配置模板
 
 ## 🐳 Docker 配置 (`tools/docker/`)
 

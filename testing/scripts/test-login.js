@@ -102,7 +102,7 @@ async function checkBackendStatus() {
     return true;
   } catch (error) {
     console.log('❌ 后端服务未运行，请先启动后端服务');
-    console.log('💡 运行命令: cd midway-backend && yarn dev');
+    console.log('💡 运行命令: cd apps/backend && yarn dev');
     return false;
   }
 }

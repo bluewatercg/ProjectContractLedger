@@ -16,8 +16,9 @@ NC='\033[0m' # No Color
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 CONTAINER_NAME="contract-ledger"
-IMAGE_NAME="ghcr.milu.moe/bluewatercg/projectcontractledger"
-HEALTH_URL="http://192.168.1.115:8000/api/health"
+BACKEND_IMAGE="ghcr.io/bluewatercg/projectcontractledger-backend"
+FRONTEND_IMAGE="ghcr.io/bluewatercg/projectcontractledger-frontend"
+HEALTH_URL="http://192.168.1.115:8080/health"
 FRONTEND_URL="http://192.168.1.115:8000"
 
 # 日志函数
