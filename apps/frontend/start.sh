@@ -27,11 +27,10 @@ CONFIG_FILE="$FRONTEND_DIR/config.js"
 cat > "$CONFIG_FILE" << EOF
 // 运行时环境配置
 window.__APP_CONFIG__ = {
-  // API配置
-  API_BASE_URL: '${FRONTEND_API_BASE_URL}',
+  // API版本配置（不设置API_BASE_URL，让前端自动检测）
   API_VERSION: '${API_VERSION}',
 
-  // 后端配置
+  // 后端配置（用于前端自动构建API URL）
   BACKEND_HOST: '${BACKEND_HOST}',
   BACKEND_PORT: '${BACKEND_PORT}',
   BACKEND_HOST_PORT: '${BACKEND_HOST_PORT}',
@@ -43,10 +42,19 @@ window.__APP_CONFIG__ = {
 
   // 调试信息
   BUILD_TIME: '$(date -u +"%Y-%m-%dT%H:%M:%SZ")',
-  CONTAINER_ID: '$(hostname)'
+  CONTAINER_ID: '$(hostname)',
+
+  // 调试：显示配置信息
+  DEBUG_INFO: {
+    FRONTEND_API_BASE_URL: '${FRONTEND_API_BASE_URL}',
+    CURRENT_HOST: window.location.hostname,
+    CURRENT_PORT: window.location.port,
+    EXPECTED_BACKEND_PORT: '${BACKEND_HOST_PORT}'
+  }
 };
 
 console.log('App Config Loaded:', window.__APP_CONFIG__);
+console.log('Frontend will auto-detect API URL based on environment');
 EOF
 
 echo "Frontend configuration generated: $CONFIG_FILE"
