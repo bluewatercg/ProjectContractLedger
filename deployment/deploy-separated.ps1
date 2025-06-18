@@ -200,13 +200,22 @@ function Test-Services {
     # 读取端口配置
     $envContent = Get-Content $EnvFile -ErrorAction SilentlyContinue
     $backendPort = 8080
-    $frontendPort = 80
+    $frontendPort = 8000
 
     foreach ($line in $envContent) {
-        if ($line -match "^BACKEND_PORT=(.+)") {
+        $line = $line.Trim()
+        # 优先使用新的HOST_PORT配置
+        if ($line -match "^BACKEND_HOST_PORT=(.+)") {
             $backendPort = $matches[1].Trim()
         }
-        if ($line -match "^FRONTEND_PORT=(.+)") {
+        elseif ($line -match "^FRONTEND_HOST_PORT=(.+)") {
+            $frontendPort = $matches[1].Trim()
+        }
+        # 向后兼容旧的PORT配置
+        elseif ($line -match "^BACKEND_PORT=(.+)" -and $backendPort -eq 8080) {
+            $backendPort = $matches[1].Trim()
+        }
+        elseif ($line -match "^FRONTEND_PORT=(.+)" -and $frontendPort -eq 8000) {
             $frontendPort = $matches[1].Trim()
         }
     }
@@ -251,17 +260,29 @@ function Show-AccessInfo {
     # 读取端口配置
     $envContent = Get-Content $EnvFile -ErrorAction SilentlyContinue
     $backendPort = 8080
-    $frontendPort = 80
-    $proxyPort = 8000
+    $frontendPort = 8000
+    $proxyPort = 8001
 
     foreach ($line in $envContent) {
-        if ($line -match "^BACKEND_PORT=(.+)") {
+        $line = $line.Trim()
+        # 优先使用新的HOST_PORT配置
+        if ($line -match "^BACKEND_HOST_PORT=(.+)") {
             $backendPort = $matches[1].Trim()
         }
-        if ($line -match "^FRONTEND_PORT=(.+)") {
+        elseif ($line -match "^FRONTEND_HOST_PORT=(.+)") {
             $frontendPort = $matches[1].Trim()
         }
-        if ($line -match "^PROXY_PORT=(.+)") {
+        elseif ($line -match "^PROXY_HOST_PORT=(.+)") {
+            $proxyPort = $matches[1].Trim()
+        }
+        # 向后兼容旧的PORT配置
+        elseif ($line -match "^BACKEND_PORT=(.+)" -and $backendPort -eq 8080) {
+            $backendPort = $matches[1].Trim()
+        }
+        elseif ($line -match "^FRONTEND_PORT=(.+)" -and $frontendPort -eq 8000) {
+            $frontendPort = $matches[1].Trim()
+        }
+        elseif ($line -match "^PROXY_PORT=(.+)" -and $proxyPort -eq 8001) {
             $proxyPort = $matches[1].Trim()
         }
     }

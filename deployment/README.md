@@ -5,9 +5,14 @@
 ## 🏗️ 架构概述
 
 前后端分离部署将应用拆分为两个独立的Docker容器：
-- **后端容器**: Node.js API服务 (端口8080)
-- **前端容器**: Nginx + Vue.js静态文件服务 (端口80)
-- **可选代理**: Nginx反向代理提供统一入口 (端口8000)
+- **后端容器**: Node.js API服务 (默认映射 8080:8080)
+- **前端容器**: Nginx + Vue.js静态文件服务 (默认映射 8000:80)
+- **可选代理**: Nginx反向代理提供统一入口 (默认映射 8001:80)
+
+### 🔧 端口映射说明
+- **宿主机端口**: 外部访问的端口，可根据环境调整
+- **容器内端口**: Docker镜像内部端口，通常固定
+- **格式**: `宿主机端口:容器内端口`
 
 ## 📁 目录结构
 
@@ -92,20 +97,36 @@ DB_HOST=192.168.1.254
 REDIS_HOST=192.168.1.160
 ```
 
-### 可选配置项
+### 端口映射配置
 
 ```bash
-# 端口配置（可根据需要调整）
-BACKEND_PORT=8080
-FRONTEND_PORT=80
-PROXY_PORT=8000
+# 前端服务端口映射
+FRONTEND_HOST_PORT=8000        # 宿主机端口（外部访问）
+FRONTEND_CONTAINER_PORT=80     # 容器内端口（镜像内部）
 
+# 后端服务端口映射
+BACKEND_HOST_PORT=8080         # 宿主机端口（外部访问）
+BACKEND_CONTAINER_PORT=8080    # 容器内端口（镜像内部）
+
+# Nginx代理端口映射（仅在使用代理模式时需要）
+PROXY_HOST_PORT=8001           # 宿主机端口（外部访问）
+PROXY_CONTAINER_PORT=80        # 容器内端口（镜像内部）
+```
+
+### 其他可选配置
+
+```bash
 # 网络模式
 NETWORK_MODE=bridge
 
-# 其他配置
+# 应用配置
 LOG_LEVEL=info
 TZ=Asia/Shanghai
+
+# 兼容性配置（自动设置，无需手动修改）
+FRONTEND_PORT=${FRONTEND_HOST_PORT}
+BACKEND_PORT=${BACKEND_HOST_PORT}
+PROXY_PORT=${PROXY_HOST_PORT}
 ```
 
 ## 🎯 部署模式
@@ -113,17 +134,36 @@ TZ=Asia/Shanghai
 ### 基础模式（推荐）
 - **特点**: 前后端独立容器，直接访问
 - **适用**: 大多数生产环境
-- **访问**:
-  - 前端: http://服务器IP:80
+- **默认访问**:
+  - 前端: http://服务器IP:8000
   - 后端: http://服务器IP:8080
 
 ### 代理模式
 - **特点**: 通过Nginx代理提供统一入口
 - **适用**: 需要统一域名访问的场景
-- **访问**:
-  - 统一入口: http://服务器IP:8000
-  - 前端直接: http://服务器IP:80
+- **默认访问**:
+  - 统一入口: http://服务器IP:8001
+  - 前端直接: http://服务器IP:8000
   - 后端直接: http://服务器IP:8080
+
+### 🔧 自定义端口示例
+
+```bash
+# 示例1: 使用高端口避免冲突
+FRONTEND_HOST_PORT=9000
+BACKEND_HOST_PORT=9080
+PROXY_HOST_PORT=9001
+
+# 示例2: 使用连续端口便于管理
+FRONTEND_HOST_PORT=8100
+BACKEND_HOST_PORT=8101
+PROXY_HOST_PORT=8102
+
+# 示例3: 适应特定环境要求
+FRONTEND_HOST_PORT=3000
+BACKEND_HOST_PORT=3001
+PROXY_HOST_PORT=3002
+```
 
 ## 🛠️ 管理命令
 

@@ -168,14 +168,16 @@ export const buildApiBaseUrl = (version?: string): string => {
   if (import.meta.env.PROD) {
     const currentHost = window.location.hostname
     const currentPort = window.location.port
-    const backendPort = runtimeConfig.BACKEND_PORT || '8080'
-    
-    // 前后端分离部署
+
+    // 优先使用新的HOST_PORT配置
+    const backendPort = runtimeConfig.BACKEND_HOST_PORT || runtimeConfig.BACKEND_PORT || '8080'
+
+    // 前后端分离部署（不同端口）
     if (currentPort !== backendPort && backendPort !== '80') {
       return `${window.location.protocol}//${currentHost}:${backendPort}${versionConfig.baseURL}`
     }
-    
-    // 通过nginx代理
+
+    // 通过nginx代理或同端口部署
     return versionConfig.baseURL
   }
   

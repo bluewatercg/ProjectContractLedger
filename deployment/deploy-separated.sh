@@ -187,12 +187,21 @@ check_services() {
 
     # 从环境变量文件中提取端口配置
     if [ -f "${ENV_FILE}" ]; then
-        BACKEND_PORT_VAL=$(grep "^BACKEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
-        FRONTEND_PORT_VAL=$(grep "^FRONTEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        # 优先使用新的HOST_PORT配置
+        BACKEND_PORT_VAL=$(grep "^BACKEND_HOST_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        FRONTEND_PORT_VAL=$(grep "^FRONTEND_HOST_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+
+        # 如果没有HOST_PORT配置，回退到旧的PORT配置（向后兼容）
+        if [ -z "$BACKEND_PORT_VAL" ]; then
+            BACKEND_PORT_VAL=$(grep "^BACKEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        fi
+        if [ -z "$FRONTEND_PORT_VAL" ]; then
+            FRONTEND_PORT_VAL=$(grep "^FRONTEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        fi
 
         # 使用默认值如果提取失败
         BACKEND_PORT_VAL=${BACKEND_PORT_VAL:-8080}
-        FRONTEND_PORT_VAL=${FRONTEND_PORT_VAL:-80}
+        FRONTEND_PORT_VAL=${FRONTEND_PORT_VAL:-8000}
     fi
 
     # 检查后端健康状态
@@ -237,14 +246,26 @@ show_access_info() {
 
     # 从环境变量文件中提取端口配置
     if [ -f "${ENV_FILE}" ]; then
-        FRONTEND_PORT_VAL=$(grep "^FRONTEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
-        BACKEND_PORT_VAL=$(grep "^BACKEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
-        PROXY_PORT_VAL=$(grep "^PROXY_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        # 优先使用新的HOST_PORT配置
+        FRONTEND_PORT_VAL=$(grep "^FRONTEND_HOST_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        BACKEND_PORT_VAL=$(grep "^BACKEND_HOST_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        PROXY_PORT_VAL=$(grep "^PROXY_HOST_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+
+        # 如果没有HOST_PORT配置，回退到旧的PORT配置（向后兼容）
+        if [ -z "$FRONTEND_PORT_VAL" ]; then
+            FRONTEND_PORT_VAL=$(grep "^FRONTEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        fi
+        if [ -z "$BACKEND_PORT_VAL" ]; then
+            BACKEND_PORT_VAL=$(grep "^BACKEND_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        fi
+        if [ -z "$PROXY_PORT_VAL" ]; then
+            PROXY_PORT_VAL=$(grep "^PROXY_PORT=" "${ENV_FILE}" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | head -1)
+        fi
 
         # 使用默认值如果提取失败
-        FRONTEND_PORT_VAL=${FRONTEND_PORT_VAL:-80}
+        FRONTEND_PORT_VAL=${FRONTEND_PORT_VAL:-8000}
         BACKEND_PORT_VAL=${BACKEND_PORT_VAL:-8080}
-        PROXY_PORT_VAL=${PROXY_PORT_VAL:-8000}
+        PROXY_PORT_VAL=${PROXY_PORT_VAL:-8001}
     fi
 
     echo ""
