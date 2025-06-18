@@ -1,4 +1,4 @@
-import { Controller, Get, Inject } from '@midwayjs/decorator';
+import { Controller, Inject } from '@midwayjs/decorator';
 import { Context } from '@midwayjs/koa';
 
 /**
@@ -22,7 +22,7 @@ export abstract class VersionedController {
   /**
    * 检查版本兼容性
    */
-  protected checkVersionCompatibility(requiredVersion: string): boolean {
+  public checkVersionCompatibility(requiredVersion: string): boolean {
     const currentVersion = this.getApiVersion();
     return this.compareVersions(currentVersion, requiredVersion) >= 0;
   }
@@ -52,14 +52,18 @@ export abstract class VersionedController {
   /**
    * 获取版本化的响应格式
    */
-  protected createVersionedResponse(data: any, message: string, success: boolean = true): any {
+  protected createVersionedResponse(
+    data: any,
+    message: string,
+    success = true
+  ): any {
     const version = this.getApiVersion();
-    
+
     const baseResponse = {
       success,
       message,
       version,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     if (success) {
@@ -75,7 +79,8 @@ export abstract class VersionedController {
 
     if (this.compareVersions(version, 'v3') >= 0) {
       baseResponse['apiVersion'] = version;
-      baseResponse['deprecationWarnings'] = this.getDeprecationWarnings(version);
+      baseResponse['deprecationWarnings'] =
+        this.getDeprecationWarnings(version);
     }
 
     return baseResponse;
@@ -93,7 +98,7 @@ export abstract class VersionedController {
    */
   private getDeprecationWarnings(version: string): string[] {
     const warnings: string[] = [];
-    
+
     // 可以根据版本添加相应的弃用警告
     if (this.compareVersions(version, 'v4') >= 0) {
       warnings.push('某些v1 API将在v5中移除，请考虑升级');
@@ -105,23 +110,23 @@ export abstract class VersionedController {
   /**
    * 检查功能是否在当前版本中可用
    */
-  protected isFeatureAvailable(feature: string): boolean {
+  public isFeatureAvailable(feature: string): boolean {
     const version = this.getApiVersion();
     const versionNumber = parseInt(version.replace('v', ''));
 
     // 定义功能的最低版本要求
     const featureVersions: Record<string, number> = {
-      'attachments': 2,
-      'notifications': 2,
-      'reports': 3,
-      'analytics': 3,
-      'webhooks': 3,
+      attachments: 2,
+      notifications: 2,
+      reports: 3,
+      analytics: 3,
+      webhooks: 3,
       'ai-insights': 4,
-      'automation': 4,
-      'integrations': 4,
+      automation: 4,
+      integrations: 4,
       'mobile-api': 5,
       'real-time': 5,
-      'advanced-search': 5
+      'advanced-search': 5,
     };
 
     const requiredVersion = featureVersions[feature];
@@ -131,7 +136,7 @@ export abstract class VersionedController {
   /**
    * 功能不可用时的响应
    */
-  protected featureNotAvailable(feature: string) {
+  public featureNotAvailable(feature: string) {
     const version = this.getApiVersion();
     return this.createVersionedResponse(
       { feature, currentVersion: version },
@@ -143,7 +148,7 @@ export abstract class VersionedController {
   /**
    * 版本不兼容时的响应
    */
-  protected versionNotSupported(requiredVersion: string) {
+  public versionNotSupported(requiredVersion: string) {
     const currentVersion = this.getApiVersion();
     return this.createVersionedResponse(
       { currentVersion, requiredVersion },
@@ -158,10 +163,10 @@ export abstract class VersionedController {
  * 用于动态创建不同版本的控制器
  */
 export function createVersionedController(version: string, basePath: string) {
-  return function <T extends { new (...args: any[]): {} }>(constructor: T) {
+  return function <T extends { new (...args: any[]): object }>(constructor: T) {
     // 动态设置控制器路径
     const controllerPath = `/api/${version}${basePath}`;
-    
+
     // 应用Controller装饰器
     return Controller(controllerPath)(constructor);
   };
@@ -172,12 +177,16 @@ export function createVersionedController(version: string, basePath: string) {
  * 用于标记方法的最低版本要求
  */
 export function RequireVersion(minVersion: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
       const controller = this as VersionedController;
-      
+
       if (!controller.checkVersionCompatibility(minVersion)) {
         return controller.versionNotSupported(minVersion);
       }
@@ -194,12 +203,16 @@ export function RequireVersion(minVersion: string) {
  * 用于检查功能在当前版本中是否可用
  */
 export function RequireFeature(feature: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
       const controller = this as VersionedController;
-      
+
       if (!controller.isFeatureAvailable(feature)) {
         return controller.featureNotAvailable(feature);
       }

@@ -1,15 +1,18 @@
 import { Post, Body, Inject } from '@midwayjs/decorator';
 import { Validate } from '@midwayjs/validate';
 import { AuthService } from '../service/auth.service';
-import { LoginDto, RegisterDto, ApiResponse } from '../interface';
-import { VersionedController, createVersionedController } from './base/versioned.controller';
+import { LoginDto, RegisterDto } from '../interface';
+import {
+  VersionedController,
+  createVersionedController,
+} from './base/versioned.controller';
 
 /**
  * 通用认证控制器示例
  * 演示如何使用版本化控制器基类
  * 可以通过修改装饰器参数支持任意版本 (v2, v3, v4, vX...)
  */
-@createVersionedController('v2', '/auth')  // 修改这里可以支持任意版本
+@createVersionedController('v2', '/auth') // 修改这里可以支持任意版本
 export class AuthVersionedController extends VersionedController {
   @Inject()
   authService: AuthService;
@@ -34,7 +37,9 @@ export class AuthVersionedController extends VersionedController {
         // v2及以上版本添加额外信息
         response.data.sessionInfo = {
           sessionId: `session_${Date.now()}`,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          expiresAt: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         };
       }
 
@@ -43,7 +48,7 @@ export class AuthVersionedController extends VersionedController {
         response.data.securityInfo = {
           lastLogin: new Date().toISOString(),
           loginCount: 1,
-          deviceFingerprint: 'web_browser'
+          deviceFingerprint: 'web_browser',
         };
       }
 
@@ -84,7 +89,7 @@ export class AuthVersionedController extends VersionedController {
         response.data.onboardingTasks = [
           { task: '上传头像', completed: false },
           { task: '验证邮箱', completed: true },
-          { task: '设置双因素认证', completed: false }
+          { task: '设置双因素认证', completed: false },
         ];
       }
 

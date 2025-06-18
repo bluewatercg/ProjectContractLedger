@@ -35,13 +35,12 @@ export class CorsMiddleware implements IMiddleware<Context, NextFunction> {
             }
           } else {
             // 3. 默认策略：允许局域网IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-            const isPrivateIP = (
+            const isPrivateIP =
               originHost.startsWith('192.168.') ||
               originHost.startsWith('10.') ||
               /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(originHost) ||
               originHost === 'localhost' ||
-              originHost === '127.0.0.1'
-            );
+              originHost === '127.0.0.1';
 
             if (isPrivateIP) {
               allowOrigin = true;
