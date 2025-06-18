@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { buildApiBaseUrl, getVersionInfo } from './version'
 
 // 运行时配置接口
 interface AppConfig {
@@ -21,39 +22,10 @@ const getRuntimeConfig = (): AppConfig => {
 }
 
 // API基础配置
-// 支持多种部署方式的动态配置，特别适用于局域网IP部署（如192.168.1.115）
+// 支持多种部署方式的动态配置和版本管理
 const getApiBaseUrl = () => {
-  const runtimeConfig = getRuntimeConfig()
-
-  // 1. 优先使用运行时配置（容器启动时注入）
-  if (runtimeConfig.API_BASE_URL) {
-    return runtimeConfig.API_BASE_URL
-  }
-
-  // 2. 使用构建时环境变量
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL
-  }
-
-  // 3. 生产环境动态配置 - 适用于局域网IP部署
-  if (import.meta.env.PROD) {
-    const currentHost = window.location.hostname
-    const currentPort = window.location.port
-    const backendPort = runtimeConfig.BACKEND_PORT || '8080'
-
-    // 场景1: 前后端分离部署（不同端口）
-    // 例如：前端 http://192.168.1.115:8000，后端 http://192.168.1.115:8080
-    if (currentPort !== backendPort && backendPort !== '80') {
-      return `${window.location.protocol}//${currentHost}:${backendPort}/api/v1`
-    }
-
-    // 场景2: 前后端在同一容器，通过nginx代理
-    // 例如：访问 http://192.168.1.115:8000，nginx代理到内部8080端口
-    return '/api/v1'
-  }
-
-  // 4. 开发环境默认配置
-  return '/api/v1'
+  // 使用版本管理模块构建API Base URL
+  return buildApiBaseUrl()
 }
 
 export const API_CONFIG = {
@@ -76,8 +48,15 @@ apiClient.interceptors.request.use(
       config.headers = config.headers || {}
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
-    
+
+    // 添加API版本信息到请求头
+    const versionInfo = getVersionInfo()
+    config.headers = config.headers || {}
+    config.headers['X-API-Version'] = versionInfo.current
+    config.headers['X-Client-Version'] = import.meta.env.VITE_APP_VERSION || '1.0.0'
+
     console.log('API Request:', config.method?.toUpperCase(), config.url, config.data)
+    console.log('API Version:', versionInfo.current, 'Base URL:', versionInfo.baseURL)
     return config
   },
   (error) => {

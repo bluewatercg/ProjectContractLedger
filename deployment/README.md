@@ -1,145 +1,271 @@
-# 部署目录说明
+# 前后端分离部署目录
 
-## 目录结构
+本目录包含前后端分离架构的Docker部署配置和脚本。
+
+## 🏗️ 架构概述
+
+前后端分离部署将应用拆分为两个独立的Docker容器：
+- **后端容器**: Node.js API服务 (端口8080)
+- **前端容器**: Nginx + Vue.js静态文件服务 (端口80)
+- **可选代理**: Nginx反向代理提供统一入口 (端口8000)
+
+## 📁 目录结构
 
 ```
 deployment/
-├── README.md                           # 本说明文件
-├── docker-compose.production.yml      # 生产环境完整配置（包含数据库、监控等）
-├── docker-compose.simple.yml          # 简化配置（仅应用，使用外部服务）
-├── deploy.sh                          # 主要部署脚本（功能完整）
-└── deploy-production.sh               # 生产环境部署脚本（简化版）
+├── README.md                    # 本说明文件
+├── docker-compose.yml          # 基础部署配置（推荐）
+├── docker-compose.separated.yml # 带代理的分离部署配置
+├── .env.template               # 环境变量配置模板
+├── deploy-separated.sh         # Linux/macOS部署脚本
+├── deploy-separated.ps1        # Windows PowerShell部署脚本
+└── nginx/
+    ├── nginx-separated.conf    # Nginx代理配置
+    └── nginx.conf             # 基础Nginx配置
 ```
 
-**注意**: 环境配置模板和文档已移至项目根目录和docs目录：
-- `.env.production.template` → 项目根目录
-- 构建和配置文档 → `docs/deployment/` 目录
+## 🚀 快速开始
 
-## 文件用途说明
+### 1. 环境准备
 
-### Docker Compose配置
+确保已安装：
+- Docker 20.10+
+- Docker Compose 2.0+
 
-#### docker-compose.production.yml
-- **用途**: 完整的生产环境配置
-- **包含**: 应用、数据库、Redis、监控、日志等完整服务栈
-- **适用场景**: 全新部署，需要完整的基础设施
+### 2. 配置环境变量
 
-#### docker-compose.simple.yml
-- **用途**: 简化的应用配置
-- **包含**: 仅应用容器
-- **适用场景**: 使用外部MySQL和Redis服务器的部署
-
-### 部署脚本
-
-#### deploy.sh
-- **用途**: 主要部署脚本，功能最完整
-- **功能**: 初始化、部署、更新、备份、恢复、监控
-- **推荐**: 生产环境使用
-
-#### deploy-production.sh
-- **用途**: 简化的生产环境部署脚本
-- **功能**: 基本的部署和健康检查
-- **适用**: 快速部署场景
-
-### 配置文件
-
-#### .env.production.template
-- **用途**: 环境变量配置模板
-- **使用**: 复制为 `.env` 并填写实际配置值
-
-### 文档
-
-#### docker-build-guide.md
-- **用途**: 完整的Docker镜像构建指南
-- **内容**: 构建命令、环境要求、故障排除
-
-#### dockerfile-configuration.md
-- **用途**: Dockerfile配置详解
-- **内容**: 多阶段构建、安全配置、优化技巧
-
-#### build-checklist.md
-- **用途**: 构建和部署检查清单
-- **内容**: 质量保证流程、验证步骤
-
-## 使用建议
-
-### 场景1: 使用外部MySQL和Redis（推荐）
 ```bash
-# 1. 复制环境配置
-cp .env.production.template .env
-# 编辑 .env 文件，填写数据库和Redis配置
+# 复制环境变量模板
+cp .env.template .env
 
-# 2. 使用简化配置部署
-docker-compose -f docker-compose.simple.yml up -d
-
-# 或使用部署脚本
-./deploy-production.sh
+# 编辑配置文件，填写数据库和Redis信息
+nano .env
 ```
 
-### 场景2: 完整基础设施部署
+### 3. 选择部署方式
+
+#### 方式一：基础部署（推荐）
 ```bash
-# 1. 复制环境配置
-cp .env.production.template .env.production
-# 编辑配置文件
+# Linux/macOS
+./deploy-separated.sh
 
-# 2. 使用完整部署脚本
-./deploy.sh --init
-./deploy.sh --deploy
+# Windows PowerShell
+.\deploy-separated.ps1
 ```
 
-### 场景3: 快速测试部署
+#### 方式二：带代理的部署
 ```bash
-# 直接使用Docker命令
-docker run -d --name contract-ledger \
-  -p 8000:80 -p 8080:8080 \
-  -e DB_HOST=your_db_host \
-  -e REDIS_HOST=your_redis_host \
-  ghcr.milu.moe/bluewatercg/projectcontractledger:latest
+# Linux/macOS
+./deploy-separated.sh --proxy
+
+# Windows PowerShell
+.\deploy-separated.ps1 -Mode proxy
 ```
 
-## 清理说明
+#### 方式三：手动部署
+```bash
+# 基础部署
+docker-compose up -d
 
-### 已删除的文件
-以下文件已被删除，因为它们是重复的或过时的：
+# 带代理的部署
+docker-compose -f docker-compose.separated.yml --profile proxy up -d
+```
 
-#### 临时修复文档（已过时）
-- `api-config-fix-summary.md` - API配置修复总结
-- `dockerignore-fix-summary.md` - .dockerignore修复总结
-- `production-deployment-adjustments.md` - 生产环境调整说明
+## 📋 配置说明
 
-#### 重复的中文文档
-- `反向代理部署指南.md` - 与英文文档重复
-- `外部服务器部署指南.md` - 与英文文档重复
-- `生产环境部署说明.md` - 与英文文档重复
+### 必需配置项
 
-#### 重复的Docker Compose文件
-- `docker-compose.app-only.yml` - 与simple版本重复
-- `docker-compose.external-mysql.yml` - 与simple版本重复
-- `docker-compose.external-services.yml` - 与simple版本功能重复
+编辑 `.env` 文件，填写以下必需配置：
 
-#### 重复的部署脚本
-- `deploy-app-only.sh` - 功能被主脚本包含
-- `deploy-external.sh` - 功能被主脚本包含
+```bash
+# 数据库配置（必填）
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
+JWT_SECRET=your_jwt_secret_key
 
-#### 过时的指南文档
-- `external-services-deployment-guide.md` - 信息已整合到其他文档
+# 服务器IP配置（根据实际环境调整）
+BACKEND_HOST=192.168.1.115
+FRONTEND_HOST=192.168.1.115
 
-### 保留原则
-- **功能完整性**: 保留功能最完整的版本
-- **维护性**: 保留最容易维护的版本
-- **实用性**: 保留最常用的配置
-- **文档质量**: 保留最详细和准确的文档
+# 外部服务地址（根据实际环境调整）
+DB_HOST=192.168.1.254
+REDIS_HOST=192.168.1.160
+```
 
-## 维护建议
+### 可选配置项
 
-1. **定期更新**: 保持环境配置和文档的时效性
-2. **版本控制**: 重要配置变更要有版本记录
-3. **测试验证**: 配置变更后要进行完整测试
-4. **文档同步**: 代码变更时同步更新相关文档
+```bash
+# 端口配置（可根据需要调整）
+BACKEND_PORT=8080
+FRONTEND_PORT=80
+PROXY_PORT=8000
 
-## 相关链接
+# 网络模式
+NETWORK_MODE=bridge
 
-- [Docker构建指南](./docker-build-guide.md)
-- [Dockerfile配置说明](./dockerfile-configuration.md)
-- [构建检查清单](./build-checklist.md)
+# 其他配置
+LOG_LEVEL=info
+TZ=Asia/Shanghai
+```
+
+## 🎯 部署模式
+
+### 基础模式（推荐）
+- **特点**: 前后端独立容器，直接访问
+- **适用**: 大多数生产环境
+- **访问**:
+  - 前端: http://服务器IP:80
+  - 后端: http://服务器IP:8080
+
+### 代理模式
+- **特点**: 通过Nginx代理提供统一入口
+- **适用**: 需要统一域名访问的场景
+- **访问**:
+  - 统一入口: http://服务器IP:8000
+  - 前端直接: http://服务器IP:80
+  - 后端直接: http://服务器IP:8080
+
+## 🛠️ 管理命令
+
+### 部署脚本命令
+
+```bash
+# Linux/macOS
+./deploy-separated.sh --basic    # 基础部署
+./deploy-separated.sh --proxy    # 代理部署
+./deploy-separated.sh --update   # 更新部署
+./deploy-separated.sh --stop     # 停止服务
+./deploy-separated.sh --logs     # 查看日志
+./deploy-separated.sh --status   # 查看状态
+
+# Windows PowerShell
+.\deploy-separated.ps1 -Mode basic   # 基础部署
+.\deploy-separated.ps1 -Mode proxy   # 代理部署
+.\deploy-separated.ps1 -Mode update  # 更新部署
+.\deploy-separated.ps1 -Mode stop    # 停止服务
+.\deploy-separated.ps1 -Mode logs    # 查看日志
+.\deploy-separated.ps1 -Mode status  # 查看状态
+```
+
+### Docker Compose命令
+
+```bash
+# 基础部署
+docker-compose up -d
+docker-compose logs -f
+docker-compose down
+
+# 代理部署
+docker-compose -f docker-compose.separated.yml --profile proxy up -d
+docker-compose -f docker-compose.separated.yml logs -f
+docker-compose -f docker-compose.separated.yml down
+```
+
+## 🔧 故障排除
+
+### 常见问题
+
+#### 1. 容器启动失败
+```bash
+# 检查日志
+docker-compose logs backend
+docker-compose logs frontend
+
+# 检查环境变量
+cat .env
+```
+
+#### 2. 数据库连接失败
+- 检查 `DB_HOST`、`DB_USERNAME`、`DB_PASSWORD` 配置
+- 确认外部MySQL服务可访问
+- 检查防火墙设置
+
+#### 3. Redis连接失败
+- 检查 `REDIS_HOST`、`REDIS_PORT` 配置
+- 确认外部Redis服务可访问
+- 检查Redis密码配置
+
+#### 4. 前后端通讯失败
+- 检查 `BACKEND_HOST`、`BACKEND_PORT` 配置
+- 确认网络模式设置正确
+- 检查容器间网络连通性
+
+### 健康检查
+
+```bash
+# 检查后端健康状态
+curl http://localhost:8080/health
+
+# 检查前端访问
+curl http://localhost:80
+
+# 检查代理（如果使用）
+curl http://localhost:8000/health
+```
+
+## 📊 监控和日志
+
+### 查看日志
+```bash
+# 查看所有服务日志
+docker-compose logs -f
+
+# 查看特定服务日志
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# 查看最近的日志
+docker-compose logs --tail=100 backend
+```
+
+### 监控资源使用
+```bash
+# 查看容器状态
+docker-compose ps
+
+# 查看资源使用情况
+docker stats
+
+# 查看容器详细信息
+docker inspect contract-ledger-backend
+docker inspect contract-ledger-frontend
+```
+
+## 🔄 更新和维护
+
+### 更新镜像
+```bash
+# 拉取最新镜像
+docker-compose pull
+
+# 重启服务
+docker-compose up -d
+```
+
+### 数据备份
+```bash
+# 备份上传文件
+docker cp contract-ledger-backend:/app/uploads ./backup-uploads
+
+# 备份日志
+docker cp contract-ledger-backend:/app/logs ./backup-logs
+```
+
+### 清理资源
+```bash
+# 停止并删除容器
+docker-compose down
+
+# 清理未使用的镜像
+docker image prune -f
+
+# 清理未使用的卷
+docker volume prune -f
+```
+
+## 📚 相关文档
+
 - [项目主文档](../README.md)
+- [Docker构建指南](../docs/deployment/docker-build-guide.md)
+- [分离式部署指南](../docs/deployment/分离式前后端部署指南.md)
+- [GitHub Actions自动构建](../.github/workflows/)

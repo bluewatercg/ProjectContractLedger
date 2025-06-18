@@ -108,60 +108,21 @@ services:
       backend:
         condition: service_healthy
 
-  # Nginx反向代理 (可选 - 统一入口)
-  nginx-proxy:
-    image: nginx:alpine
-    container_name: contract-ledger-nginx-proxy
-    restart: unless-stopped
-    profiles:
-      - proxy  # 使用profile控制是否启动
-
-    # 端口映射
-    ports:
-      - "${PROXY_PORT:-8000}:8000"
-
-    # 环境变量配置
-    environment:
-      - BACKEND_HOST=${BACKEND_HOST:-192.168.1.115}
-      - BACKEND_PORT=${BACKEND_PORT:-8080}
-      - FRONTEND_HOST=${FRONTEND_HOST:-192.168.1.115}
-      - FRONTEND_PORT=${FRONTEND_PORT:-80}
-      - PROXY_PORT=${PROXY_PORT:-8000}
-
-    # 配置文件挂载
-    volumes:
-      - ./nginx/nginx-separated.conf:/etc/nginx/nginx.conf.template:ro
-      - nginx_logs:/var/log/nginx
-
-    # 启动命令 - 替换环境变量并启动nginx
-    command: >
-      sh -c "envsubst '$$BACKEND_HOST $$BACKEND_PORT $$FRONTEND_HOST $$FRONTEND_PORT $$PROXY_PORT'
-      < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
-      nginx -g 'daemon off;'"
-
-    # 健康检查
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PROXY_PORT:-8000}/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-    # 依赖前后端服务
-    depends_on:
-      backend:
-        condition: service_healthy
-      frontend:
-        condition: service_healthy
-
-    # 网络模式配置
-    network_mode: ${NETWORK_MODE:-bridge}
-
 # 数据卷
 volumes:
   backend_logs:
     driver: local
   backend_uploads:
     driver: local
-  nginx_logs:
-    driver: local
+
+# 使用说明：
+# 1. 复制环境变量模板：cp .env.template .env
+# 2. 编辑 .env 文件，填写数据库和Redis配置
+# 3. 启动服务：docker-compose up -d
+# 4. 查看日志：docker-compose logs -f
+# 5. 停止服务：docker-compose down
+# 
+# 访问地址：
+# - 前端：http://您的服务器IP:${FRONTEND_PORT:-80}
+# - 后端API：http://您的服务器IP:${BACKEND_PORT:-8080}
+# - 健康检查：http://您的服务器IP:${BACKEND_PORT:-8080}/health
