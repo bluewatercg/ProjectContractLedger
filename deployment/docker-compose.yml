@@ -15,9 +15,13 @@ services:
     environment:
       # 基础配置
       - NODE_ENV=${NODE_ENV:-production}
-      - BACKEND_PORT=8080
+      - BACKEND_PORT=${BACKEND_CONTAINER_PORT:-8080}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+
+      # API版本配置
+      - API_VERSION=${API_VERSION:-v1}
+      - FRONTEND_API_BASE_URL=${FRONTEND_API_BASE_URL:-/api/v1}
 
       # 外部MySQL数据库配置
       - DB_HOST=${DB_HOST:-192.168.1.254}
@@ -42,6 +46,13 @@ services:
 
       # 时区配置
       - TZ=${TZ:-Asia/Shanghai}
+
+      # 生产环境优化配置
+      - ENABLE_COMPRESSION=${ENABLE_COMPRESSION:-true}
+      - ENABLE_CACHE=${ENABLE_CACHE:-true}
+      - CACHE_TTL=${CACHE_TTL:-3600}
+      - ENABLE_RATE_LIMIT=${ENABLE_RATE_LIMIT:-true}
+      - MAX_REQUESTS_PER_MINUTE=${MAX_REQUESTS_PER_MINUTE:-100}
 
     # 数据卷映射
     volumes:
@@ -81,6 +92,12 @@ services:
       # 后端服务配置 - 支持IP地址通讯
       - BACKEND_HOST=${BACKEND_HOST:-192.168.1.115}
       - BACKEND_PORT=${BACKEND_HOST_PORT:-8080}
+      - BACKEND_HOST_PORT=${BACKEND_HOST_PORT:-8080}
+
+      # API版本配置
+      - API_VERSION=${API_VERSION:-v1}
+      - API_BASE_URL=${FRONTEND_API_BASE_URL:-/api/v1}
+      - FRONTEND_API_BASE_URL=${FRONTEND_API_BASE_URL:-/api/v1}
 
       # 时区配置
       - TZ=${TZ:-Asia/Shanghai}
@@ -108,11 +125,62 @@ services:
       backend:
         condition: service_healthy
 
+  # Nginx反向代理 (可选 - 统一入口)
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: contract-ledger-nginx-proxy
+    restart: unless-stopped
+    profiles:
+      - proxy  # 使用profile控制是否启动
+
+    # 端口映射 - 支持灵活配置
+    ports:
+      - "${PROXY_HOST_PORT:-8001}:${PROXY_CONTAINER_PORT:-80}"
+
+    # 环境变量配置
+    environment:
+      - BACKEND_HOST=${BACKEND_HOST:-192.168.1.115}
+      - BACKEND_PORT=${BACKEND_HOST_PORT:-8080}
+      - FRONTEND_HOST=${FRONTEND_HOST:-192.168.1.115}
+      - FRONTEND_PORT=${FRONTEND_HOST_PORT:-8000}
+      - PROXY_PORT=${PROXY_HOST_PORT:-8001}
+
+    # 配置文件挂载
+    volumes:
+      - ./nginx/nginx-separated.conf:/etc/nginx/nginx.conf.template:ro
+      - nginx_logs:/var/log/nginx
+
+    # 启动命令 - 替换环境变量并启动nginx
+    command: >
+      sh -c "envsubst '$$BACKEND_HOST $$BACKEND_PORT $$FRONTEND_HOST $$FRONTEND_PORT $$PROXY_PORT'
+      < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
+      nginx -g 'daemon off;'"
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PROXY_CONTAINER_PORT:-80}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # 依赖前后端服务
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+    # 网络模式配置
+    network_mode: ${NETWORK_MODE:-bridge}
+
 # 数据卷
 volumes:
   backend_logs:
     driver: local
   backend_uploads:
+    driver: local
+  nginx_logs:
     driver: local
 
 # 使用说明：
@@ -121,8 +189,15 @@ volumes:
 # 3. 启动服务：docker-compose up -d
 # 4. 查看日志：docker-compose logs -f
 # 5. 停止服务：docker-compose down
-# 
+#
+# 端口配置示例：
+# - 前端: FRONTEND_HOST_PORT=8000 (宿主机) -> FRONTEND_CONTAINER_PORT=80 (容器内)
+# - 后端: BACKEND_HOST_PORT=8080 (宿主机) -> BACKEND_CONTAINER_PORT=8080 (容器内)
+# - 代理: PROXY_HOST_PORT=8001 (宿主机) -> PROXY_CONTAINER_PORT=80 (容器内)
+#
 # 访问地址：
-# - 前端：http://您的服务器IP:${FRONTEND_PORT:-80}
-# - 后端API：http://您的服务器IP:${BACKEND_PORT:-8080}
-# - 健康检查：http://您的服务器IP:${BACKEND_PORT:-8080}/health
+# - 前端：http://您的服务器IP:${FRONTEND_HOST_PORT:-8000}
+# - 后端API：http://您的服务器IP:${BACKEND_HOST_PORT:-8080}
+# - 代理入口：http://您的服务器IP:${PROXY_HOST_PORT:-8001}
+# - 健康检查：http://您的服务器IP:${BACKEND_HOST_PORT:-8080}/health
+# - Swagger文档：http://您的服务器IP:${BACKEND_HOST_PORT:-8080}/api-docs
