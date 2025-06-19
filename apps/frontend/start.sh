@@ -27,8 +27,9 @@ CONFIG_FILE="$FRONTEND_DIR/config.js"
 cat > "$CONFIG_FILE" << EOF
 // 运行时环境配置
 window.__APP_CONFIG__ = {
-  // API版本配置（不设置API_BASE_URL，让前端自动检测）
+  // API版本配置 - 使用生产环境指定的API Base URL
   API_VERSION: '${API_VERSION}',
+  API_BASE_URL: '${FRONTEND_API_BASE_URL}',
 
   // 后端配置（用于前端自动构建API URL）
   BACKEND_HOST: '${BACKEND_HOST}',
