@@ -58,7 +58,7 @@ export default {
   // Swagger 配置
   swagger: {
     title: '客户合同管理系统API',
-    description: '客户合同管理系统的RESTful API文档',
+    description: '客户合同管理系统的RESTful API文档，支持客户、合同、发票、支付等业务功能',
     version: '1.0.0',
     termsOfService: '',
     contact: {
@@ -69,6 +69,55 @@ export default {
       name: 'MIT',
       url: 'https://opensource.org/licenses/MIT',
     },
+    // 标签配置
+    tags: [
+      {
+        name: '用户认证',
+        description: '用户登录、注册等认证相关接口'
+      },
+      {
+        name: '客户管理',
+        description: '客户信息的增删改查操作'
+      },
+      {
+        name: '合同管理',
+        description: '合同信息的管理和维护'
+      },
+      {
+        name: '发票管理',
+        description: '发票开具和管理功能'
+      },
+      {
+        name: '支付管理',
+        description: '支付记录的管理和跟踪'
+      },
+      {
+        name: '附件管理',
+        description: '文件上传和附件管理'
+      }
+    ],
+    // UI 显示配置
+    displayOptions: {
+      deepLinking: true,
+      displayOperationId: false,
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 2,
+      defaultModelRendering: 'model',
+      displayRequestDuration: true,
+      docExpansion: 'list',
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tryItOutEnabled: true,
+    },
+    // 文档选项
+    documentOptions: {
+      operationIdFactory: (controllerKey: string, webRouter: any) => {
+        const url = webRouter?.url || webRouter?.path || 'unknown';
+        const method = webRouter?.method || 'unknown';
+        return `${controllerKey}_${method}_${url.replace(/[\/\:]/g, '_')}`;
+      }
+    }
   },
 
   // 文件上传配置
