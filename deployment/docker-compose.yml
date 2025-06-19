@@ -54,10 +54,10 @@ services:
       - ENABLE_RATE_LIMIT=${ENABLE_RATE_LIMIT:-true}
       - MAX_REQUESTS_PER_MINUTE=${MAX_REQUESTS_PER_MINUTE:-100}
 
-    # 数据卷映射
+    # 数据卷映射 - 使用绑定挂载到宿主机
     volumes:
-      - backend_logs:/app/logs
-      - backend_uploads:/app/uploads
+      - ./data/logs:/app/logs
+      - ./data/uploads:/app/uploads
 
     # 健康检查
     healthcheck:

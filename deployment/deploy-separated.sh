@@ -311,12 +311,31 @@ show_help() {
     echo "  $0 --logs         # 查看日志"
 }
 
+# 初始化数据目录
+init_data_directories() {
+    log_info "初始化数据目录..."
+
+    if [ -f "./init-data-dirs.sh" ]; then
+        chmod +x ./init-data-dirs.sh
+        ./init-data-dirs.sh
+    else
+        # 手动创建目录
+        mkdir -p ./data/logs
+        mkdir -p ./data/uploads/contracts
+        mkdir -p ./data/uploads/invoices
+        mkdir -p ./data/uploads/temp
+        chmod -R 755 ./data
+        log_success "数据目录创建完成"
+    fi
+}
+
 # 基础部署
 deploy_basic() {
     log_info "开始基础部署..."
 
     check_docker
     check_env_file
+    init_data_directories
     pull_images "${COMPOSE_FILE}"
     stop_services "${COMPOSE_FILE}"
     start_services "${COMPOSE_FILE}"
@@ -332,6 +351,7 @@ deploy_proxy() {
 
     check_docker
     check_env_file
+    init_data_directories
     pull_images "${COMPOSE_FILE_SEPARATED}"
     stop_services "${COMPOSE_FILE_SEPARATED}"
     start_services "${COMPOSE_FILE_SEPARATED}" "proxy"

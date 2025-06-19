@@ -1,0 +1,36 @@
+# 部署相关忽略文件
+
+# 环境变量文件（包含敏感信息）
+.env
+.env.local
+.env.production
+
+# 数据目录（保留结构，忽略内容）
+data/logs/*
+data/uploads/*
+
+# 保留目录结构
+!data/logs/.gitkeep
+!data/uploads/.gitkeep
+!data/uploads/contracts/.gitkeep
+!data/uploads/invoices/.gitkeep
+!data/uploads/temp/.gitkeep
+
+# 备份文件
+backups/
+*.backup
+*.bak
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Docker相关
+.docker/
+docker-compose.override.yml
+
+# 日志文件
+*.log
+logs/
