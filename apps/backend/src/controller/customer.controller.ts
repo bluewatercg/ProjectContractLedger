@@ -41,11 +41,11 @@ export class CustomerController {
   @Post('/')
   @ApiOperation({
     summary: '创建客户',
-    description: '创建新的客户记录'
+    description: '创建新的客户记录',
   })
   @ApiBody({
     description: '客户创建信息',
-    type: CreateCustomerDto
+    type: CreateCustomerDto,
   })
   @ApiCreatedResponse({
     description: '客户创建成功',
@@ -54,9 +54,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: true },
         data: { type: 'object' },
-        message: { type: 'string', example: '客户创建成功' }
-      }
-    }
+        message: { type: 'string', example: '客户创建成功' },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: '请求参数错误',
@@ -65,9 +65,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: false },
         message: { type: 'string', example: '客户创建失败' },
-        code: { type: 'number', example: 400 }
-      }
-    }
+        code: { type: 'number', example: 400 },
+      },
+    },
   })
   @Validate()
   async createCustomer(
@@ -97,42 +97,42 @@ export class CustomerController {
   @Get('/')
   @ApiOperation({
     summary: '获取客户列表',
-    description: '分页获取客户列表，支持搜索'
+    description: '分页获取客户列表，支持搜索',
   })
   @ApiQuery({
     name: 'page',
     description: '页码',
     required: false,
     type: 'integer',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'limit',
     description: '每页数量',
     required: false,
     type: 'integer',
-    example: 10
+    example: 10,
   })
   @ApiQuery({
     name: 'search',
     description: '搜索关键词（客户名称）',
     required: false,
     type: 'string',
-    example: '阿里巴巴'
+    example: '阿里巴巴',
   })
   @ApiQuery({
     name: 'sortBy',
     description: '排序字段',
     required: false,
     type: 'string',
-    example: 'created_at'
+    example: 'created_at',
   })
   @ApiQuery({
     name: 'sortOrder',
     description: '排序方向',
     required: false,
     enum: ['ASC', 'DESC'],
-    example: 'DESC'
+    example: 'DESC',
   })
   @ApiOkResponse({
     description: '获取客户列表成功',
@@ -147,12 +147,12 @@ export class CustomerController {
             total: { type: 'integer', example: 100 },
             page: { type: 'integer', example: 1 },
             limit: { type: 'integer', example: 10 },
-            totalPages: { type: 'integer', example: 10 }
-          }
+            totalPages: { type: 'integer', example: 10 },
+          },
         },
-        message: { type: 'string', example: '获取客户列表成功' }
-      }
-    }
+        message: { type: 'string', example: '获取客户列表成功' },
+      },
+    },
   })
   async getCustomers(
     @Query() query: PaginationQuery & { search?: string }
@@ -179,13 +179,13 @@ export class CustomerController {
   @Get('/:id')
   @ApiOperation({
     summary: '获取客户详情',
-    description: '根据客户ID获取客户详细信息'
+    description: '根据客户ID获取客户详细信息',
   })
   @ApiParam({
     name: 'id',
     description: '客户ID',
     type: 'integer',
-    example: 1
+    example: 1,
   })
   @ApiOkResponse({
     description: '获取客户详情成功',
@@ -194,9 +194,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: true },
         data: { type: 'object' },
-        message: { type: 'string', example: '获取客户详情成功' }
-      }
-    }
+        message: { type: 'string', example: '获取客户详情成功' },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: '客户不存在',
@@ -205,9 +205,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: false },
         message: { type: 'string', example: '客户不存在' },
-        code: { type: 'number', example: 404 }
-      }
-    }
+        code: { type: 'number', example: 404 },
+      },
+    },
   })
   async getCustomerById(@Param('id') id: number): Promise<ApiResponse> {
     try {
@@ -239,17 +239,17 @@ export class CustomerController {
   @Put('/:id')
   @ApiOperation({
     summary: '更新客户信息',
-    description: '根据客户ID更新客户信息'
+    description: '根据客户ID更新客户信息',
   })
   @ApiParam({
     name: 'id',
     description: '客户ID',
     type: 'integer',
-    example: 1
+    example: 1,
   })
   @ApiBody({
     description: '客户更新信息',
-    type: UpdateCustomerDto
+    type: UpdateCustomerDto,
   })
   @ApiOkResponse({
     description: '客户信息更新成功',
@@ -258,9 +258,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: true },
         data: { type: 'object' },
-        message: { type: 'string', example: '客户信息更新成功' }
-      }
-    }
+        message: { type: 'string', example: '客户信息更新成功' },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: '客户不存在',
@@ -269,9 +269,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: false },
         message: { type: 'string', example: '客户不存在' },
-        code: { type: 'number', example: 404 }
-      }
-    }
+        code: { type: 'number', example: 404 },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: '请求参数错误',
@@ -280,9 +280,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: false },
         message: { type: 'string', example: '客户信息更新失败' },
-        code: { type: 'number', example: 400 }
-      }
-    }
+        code: { type: 'number', example: 400 },
+      },
+    },
   })
   @Validate()
   async updateCustomer(
@@ -321,13 +321,13 @@ export class CustomerController {
   @Del('/:id')
   @ApiOperation({
     summary: '删除客户',
-    description: '根据客户ID删除客户记录'
+    description: '根据客户ID删除客户记录',
   })
   @ApiParam({
     name: 'id',
     description: '客户ID',
     type: 'integer',
-    example: 1
+    example: 1,
   })
   @ApiOkResponse({
     description: '客户删除成功',
@@ -335,9 +335,9 @@ export class CustomerController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: '客户删除成功' }
-      }
-    }
+        message: { type: 'string', example: '客户删除成功' },
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: '客户不存在',
@@ -346,9 +346,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: false },
         message: { type: 'string', example: '客户不存在' },
-        code: { type: 'number', example: 404 }
-      }
-    }
+        code: { type: 'number', example: 404 },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: '删除失败',
@@ -357,9 +357,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: false },
         message: { type: 'string', example: '客户删除失败' },
-        code: { type: 'number', example: 400 }
-      }
-    }
+        code: { type: 'number', example: 400 },
+      },
+    },
   })
   async deleteCustomer(@Param('id') id: number): Promise<ApiResponse> {
     try {
@@ -390,13 +390,13 @@ export class CustomerController {
   @Get('/status/:status')
   @ApiOperation({
     summary: '根据状态获取客户列表',
-    description: '根据客户状态筛选客户列表'
+    description: '根据客户状态筛选客户列表',
   })
   @ApiParam({
     name: 'status',
     description: '客户状态',
     enum: ['active', 'inactive', 'suspended'],
-    example: 'active'
+    example: 'active',
   })
   @ApiOkResponse({
     description: '获取客户列表成功',
@@ -405,9 +405,9 @@ export class CustomerController {
       properties: {
         success: { type: 'boolean', example: true },
         data: { type: 'array', items: { type: 'object' } },
-        message: { type: 'string', example: '获取客户列表成功' }
-      }
-    }
+        message: { type: 'string', example: '获取客户列表成功' },
+      },
+    },
   })
   async getCustomersByStatus(
     @Param('status') status: string
