@@ -85,7 +85,7 @@
             v-model="form.description"
             type="textarea"
             :rows="4"
-            placeholder="请输入发票描述"
+            placeholder="请输入发票描述（发票号等）"
           />
         </el-form-item>
         

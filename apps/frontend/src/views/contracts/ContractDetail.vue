@@ -70,7 +70,18 @@
 
         <!-- 发票列表 -->
         <el-table :data="contract?.invoices || []" border style="width: 100%">
-          <el-table-column prop="invoice_number" label="发票编号" width="150" />
+          <el-table-column prop="invoice_number" label="发票编号" width="150">
+            <template #default="scope">
+              <el-link
+                type="primary"
+                @click="goToEditInvoice(scope.row.id)"
+                :underline="false"
+                class="invoice-link"
+              >
+                {{ scope.row.invoice_number }}
+              </el-link>
+            </template>
+          </el-table-column>
           <el-table-column prop="amount" label="发票金额" width="120">
             <template #default="scope">
               ¥{{ formatCurrency(scope.row.total_amount) }}
@@ -370,6 +381,11 @@ const goToCreatePayment = (invoiceId: number) => {
   router.push(`/payments/create?invoiceId=${invoiceId}`)
 }
 
+// 跳转到发票编辑页面
+const goToEditInvoice = (invoiceId: number) => {
+  router.push(`/invoices/${invoiceId}/edit`)
+}
+
 // 返回上一页
 const goBack = () => {
   router.go(-1)
@@ -573,5 +589,15 @@ onMounted(() => {
   margin-top: 12px;
   padding-top: 8px;
   border-top: 1px solid #e4e7ed;
+}
+
+/* 发票编号链接样式 */
+.invoice-link {
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.invoice-link:hover {
+  text-decoration: underline;
 }
 </style>
