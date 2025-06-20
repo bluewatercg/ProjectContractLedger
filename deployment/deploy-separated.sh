@@ -173,6 +173,43 @@ start_services() {
     log_success "服务启动完成"
 }
 
+# 验证上传权限
+verify_upload_permissions() {
+    log_info "验证上传目录权限..."
+
+    # 检查目录是否存在
+    if [ ! -d "./data/uploads" ]; then
+        log_error "上传目录不存在"
+        return 1
+    fi
+
+    # 显示目录权限
+    log_info "目录权限状态："
+    ls -la ./data/ | sed 's/^/  /'
+    ls -la ./data/uploads/ | sed 's/^/  /'
+
+    # 如果后端容器正在运行，测试容器内权限
+    if docker ps --format "table {{.Names}}" | grep -q "contract-ledger-backend"; then
+        log_info "测试容器内权限..."
+
+        # 测试目录创建权限
+        if docker exec contract-ledger-backend mkdir -p /app/uploads/contracts/test 2>/dev/null; then
+            log_success "contracts目录权限正常"
+            docker exec contract-ledger-backend rmdir /app/uploads/contracts/test 2>/dev/null || true
+        else
+            log_warning "contracts目录权限可能有问题"
+        fi
+
+        # 测试文件创建权限
+        if docker exec contract-ledger-backend touch /app/uploads/test.txt 2>/dev/null; then
+            log_success "文件创建权限正常"
+            docker exec contract-ledger-backend rm /app/uploads/test.txt 2>/dev/null || true
+        else
+            log_warning "文件创建权限可能有问题"
+        fi
+    fi
+}
+
 # 检查服务状态
 check_services() {
     local compose_file="$1"
@@ -324,8 +361,14 @@ init_data_directories() {
         mkdir -p ./data/uploads/contracts
         mkdir -p ./data/uploads/invoices
         mkdir -p ./data/uploads/temp
-        chmod -R 755 ./data
-        log_success "数据目录创建完成"
+
+        # 设置正确的权限以解决上传权限问题
+        # 容器内运行的是midway用户（UID 1001），需要确保可写权限
+        log_info "设置目录权限以支持文件上传..."
+        chmod -R 755 ./data/logs
+        chmod -R 777 ./data/uploads  # 设置777权限确保容器内用户可写
+
+        log_success "数据目录创建完成，权限已设置"
     fi
 }
 
@@ -340,6 +383,7 @@ deploy_basic() {
     stop_services "${COMPOSE_FILE}"
     start_services "${COMPOSE_FILE}"
     check_services "${COMPOSE_FILE}"
+    verify_upload_permissions
     show_access_info "basic"
 
     log_success "基础部署完成！"
@@ -356,6 +400,7 @@ deploy_proxy() {
     stop_services "${COMPOSE_FILE_SEPARATED}"
     start_services "${COMPOSE_FILE_SEPARATED}" "proxy"
     check_services "${COMPOSE_FILE_SEPARATED}"
+    verify_upload_permissions
     show_access_info "proxy"
 
     log_success "代理部署完成！"

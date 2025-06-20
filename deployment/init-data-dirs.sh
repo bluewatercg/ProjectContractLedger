@@ -36,23 +36,25 @@ mkdir -p "$DATA_DIR/uploads/temp"
 
 # 设置权限 (确保Docker容器可以写入)
 echo "设置目录权限..."
-chmod -R 755 "$DATA_DIR"
+chmod -R 755 "$DATA_DIR/logs"
 
-# 如果是Linux系统，设置适当的所有者
+# 为上传目录设置777权限，确保容器内midway用户（UID 1001）可以写入
+echo "设置上传目录权限（解决权限问题）..."
+chmod -R 777 "$DATA_DIR/uploads"
+
+# 如果是Linux系统，尝试设置适当的所有者
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo -e "${YELLOW}检测到Linux系统，设置目录所有者...${NC}"
-    
-    # 获取当前用户ID和组ID
-    USER_ID=$(id -u)
-    GROUP_ID=$(id -g)
-    
-    echo "设置所有者为 $USER_ID:$GROUP_ID"
-    chown -R "$USER_ID:$GROUP_ID" "$DATA_DIR"
-    
-    # 为Docker容器设置适当的权限
-    # Docker容器通常以特定的用户ID运行，我们需要确保权限兼容
-    chmod -R 777 "$DATA_DIR/uploads"
-    chmod -R 777 "$DATA_DIR/logs"
+    echo -e "${YELLOW}检测到Linux系统，尝试设置目录所有者...${NC}"
+
+    # 尝试设置为容器内的用户ID（midway用户，UID 1001）
+    if command -v chown &> /dev/null; then
+        echo "尝试设置所有者为1001:1001（容器内midway用户）"
+        chown -R 1001:1001 "$DATA_DIR" 2>/dev/null || {
+            echo -e "${YELLOW}无法设置所有者，使用777权限模式${NC}"
+        }
+    fi
+else
+    echo -e "${YELLOW}非Linux系统，使用777权限模式${NC}"
 fi
 
 # 创建.gitkeep文件以保持目录结构
