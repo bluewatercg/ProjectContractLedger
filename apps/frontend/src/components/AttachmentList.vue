@@ -96,6 +96,7 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, Picture, Download, View, Delete } from '@element-plus/icons-vue'
+import { attachmentApi } from '@/api/attachment'
 
 // Types
 interface Attachment {
@@ -191,9 +192,8 @@ const previewFile = (attachment: Attachment) => {
   previewFileData.value = attachment
   previewType.value = isPdf(attachment.file_name) ? 'pdf' : 'image'
 
-  // 为预览URL添加认证token
-  const token = localStorage.getItem('token')
-  previewUrl.value = `/api/v1/attachments/${attachment.attachment_id}/download?token=${token}`
+  // 使用API模块的预览URL生成方法，确保使用正确的基础URL
+  previewUrl.value = attachmentApi.getAttachmentPreviewUrl(attachment.attachment_id)
   previewVisible.value = true
 }
 

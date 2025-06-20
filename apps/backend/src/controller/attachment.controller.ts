@@ -71,8 +71,41 @@ export class AttachmentController {
         file.filename
       );
 
+      // 添加调试日志
+      console.log('文件上传调试信息:', {
+        originalFile: file.data,
+        targetPath: filePath,
+        originalExists: fs.existsSync(file.data),
+        targetDirExists: fs.existsSync(path.dirname(filePath)),
+        fileSize: fileSize
+      });
+
+      // 确保目标目录存在
+      const targetDir = path.dirname(filePath);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log('创建目标目录:', targetDir);
+      }
+
       // 移动文件到目标位置
-      fs.copyFileSync(file.data, filePath);
+      try {
+        fs.copyFileSync(file.data, filePath);
+        console.log('文件复制成功:', filePath);
+
+        // 验证文件是否真的被复制
+        if (!fs.existsSync(filePath)) {
+          throw new Error('文件复制后不存在于目标位置');
+        }
+
+        const copiedFileSize = fs.statSync(filePath).size;
+        if (copiedFileSize !== fileSize) {
+          throw new Error(`文件大小不匹配: 原始${fileSize}, 复制后${copiedFileSize}`);
+        }
+
+      } catch (copyError) {
+        console.error('文件复制失败:', copyError);
+        throw new Error(`文件保存失败: ${copyError.message}`);
+      }
 
       // 创建附件记录
       const attachment = await this.contractAttachmentService.createAttachment(
@@ -85,8 +118,15 @@ export class AttachmentController {
         }
       );
 
+      console.log('附件记录创建成功:', attachment);
+
       // 清理临时文件
-      fs.unlinkSync(file.data);
+      try {
+        fs.unlinkSync(file.data);
+        console.log('临时文件清理成功:', file.data);
+      } catch (cleanupError) {
+        console.warn('临时文件清理失败:', cleanupError.message);
+      }
 
       return {
         success: true,
@@ -205,8 +245,41 @@ export class AttachmentController {
         file.filename
       );
 
+      // 添加调试日志
+      console.log('发票文件上传调试信息:', {
+        originalFile: file.data,
+        targetPath: filePath,
+        originalExists: fs.existsSync(file.data),
+        targetDirExists: fs.existsSync(path.dirname(filePath)),
+        fileSize: fileSize
+      });
+
+      // 确保目标目录存在
+      const targetDir = path.dirname(filePath);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log('创建发票目标目录:', targetDir);
+      }
+
       // 移动文件到目标位置
-      fs.copyFileSync(file.data, filePath);
+      try {
+        fs.copyFileSync(file.data, filePath);
+        console.log('发票文件复制成功:', filePath);
+
+        // 验证文件是否真的被复制
+        if (!fs.existsSync(filePath)) {
+          throw new Error('文件复制后不存在于目标位置');
+        }
+
+        const copiedFileSize = fs.statSync(filePath).size;
+        if (copiedFileSize !== fileSize) {
+          throw new Error(`文件大小不匹配: 原始${fileSize}, 复制后${copiedFileSize}`);
+        }
+
+      } catch (copyError) {
+        console.error('发票文件复制失败:', copyError);
+        throw new Error(`文件保存失败: ${copyError.message}`);
+      }
 
       // 创建附件记录
       const attachment = await this.invoiceAttachmentService.createAttachment(
@@ -219,8 +292,15 @@ export class AttachmentController {
         }
       );
 
+      console.log('发票附件记录创建成功:', attachment);
+
       // 清理临时文件
-      fs.unlinkSync(file.data);
+      try {
+        fs.unlinkSync(file.data);
+        console.log('发票临时文件清理成功:', file.data);
+      } catch (cleanupError) {
+        console.warn('发票临时文件清理失败:', cleanupError.message);
+      }
 
       return {
         success: true,
@@ -348,8 +428,25 @@ export class AttachmentController {
         return;
       }
 
+      // 添加详细的调试信息
+      console.log('文件下载/预览调试信息:', {
+        attachmentId,
+        fileName,
+        filePath,
+        fileExists: fs.existsSync(filePath),
+        isPreview: !!token,
+        uploadDir: process.env.UPLOAD_DIR || '/app/uploads'
+      });
+
       // 检查文件是否存在
       if (!fs.existsSync(filePath)) {
+        console.error('文件不存在:', {
+          filePath,
+          dirExists: fs.existsSync(path.dirname(filePath)),
+          dirContents: fs.existsSync(path.dirname(filePath)) ?
+            fs.readdirSync(path.dirname(filePath)) : '目录不存在'
+        });
+
         this.ctx.status = 404;
         this.ctx.body = { success: false, message: '文件不存在' };
         return;
