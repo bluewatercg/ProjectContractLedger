@@ -123,7 +123,7 @@
             <template #default="scope">
               <el-link
                 type="primary"
-                @click="goToEditInvoice(scope.row.id)"
+                @click="goToViewInvoice(scope.row.id)"
                 :underline="false"
                 class="invoice-link"
               >
@@ -489,9 +489,9 @@ const handleSubmit = async () => {
   }
 }
 
-// 跳转到发票编辑页面
-const goToEditInvoice = (invoiceId: number) => {
-  router.push(`/invoices/${invoiceId}/edit`)
+// 跳转到发票查看页面
+const goToViewInvoice = (invoiceId: number) => {
+  router.push(`/invoices/${invoiceId}`)
 }
 
 // 返回上一页
