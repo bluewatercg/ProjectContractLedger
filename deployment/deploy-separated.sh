@@ -10,6 +10,7 @@
 #   --stop      停止服务
 #   --logs      查看日志
 #   --status    查看状态
+#   --cleanup   清理临时和旧镜像
 
 set -e
 
@@ -145,6 +146,92 @@ pull_images() {
     log_success "镜像拉取完成"
 }
 
+# 清理旧镜像
+cleanup_old_images() {
+    log_info "清理临时和旧镜像..."
+
+    # 获取当前正在使用的镜像
+    local current_images
+    current_images=$(docker ps --format "table {{.Image}}" | grep -v "IMAGE" | sort | uniq)
+
+    # 显示清理前的镜像状态
+    log_info "清理前镜像统计："
+    docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -10 | sed 's/^/  /'
+
+    # 清理悬空镜像（dangling images）
+    log_info "清理悬空镜像..."
+    local dangling_count
+    dangling_count=$(docker images -f "dangling=true" -q | wc -l)
+
+    if [ "$dangling_count" -gt 0 ]; then
+        docker rmi $(docker images -f "dangling=true" -q) 2>/dev/null || true
+        log_success "清理了 $dangling_count 个悬空镜像"
+    else
+        log_info "没有悬空镜像需要清理"
+    fi
+
+    # 清理项目相关的旧镜像（保留最新的2个版本）
+    log_info "清理项目旧镜像..."
+
+    # 清理后端镜像
+    local backend_images
+    backend_images=$(docker images --format "{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedAt}}" | \
+                    grep "projectcontractledger-backend" | \
+                    sort -k3 -r | \
+                    tail -n +3)
+
+    if [ -n "$backend_images" ]; then
+        echo "$backend_images" | while read -r line; do
+            local image_id=$(echo "$line" | awk '{print $2}')
+            local image_name=$(echo "$line" | awk '{print $1}')
+
+            # 检查镜像是否正在使用
+            if ! echo "$current_images" | grep -q "$image_name"; then
+                log_info "删除旧后端镜像: $image_name"
+                docker rmi "$image_id" 2>/dev/null || true
+            fi
+        done
+    fi
+
+    # 清理前端镜像
+    local frontend_images
+    frontend_images=$(docker images --format "{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedAt}}" | \
+                     grep "projectcontractledger-frontend" | \
+                     sort -k3 -r | \
+                     tail -n +3)
+
+    if [ -n "$frontend_images" ]; then
+        echo "$frontend_images" | while read -r line; do
+            local image_id=$(echo "$line" | awk '{print $2}')
+            local image_name=$(echo "$line" | awk '{print $1}')
+
+            # 检查镜像是否正在使用
+            if ! echo "$current_images" | grep -q "$image_name"; then
+                log_info "删除旧前端镜像: $image_name"
+                docker rmi "$image_id" 2>/dev/null || true
+            fi
+        done
+    fi
+
+    # 清理未使用的网络
+    log_info "清理未使用的Docker网络..."
+    docker network prune -f >/dev/null 2>&1 || true
+
+    # 清理未使用的卷（谨慎操作，只清理匿名卷）
+    log_info "清理未使用的匿名卷..."
+    docker volume prune -f >/dev/null 2>&1 || true
+
+    # 显示清理后的状态
+    log_info "清理后镜像统计："
+    docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -10 | sed 's/^/  /'
+
+    # 显示磁盘空间节省情况
+    log_info "Docker系统空间使用情况："
+    docker system df | sed 's/^/  /'
+
+    log_success "镜像清理完成"
+}
+
 # 停止现有服务
 stop_services() {
     local compose_file="$1"
@@ -177,27 +264,60 @@ start_services() {
 verify_upload_permissions() {
     log_info "验证上传目录权限..."
 
-    # 检查目录是否存在
-    if [ ! -d "./data/uploads" ]; then
-        log_error "上传目录不存在"
-        return 1
+    # 解析docker-compose.yml中的卷映射
+    local volume_info
+    volume_info=$(parse_volume_mappings)
+
+    if [ $? -ne 0 ]; then
+        log_warning "无法解析Docker Compose文件，跳过权限验证"
+        return 0
     fi
 
-    # 显示目录权限
-    log_info "目录权限状态："
-    ls -la ./data/ | sed 's/^/  /'
-    ls -la ./data/uploads/ | sed 's/^/  /'
+    # 提取路径信息
+    local uploads_host_path
+    local logs_host_path
+    uploads_host_path=$(echo "$volume_info" | grep "UPLOADS_HOST_PATH=" | cut -d'=' -f2)
+    logs_host_path=$(echo "$volume_info" | grep "LOGS_HOST_PATH=" | cut -d'=' -f2)
+
+    # 验证宿主机目录权限
+    if [ -n "$uploads_host_path" ] && [ -d "$uploads_host_path" ]; then
+        log_info "宿主机上传目录权限状态："
+        ls -la "$(dirname "$uploads_host_path")" | grep "$(basename "$uploads_host_path")" | sed 's/^/  /'
+
+        if [ -d "$uploads_host_path" ]; then
+            ls -la "$uploads_host_path/" | sed 's/^/  /'
+        fi
+    elif [ -n "$uploads_host_path" ]; then
+        log_warning "上传目录不存在: $uploads_host_path"
+    fi
+
+    if [ -n "$logs_host_path" ] && [ -d "$logs_host_path" ]; then
+        log_info "宿主机日志目录权限状态："
+        ls -la "$(dirname "$logs_host_path")" | grep "$(basename "$logs_host_path")" | sed 's/^/  /'
+    elif [ -n "$logs_host_path" ]; then
+        log_warning "日志目录不存在: $logs_host_path"
+    fi
 
     # 如果后端容器正在运行，测试容器内权限
     if docker ps --format "table {{.Names}}" | grep -q "contract-ledger-backend"; then
         log_info "测试容器内权限..."
+
+        # 检查容器内当前用户
+        log_info "容器内用户信息："
+        docker exec contract-ledger-backend whoami | sed 's/^/  用户: /'
+        docker exec contract-ledger-backend id | sed 's/^/  ID: /'
+
+        # 显示容器内目录权限
+        log_info "容器内目录权限："
+        docker exec contract-ledger-backend ls -la /app/uploads/ | sed 's/^/  /'
 
         # 测试目录创建权限
         if docker exec contract-ledger-backend mkdir -p /app/uploads/contracts/test 2>/dev/null; then
             log_success "contracts目录权限正常"
             docker exec contract-ledger-backend rmdir /app/uploads/contracts/test 2>/dev/null || true
         else
-            log_warning "contracts目录权限可能有问题"
+            log_error "contracts目录权限失败 - 无法创建子目录"
+            log_error "这是导致 'EACCES: permission denied, mkdir' 错误的原因"
         fi
 
         # 测试文件创建权限
@@ -205,8 +325,10 @@ verify_upload_permissions() {
             log_success "文件创建权限正常"
             docker exec contract-ledger-backend rm /app/uploads/test.txt 2>/dev/null || true
         else
-            log_warning "文件创建权限可能有问题"
+            log_error "文件创建权限失败"
         fi
+    else
+        log_warning "后端容器未运行，无法测试容器内权限"
     fi
 }
 
@@ -338,6 +460,7 @@ show_help() {
     echo "  --stop      停止服务"
     echo "  --logs      查看日志"
     echo "  --status    查看状态"
+    echo "  --cleanup   清理临时和旧镜像"
     echo "  --help      显示帮助信息"
     echo ""
     echo "示例:"
@@ -346,29 +469,130 @@ show_help() {
     echo "  $0 --proxy        # 带代理的部署"
     echo "  $0 --update       # 更新部署"
     echo "  $0 --logs         # 查看日志"
+    echo "  $0 --cleanup      # 清理旧镜像"
+}
+
+# 解析docker-compose.yml中的卷映射
+parse_volume_mappings() {
+    local compose_file="${1:-docker-compose.yml}"
+
+    if [ ! -f "$compose_file" ]; then
+        log_error "Docker Compose文件不存在: $compose_file"
+        return 1
+    fi
+
+    # 提取后端服务的卷映射
+    # 查找backend服务的volumes配置
+    local in_backend_volumes=false
+    local uploads_host_path=""
+    local logs_host_path=""
+
+    while IFS= read -r line; do
+        # 检测是否进入backend服务的volumes部分
+        if [[ "$line" =~ ^[[:space:]]*volumes:[[:space:]]*$ ]] && [ "$in_backend_volumes" = true ]; then
+            continue
+        elif [[ "$line" =~ ^[[:space:]]*-[[:space:]]*(.+):/app/uploads[[:space:]]*$ ]]; then
+            uploads_host_path="${BASH_REMATCH[1]}"
+        elif [[ "$line" =~ ^[[:space:]]*-[[:space:]]*(.+):/app/logs[[:space:]]*$ ]]; then
+            logs_host_path="${BASH_REMATCH[1]}"
+        elif [[ "$line" =~ ^[[:space:]]*backend:[[:space:]]*$ ]]; then
+            in_backend_volumes=true
+        elif [[ "$line" =~ ^[[:space:]]*[a-zA-Z_-]+:[[:space:]]*$ ]] && [ "$in_backend_volumes" = true ]; then
+            # 进入其他服务，退出backend解析
+            in_backend_volumes=false
+        fi
+    done < "$compose_file"
+
+    # 输出解析结果
+    echo "UPLOADS_HOST_PATH=$uploads_host_path"
+    echo "LOGS_HOST_PATH=$logs_host_path"
 }
 
 # 初始化数据目录
 init_data_directories() {
     log_info "初始化数据目录..."
 
-    if [ -f "./init-data-dirs.sh" ]; then
-        chmod +x ./init-data-dirs.sh
-        ./init-data-dirs.sh
+    # 解析docker-compose.yml中的卷映射
+    local volume_info
+    volume_info=$(parse_volume_mappings)
+
+    if [ $? -ne 0 ]; then
+        log_error "解析Docker Compose文件失败"
+        return 1
+    fi
+
+    # 提取路径信息
+    local uploads_host_path
+    local logs_host_path
+    uploads_host_path=$(echo "$volume_info" | grep "UPLOADS_HOST_PATH=" | cut -d'=' -f2)
+    logs_host_path=$(echo "$volume_info" | grep "LOGS_HOST_PATH=" | cut -d'=' -f2)
+
+    log_info "检测到卷映射配置:"
+    log_info "  上传目录: $uploads_host_path -> /app/uploads"
+    log_info "  日志目录: $logs_host_path -> /app/logs"
+
+    # 根据路径类型决定创建方式
+    if [[ "$uploads_host_path" =~ ^/ ]]; then
+        # 绝对路径 - 需要sudo权限
+        log_info "检测到绝对路径映射，使用sudo创建目录..."
+
+        if [ -n "$uploads_host_path" ]; then
+            sudo mkdir -p "$uploads_host_path/contracts"
+            sudo mkdir -p "$uploads_host_path/invoices"
+            sudo mkdir -p "$uploads_host_path/temp"
+
+            log_info "设置上传目录权限: $uploads_host_path"
+            sudo chmod -R 777 "$uploads_host_path"
+            sudo chown -R 1001:1001 "$uploads_host_path" 2>/dev/null || {
+                log_warning "无法设置所有者，使用777权限模式"
+            }
+        fi
+
+        if [ -n "$logs_host_path" ]; then
+            sudo mkdir -p "$logs_host_path"
+
+            log_info "设置日志目录权限: $logs_host_path"
+            sudo chmod -R 755 "$logs_host_path"
+            sudo chown -R 1001:1001 "$logs_host_path" 2>/dev/null || true
+        fi
+
+        log_success "绝对路径目录创建完成，权限已设置"
+
     else
-        # 手动创建目录
-        mkdir -p ./data/logs
-        mkdir -p ./data/uploads/contracts
-        mkdir -p ./data/uploads/invoices
-        mkdir -p ./data/uploads/temp
+        # 相对路径 - 直接创建
+        log_info "检测到相对路径映射，直接创建目录..."
 
-        # 设置正确的权限以解决上传权限问题
-        # 容器内运行的是midway用户（UID 1001），需要确保可写权限
-        log_info "设置目录权限以支持文件上传..."
-        chmod -R 755 ./data/logs
-        chmod -R 777 ./data/uploads  # 设置777权限确保容器内用户可写
+        if [ -n "$uploads_host_path" ]; then
+            mkdir -p "$uploads_host_path/contracts"
+            mkdir -p "$uploads_host_path/invoices"
+            mkdir -p "$uploads_host_path/temp"
+            chmod -R 777 "$uploads_host_path"
+        fi
 
-        log_success "数据目录创建完成，权限已设置"
+        if [ -n "$logs_host_path" ]; then
+            mkdir -p "$logs_host_path"
+            chmod -R 755 "$logs_host_path"
+        fi
+
+        log_success "相对路径目录创建完成，权限已设置"
+    fi
+
+    # 如果没有找到卷映射，使用默认方式
+    if [ -z "$uploads_host_path" ] && [ -z "$logs_host_path" ]; then
+        log_warning "未找到卷映射配置，使用默认方式..."
+
+        if [ -f "./init-data-dirs.sh" ]; then
+            chmod +x ./init-data-dirs.sh
+            ./init-data-dirs.sh
+        else
+            mkdir -p ./data/logs
+            mkdir -p ./data/uploads/contracts
+            mkdir -p ./data/uploads/invoices
+            mkdir -p ./data/uploads/temp
+            chmod -R 755 ./data/logs
+            chmod -R 777 ./data/uploads
+            log_success "默认目录创建完成，权限已设置"
+        fi
     fi
 }
 
@@ -380,6 +604,7 @@ deploy_basic() {
     check_env_file
     init_data_directories
     pull_images "${COMPOSE_FILE}"
+    cleanup_old_images
     stop_services "${COMPOSE_FILE}"
     start_services "${COMPOSE_FILE}"
     check_services "${COMPOSE_FILE}"
@@ -397,6 +622,7 @@ deploy_proxy() {
     check_env_file
     init_data_directories
     pull_images "${COMPOSE_FILE_SEPARATED}"
+    cleanup_old_images
     stop_services "${COMPOSE_FILE_SEPARATED}"
     start_services "${COMPOSE_FILE_SEPARATED}" "proxy"
     check_services "${COMPOSE_FILE_SEPARATED}"
@@ -480,6 +706,9 @@ main() {
             ;;
         --status)
             show_status
+            ;;
+        --cleanup)
+            cleanup_old_images
             ;;
         --help)
             show_help
