@@ -118,9 +118,17 @@ ProjectContractLedger/
 │       │   └── stores/      # 状态管理
 ├── database/               # 数据库相关
 ├── docs/                   # 项目文档
-├── scripts/                # 项目脚本
-├── tools/                  # 工具和配置
-└── deployment/             # 部署配置
+│   ├── deployment/         # 部署相关文档
+│   ├── fixes/             # 问题修复文档
+│   └── ...                # 其他文档
+├── tools/                  # 工具脚本
+│   ├── backup/            # 备份和恢复工具
+│   ├── maintenance/       # 维护和调试工具
+│   └── ...               # 其他工具
+├── config/                # 配置文件
+│   └── templates/         # 环境配置模板
+├── scripts/               # 构建和部署脚本
+└── deployment/            # 部署配置
 ```
 
 ## 🚀 快速开始
