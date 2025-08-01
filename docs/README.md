@@ -27,20 +27,32 @@ docs/
 - 错误码定义
 - 接口使用示例
 
-## 🚀 Deployment 文档 (`docs/deployment/`)
+## 🚀 部署文档
 
 ### 部署指南
 | 文件路径 | 作用 | 维护状态 |
 |---------|------|----------|
-| `build-checklist.md` | 构建和部署检查清单 | ✅ 生产就绪 |
+| `DEPLOYMENT_GUIDE.md` | 生产环境部署指南 | ✅ 生产就绪 |
 | `docker-build-guide.md` | Docker镜像构建指南 | ✅ 生产就绪 |
 | `dockerfile-configuration.md` | Dockerfile配置详解 | ✅ 生产就绪 |
+| `build-checklist.md` | 构建和部署检查清单 | ✅ 生产就绪 |
+| `SEPARATED_DEPLOYMENT_SUMMARY.md` | 分离式部署总结 | ✅ 生产就绪 |
+| `分离式前后端部署指南.md` | 分离式部署详细指南 | ✅ 生产就绪 |
+
+### 专项指南
+| 文件路径 | 作用 | 维护状态 |
+|---------|------|----------|
+| `API_VERSION_MANAGEMENT.md` | API版本管理指南 | ✅ 活跃维护 |
+| `GITHUB_RELEASE_GUIDE.md` | GitHub构建发布指南 | ✅ 活跃维护 |
+| `DOCKER_DEPLOYMENT_SUMMARY.md` | Docker部署配置总结 | ✅ 活跃维护 |
 
 **功能特性**：
 - 完整的Docker构建流程
 - 生产环境部署最佳实践
+- 分离式前后端部署方案
+- GitHub Actions自动化部署
+- API版本管理策略
 - 故障排除和问题解决
-- 质量保证检查清单
 
 ## 🎨 Design 文档 (`docs/design/`)
 
@@ -138,25 +150,27 @@ docs/
 
 ## 🚀 快速导航
 
-### 新手入门
-1. [启动指南](user-guide/启动指南.md)
-2. [项目结构说明](user-guide/项目结构说明-新版.md)
-3. [快速部署指南](user-guide/快速部署指南.md)
+### 🌟 新手入门
+1. [⚡ 快速入门指南](QUICK_START.md) - 5分钟快速体验
+2. [📖 完整用户指南](USER_GUIDE.md) - 详细使用说明
+3. [🏗️ 系统架构设计](ARCHITECTURE.md) - 技术架构详解
+4. [🛠️ 开发环境设置](DEVELOPMENT_SETUP.md) - 完整开发环境配置
 
-### 开发者
-1. [API开发指南](development/API_Development_Guide.md)
-2. [数据库设计](development/Database_Design.md)
-3. [Docker部署](development/Docker_Deployment.md)
+### 👨‍💻 开发者
+1. [🚀 API开发指南](development/API_Development_Guide.md) - Midway.js最佳实践
+2. [🗄️ 数据库设计](development/Database_Design.md) - 数据模型详解
+3. [🐳 Docker部署](development/Docker_Deployment.md) - 容器化部署
+4. [🤝 贡献指南](CONTRIBUTING.md) - 如何参与项目开发
 
-### 运维人员
-1. [Docker构建指南](deployment/docker-build-guide.md)
-2. [部署检查清单](deployment/build-checklist.md)
-3. [GitHub Actions部署](development/GitHub_Actions_部署指南.md)
+### 🛠️ 运维人员
+1. [📋 部署指南](DEPLOYMENT_GUIDE.md) - 生产环境部署
+2. [🔧 故障排除](TROUBLESHOOTING.md) - 常见问题解决
+3. [🏗️ Docker构建指南](docker-build-guide.md) - 镜像构建流程
 
-### 产品经理
-1. [产品需求文档](user-guide/PRD.md)
-2. [产品路线图](user-guide/Roadmap.md)
-3. [用户故事地图](user-guide/User_Story_Map.md)
+### 📊 产品经理
+1. [📋 产品需求文档](user-guide/PRD.md) - 完整产品规划
+2. [🗺️ 产品路线图](development/Roadmap.md) - 功能发展规划
+3. [📝 用户故事地图](development/User_Story_Map.md) - 用户需求分析
 
 ## 📝 文档维护
 

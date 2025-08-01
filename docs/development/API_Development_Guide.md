@@ -1,19 +1,44 @@
-# Node.js API 模块快速开发指南
+# 🚀 API 开发指南
 
-本指南旨在提供一个清晰的流程，帮助开发者在 `node_api_service` 文件夹下快速生成和搭建新的 API 模块。
+本指南提供完整的后端API开发流程，帮助开发者快速构建高质量的API服务。
 
-## 核心任务
+## 🎯 开发目标
 
-你的核心任务是：
+基于 Midway.js 框架构建企业级的合同管理系统API，实现：
+- 完整的CRUD操作
+- 标准的RESTful设计
+- 完善的错误处理
+- 自动化的API文档
+- 高质量的代码结构
 
-2.  **后端 API 开发**: 根据 `backend_service/api_spec.yaml` API 定义文档和 `database/scripts/mysql_init.sql` 数据库结构文件，使用 Node.js (及选定框架) 开发和实现后端 API 服务。
+## 📋 技术栈
 
-## 关键输入
+### 后端框架
+- **Midway.js 3.x** - 企业级Node.js框架
+- **TypeORM** - 类型安全的ORM
+- **JWT** - 无状态认证
+- **Swagger/OpenAPI** - 自动化API文档
 
-*   **API 定义文档 (后端实现依据与前端调用契约)**: `backend_service/api_spec.yaml`。包含所有 API 端点、请求/响应格式、HTTP 方法、状态码等。
-*   **数据库结构文件 (后端数据模型)**: `database/scripts/mysql_init.sql`。定义了 MySQL 数据库的表结构。
-*   **数据库查询文件**: `database/scripts/queries.sql`。可作为后端复杂查询逻辑的参考。
-*   **(推荐) 产品需求文档 (PRD)**: (假设路径 `docs/PRD.md`) 获取整体业务背景、用户故事和非功能性需求。
+### 数据库
+- **MySQL 8.0** - 主数据库
+- **Redis 6.0** - 缓存和会话存储
+
+## 📁 项目结构
+
+```
+apps/backend/
+├── src/
+│   ├── controller/          # 控制器层
+│   ├── service/            # 业务逻辑层
+│   ├── entity/             # 数据实体
+│   ├── dto/                # 数据传输对象
+│   ├── middleware/         # 中间件
+│   ├── config/             # 配置文件
+│   └── utils/              # 工具函数
+├── test/                   # 测试文件
+├── package.json
+└── README.md
+```
 
 ## 1. 现有 API 模块结构概览
 
@@ -297,6 +322,486 @@ graph TD
 
 你的主要产出是 `node_api_service/` 代码库（或一个统一管理的项目）及其相关文档，将交付给协调者，并由测试工程师进行全面的功能、UI、API 和性能测试。
 
-## 6. 总结
+## 🔧 Midway.js 开发最佳实践
 
-遵循以上步骤，您将能够高效地在 `node_api_service` 文件夹下搭建新的 API 模块。请务必在每个阶段进行充分的测试，以确保 API 的质量和稳定性。
+### 控制器开发
+```typescript
+import { Controller, Get, Post, Body, Query, Param } from '@midwayjs/core';
+import { ApiTags, ApiOperation, ApiResponse } from '@midwayjs/swagger';
+import { CustomerService } from '../service/customer.service';
+import { CreateCustomerDto, QueryCustomerDto } from '../dto/customer.dto';
+
+@ApiTags('客户管理')
+@Controller('/api/v1/customers')
+export class CustomerController {
+  
+  @Inject()
+  customerService: CustomerService;
+
+  @ApiOperation({ summary: '获取客户列表' })
+  @ApiResponse({ status: 200, description: '成功获取客户列表' })
+  @Get('/')
+  async getCustomers(@Query() query: QueryCustomerDto) {
+    return await this.customerService.findAll(query);
+  }
+
+  @ApiOperation({ summary: '创建客户' })
+  @ApiResponse({ status: 201, description: '客户创建成功' })
+  @Post('/')
+  async createCustomer(@Body() createDto: CreateCustomerDto) {
+    return await this.customerService.create(createDto);
+  }
+}
+```
+
+### 服务层开发
+```typescript
+import { Provide } from '@midwayjs/core';
+import { InjectEntityModel } from '@midwayjs/typeorm';
+import { Repository } from 'typeorm';
+import { Customer } from '../entity/customer.entity';
+import { CreateCustomerDto, QueryCustomerDto } from '../dto/customer.dto';
+
+@Provide()
+export class CustomerService {
+  
+  @InjectEntityModel(Customer)
+  customerRepository: Repository<Customer>;
+
+  async findAll(query: QueryCustomerDto) {
+    const { page = 1, pageSize = 10, name } = query;
+    const queryBuilder = this.customerRepository.createQueryBuilder('customer');
+    
+    if (name) {
+      queryBuilder.where('customer.name LIKE :name', { name: `%${name}%` });
+    }
+    
+    const [data, total] = await queryBuilder
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+    
+    return {
+      data,
+      pagination: { total, page, pageSize }
+    };
+  }
+
+  async create(createDto: CreateCustomerDto) {
+    const customer = this.customerRepository.create(createDto);
+    return await this.customerRepository.save(customer);
+  }
+}
+```
+
+### 实体定义
+```typescript
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Contract } from './contract.entity';
+
+@Entity('customers')
+export class Customer {
+  @PrimaryGeneratedColumn()
+  customer_id: number;
+
+  @Column({ length: 255 })
+  name: string;
+
+  @Column({ length: 100, nullable: true })
+  contact_person: string;
+
+  @Column({ length: 20, nullable: true })
+  phone: string;
+
+  @Column({ length: 100, nullable: true })
+  email: string;
+
+  @Column({ type: 'text', nullable: true })
+  address: string;
+
+  @Column({ type: 'text', nullable: true })
+  notes: string;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  @OneToMany(() => Contract, contract => contract.customer)
+  contracts: Contract[];
+}
+```
+
+### DTO定义
+```typescript
+import { Rule, RuleType } from '@midwayjs/validate';
+import { ApiProperty } from '@midwayjs/swagger';
+
+export class CreateCustomerDto {
+  @ApiProperty({ description: '客户名称' })
+  @Rule(RuleType.string().required())
+  name: string;
+
+  @ApiProperty({ description: '联系人', required: false })
+  @Rule(RuleType.string().optional())
+  contact_person?: string;
+
+  @ApiProperty({ description: '电话', required: false })
+  @Rule(RuleType.string().optional())
+  phone?: string;
+
+  @ApiProperty({ description: '邮箱', required: false })
+  @Rule(RuleType.string().email().optional())
+  email?: string;
+
+  @ApiProperty({ description: '地址', required: false })
+  @Rule(RuleType.string().optional())
+  address?: string;
+
+  @ApiProperty({ description: '备注', required: false })
+  @Rule(RuleType.string().optional())
+  notes?: string;
+}
+
+export class QueryCustomerDto {
+  @ApiProperty({ description: '页码', required: false, default: 1 })
+  @Rule(RuleType.number().integer().min(1).optional())
+  page?: number = 1;
+
+  @ApiProperty({ description: '每页数量', required: false, default: 10 })
+  @Rule(RuleType.number().integer().min(1).max(100).optional())
+  pageSize?: number = 10;
+
+  @ApiProperty({ description: '客户名称搜索', required: false })
+  @Rule(RuleType.string().optional())
+  name?: string;
+}
+```
+
+## 🛡️ 错误处理和验证
+
+### 全局异常处理
+```typescript
+import { Catch } from '@midwayjs/core';
+import { Context } from '@midwayjs/koa';
+
+@Catch()
+export class GlobalExceptionFilter {
+  async catch(err: Error, ctx: Context) {
+    // 业务异常
+    if (err.name === 'BusinessError') {
+      ctx.status = 400;
+      return {
+        code: 400,
+        message: err.message,
+        data: null
+      };
+    }
+
+    // 验证异常
+    if (err.name === 'ValidationError') {
+      ctx.status = 422;
+      return {
+        code: 422,
+        message: '参数验证失败',
+        data: err.message
+      };
+    }
+
+    // 系统异常
+    ctx.status = 500;
+    ctx.logger.error(err);
+    return {
+      code: 500,
+      message: '服务器内部错误',
+      data: null
+    };
+  }
+}
+```
+
+### 自定义业务异常
+```typescript
+export class BusinessError extends Error {
+  constructor(message: string, public code: number = 400) {
+    super(message);
+    this.name = 'BusinessError';
+  }
+}
+
+// 使用示例
+if (!customer) {
+  throw new BusinessError('客户不存在', 404);
+}
+```
+
+## 🔐 认证和授权
+
+### JWT中间件
+```typescript
+import { Middleware } from '@midwayjs/core';
+import { Context, NextFunction } from '@midwayjs/koa';
+import { JwtService } from '@midwayjs/jwt';
+
+@Middleware()
+export class AuthMiddleware {
+  
+  @Inject()
+  jwtService: JwtService;
+
+  resolve() {
+    return async (ctx: Context, next: NextFunction) => {
+      const token = ctx.headers.authorization?.replace('Bearer ', '');
+      
+      if (!token) {
+        ctx.status = 401;
+        ctx.body = { code: 401, message: '未提供认证令牌' };
+        return;
+      }
+
+      try {
+        const payload = await this.jwtService.verify(token);
+        ctx.state.user = payload;
+        await next();
+      } catch (err) {
+        ctx.status = 401;
+        ctx.body = { code: 401, message: '认证令牌无效' };
+      }
+    };
+  }
+}
+```
+
+## 📊 数据库操作最佳实践
+
+### 事务处理
+```typescript
+import { InjectDataSource } from '@midwayjs/typeorm';
+import { DataSource } from 'typeorm';
+
+@Provide()
+export class ContractService {
+  
+  @InjectDataSource()
+  dataSource: DataSource;
+
+  async createContractWithInvoice(contractData: any, invoiceData: any) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 创建合同
+      const contract = await queryRunner.manager.save(Contract, contractData);
+      
+      // 创建发票
+      invoiceData.contract_id = contract.contract_id;
+      await queryRunner.manager.save(Invoice, invoiceData);
+
+      await queryRunner.commitTransaction();
+      return contract;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+}
+```
+
+### 复杂查询
+```typescript
+async getContractStatistics(customerId?: number) {
+  const queryBuilder = this.contractRepository
+    .createQueryBuilder('contract')
+    .leftJoin('contract.invoices', 'invoice')
+    .leftJoin('invoice.payments', 'payment')
+    .select([
+      'contract.contract_id',
+      'contract.name',
+      'contract.amount',
+      'contract.status',
+      'SUM(COALESCE(payment.amount, 0)) as paid_amount'
+    ])
+    .groupBy('contract.contract_id');
+
+  if (customerId) {
+    queryBuilder.where('contract.customer_id = :customerId', { customerId });
+  }
+
+  return await queryBuilder.getRawMany();
+}
+```
+
+## 🧪 测试开发
+
+### 单元测试
+```typescript
+import { createApp, close, createHttpRequest } from '@midwayjs/mock';
+import { Framework } from '@midwayjs/koa';
+
+describe('CustomerController', () => {
+  let app;
+  let httpRequest;
+
+  beforeAll(async () => {
+    app = await createApp<Framework>();
+    httpRequest = createHttpRequest(app);
+  });
+
+  afterAll(async () => {
+    await close(app);
+  });
+
+  it('should create customer', async () => {
+    const customerData = {
+      name: '测试客户',
+      contact_person: '张三',
+      phone: '13800138000'
+    };
+
+    const response = await httpRequest
+      .post('/api/v1/customers')
+      .send(customerData)
+      .expect(201);
+
+    expect(response.body.name).toBe(customerData.name);
+  });
+
+  it('should get customers list', async () => {
+    const response = await httpRequest
+      .get('/api/v1/customers')
+      .query({ page: 1, pageSize: 10 })
+      .expect(200);
+
+    expect(response.body.data).toBeInstanceOf(Array);
+    expect(response.body.pagination).toBeDefined();
+  });
+});
+```
+
+## 📝 API文档配置
+
+### Swagger配置
+```typescript
+// src/config/config.default.ts
+export default {
+  swagger: {
+    title: '合同管理系统API',
+    description: '企业级合同管理系统的RESTful API',
+    version: '1.0.0',
+    termsOfService: '',
+    contact: {
+      name: 'API Support',
+      email: 'support@example.com'
+    },
+    license: {
+      name: 'MIT',
+      url: 'https://opensource.org/licenses/MIT'
+    }
+  }
+};
+```
+
+## 🚀 性能优化
+
+### 缓存策略
+```typescript
+import { Inject, Provide } from '@midwayjs/core';
+import { RedisService } from '@midwayjs/redis';
+
+@Provide()
+export class CustomerService {
+  
+  @Inject()
+  redisService: RedisService;
+
+  async findById(id: number) {
+    const cacheKey = `customer:${id}`;
+    
+    // 尝试从缓存获取
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    // 从数据库查询
+    const customer = await this.customerRepository.findOne({ 
+      where: { customer_id: id } 
+    });
+
+    if (customer) {
+      // 缓存结果，过期时间1小时
+      await this.redisService.setex(cacheKey, 3600, JSON.stringify(customer));
+    }
+
+    return customer;
+  }
+}
+```
+
+### 数据库连接池优化
+```typescript
+// src/config/config.default.ts
+export default {
+  typeorm: {
+    dataSource: {
+      default: {
+        type: 'mysql',
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT) || 3306,
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        synchronize: false,
+        logging: false,
+        // 连接池配置
+        extra: {
+          connectionLimit: 10,
+          acquireTimeout: 60000,
+          timeout: 60000
+        }
+      }
+    }
+  }
+};
+```
+
+## 📋 开发检查清单
+
+### 代码质量检查
+- [ ] 遵循TypeScript类型安全
+- [ ] 使用装饰器进行依赖注入
+- [ ] 实现完整的错误处理
+- [ ] 添加输入验证和DTO
+- [ ] 编写单元测试
+- [ ] 添加API文档注释
+
+### 性能检查
+- [ ] 数据库查询优化
+- [ ] 适当使用缓存
+- [ ] 分页查询实现
+- [ ] 连接池配置优化
+
+### 安全检查
+- [ ] 实现认证中间件
+- [ ] 输入数据验证
+- [ ] SQL注入防护
+- [ ] 敏感信息加密
+
+## 🔗 相关资源
+
+- [Midway.js 官方文档](https://midwayjs.org/)
+- [TypeORM 文档](https://typeorm.io/)
+- [Swagger/OpenAPI 规范](https://swagger.io/specification/)
+- [Jest 测试框架](https://jestjs.io/)
+
+## 📞 获取帮助
+
+遇到问题时：
+1. 查看 Midway.js 官方文档
+2. 检查项目的 `docs/TROUBLESHOOTING.md`
+3. 使用项目提供的调试工具
+4. 在团队内部寻求技术支持

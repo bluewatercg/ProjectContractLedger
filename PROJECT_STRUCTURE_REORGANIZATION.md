@@ -21,12 +21,12 @@
 - ✅ `check-docker-env.sh` → `tools/maintenance/check-docker-env.sh`
 - ✅ `check-env-path.sh` → `tools/maintenance/check-env-path.sh`
 
-### 3. 修复文档 → `docs/fixes/`
-- ✅ `API_PATH_FIX_SUMMARY.md` → `docs/fixes/API_PATH_FIX_SUMMARY.md`
-- ✅ `LOGIN_API_FIX_SUMMARY.md` → `docs/fixes/LOGIN_API_FIX_SUMMARY.md`
-- ✅ `UPLOAD_FIX_SUMMARY.md` → `docs/fixes/UPLOAD_FIX_SUMMARY.md`
-- ✅ `UPLOAD_PREVIEW_ISSUE_ANALYSIS.md` → `docs/fixes/UPLOAD_PREVIEW_ISSUE_ANALYSIS.md`
-- ✅ `DEPLOYMENT_UPLOAD_FIX.md` → `docs/fixes/DEPLOYMENT_UPLOAD_FIX.md`
+### 3. 过时修复文档 → 已删除 ✅
+- ✅ `API_PATH_FIX_SUMMARY.md` → 已删除（问题已在最新代码中修复）
+- ✅ `LOGIN_API_FIX_SUMMARY.md` → 已删除（问题已在最新代码中修复）
+- ✅ `UPLOAD_FIX_SUMMARY.md` → 已删除（问题已在最新代码中修复）
+- ✅ `UPLOAD_PREVIEW_ISSUE_ANALYSIS.md` → 已删除（问题已在最新代码中修复）
+- ✅ `DEPLOYMENT_UPLOAD_FIX.md` → 已删除（问题已在最新代码中修复）
 
 ### 4. 部署文档 → `docs/`（避免与deployment/目录混淆）
 - ✅ `DEPLOYMENT_GUIDE.md` → `docs/DEPLOYMENT_GUIDE.md`
@@ -58,10 +58,10 @@ ProjectContractLedger/
 ├── 📁 database/               # 数据库相关
 ├── 📁 deployment/             # 部署配置和脚本
 ├── 📁 docs/                   # 项目文档
-│   ├── 📁 fixes/             # 问题修复文档
-│   ├── 📄 DEPLOYMENT_GUIDE.md # 部署指南
+│   ├── � DEPeLOYMENT_GUIDE.md # 部署指南
 │   ├── 📄 DOCKER_DEPLOYMENT_SUMMARY.md
-│   └── 📄 GITHUB_RELEASE_GUIDE.md
+│   ├── 📄 GITHUB_RELEASE_GUIDE.md
+│   └── 📄 TROUBLESHOOTING.md  # 故障排除指南
 ├── 📁 scripts/                # 构建和部署脚本
 ├── 📁 tools/                  # 工具脚本
 │   ├── 📁 backup/            # 备份和恢复工具
@@ -133,6 +133,26 @@ cp config/templates/.env.production.template deployment/.env
 - ✅ 目录README创建完成
 - ✅ 主README更新完成
 - ✅ 项目结构文档更新完成
+
+## 📝 第二轮整理（用户指南优化）
+
+### 🗑️ **删除的重复文档**
+- ✅ `docs/user-guide/启动指南.md` → 已删除（内容合并到USER_GUIDE.md）
+- ✅ `docs/user-guide/快速部署指南.md` → 已删除（内容合并到USER_GUIDE.md）
+- ✅ `docs/user-guide/Yarn命令指南.md` → 已删除（内容合并到USER_GUIDE.md）
+- ✅ `docs/user-guide/项目结构说明.md` → 已删除（与README重复）
+
+### 🔄 **移动的开发文档**
+- ✅ `docs/user-guide/Roadmap.md` → `docs/development/Roadmap.md`
+- ✅ `docs/user-guide/User_Story_Map.md` → `docs/development/User_Story_Map.md`
+- ✅ `docs/user-guide/Customer_Select_Component.md` → `docs/development/Customer_Select_Component.md`
+
+### 📋 **保留的核心文档**
+- ✅ `docs/user-guide/PRD.md` - 产品需求文档（高价值）
+- ✅ `docs/user-guide/业务状态关系说明.md` - 业务逻辑说明（高价值）
+
+### 🆕 **新增的整合文档**
+- ✅ `docs/USER_GUIDE.md` - 完整用户指南（整合了启动、部署、命令等内容）
 
 ## 📝 后续建议
 

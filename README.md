@@ -1,6 +1,13 @@
-# 客户合同管理系统 - ProjectContractLedger
+# 🏢 ProjectContractLedger
 
-基于Midway框架的现代化客户合同管理系统，采用前后端分离架构，支持完整的合同生命周期管理。
+> 现代化企业级合同管理系统，让合同管理更简单、更智能！
+
+[![GitHub release](https://img.shields.io/github/release/bluewatercg/projectcontractledger.svg)](https://github.com/bluewatercg/projectcontractledger/releases)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/bluewatercg/projectcontractledger)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
+
+基于 **Midway.js + Vue3** 的现代化合同管理系统，采用前后端分离架构，专为中小企业设计，支持完整的合同生命周期管理。
 
 ## 🚀 快速部署 (推荐)
 
@@ -118,9 +125,9 @@ ProjectContractLedger/
 │       │   └── stores/      # 状态管理
 ├── database/               # 数据库相关
 ├── docs/                   # 项目文档
-│   ├── fixes/             # 问题修复文档
 │   ├── api/               # API文档
 │   ├── user-guide/        # 用户指南
+│   ├── development/       # 开发文档
 │   └── ...                # 其他文档
 ├── tools/                  # 工具脚本
 │   ├── backup/            # 备份和恢复工具
@@ -286,14 +293,18 @@ curl -X DELETE http://localhost:8080/api/v1/statistics/cache/clear
 tail -f apps/backend/logs/midway-core.log
 ```
 
-## 📚 文档链接
+## 📚 文档导航
 
-- [API开发指南](./docs/development/API_Development_Guide.md)
-- [数据库设计](./docs/development/Database_Design.md)
-- [部署指南](./docs/development/Docker_Deployment.md)
-- [业务状态说明](./docs/user-guide/业务状态关系说明.md)
-- [启动指南](./docs/user-guide/启动指南.md)
-- [项目结构说明](./docs/user-guide/项目结构说明-新版.md)
+### 🚀 快速开始
+- [**用户指南**](./docs/USER_GUIDE.md) - 完整的使用指南（开发、部署、常用命令）
+- [故障排除](./docs/TROUBLESHOOTING.md) - 常见问题解决方案
+
+### 📖 详细文档
+- [📁 **完整文档索引**](./docs/README.md) - 所有文档的分类索引和导航
+- [产品需求文档](./docs/user-guide/PRD.md) - 系统设计和功能规划
+- [业务逻辑说明](./docs/user-guide/业务状态关系说明.md) - 业务流程和状态管理
+- [API开发指南](./docs/development/API_Development_Guide.md) - 后端开发详细指南
+- [Docker部署指南](./docs/development/Docker_Deployment.md) - 容器化部署方案
 
 ## 🤝 贡献指南
 
