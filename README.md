@@ -118,8 +118,9 @@ ProjectContractLedger/
 │       │   └── stores/      # 状态管理
 ├── database/               # 数据库相关
 ├── docs/                   # 项目文档
-│   ├── deployment/         # 部署相关文档
 │   ├── fixes/             # 问题修复文档
+│   ├── api/               # API文档
+│   ├── user-guide/        # 用户指南
 │   └── ...                # 其他文档
 ├── tools/                  # 工具脚本
 │   ├── backup/            # 备份和恢复工具

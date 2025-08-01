@@ -28,10 +28,14 @@
 - ✅ `UPLOAD_PREVIEW_ISSUE_ANALYSIS.md` → `docs/fixes/UPLOAD_PREVIEW_ISSUE_ANALYSIS.md`
 - ✅ `DEPLOYMENT_UPLOAD_FIX.md` → `docs/fixes/DEPLOYMENT_UPLOAD_FIX.md`
 
-### 4. 部署文档 → `docs/deployment/`
-- ✅ `DEPLOYMENT_GUIDE.md` → `docs/deployment/DEPLOYMENT_GUIDE.md`
-- ✅ `DOCKER_DEPLOYMENT_SUMMARY.md` → `docs/deployment/DOCKER_DEPLOYMENT_SUMMARY.md`
-- ✅ `SEPARATED_DEPLOYMENT_SUMMARY.md` → `docs/deployment/SEPARATED_DEPLOYMENT_SUMMARY.md`
+### 4. 部署文档 → `docs/`（避免与deployment/目录混淆）
+- ✅ `DEPLOYMENT_GUIDE.md` → `docs/DEPLOYMENT_GUIDE.md`
+- ✅ `DOCKER_DEPLOYMENT_SUMMARY.md` → `docs/DOCKER_DEPLOYMENT_SUMMARY.md`
+- ✅ `SEPARATED_DEPLOYMENT_SUMMARY.md` → `docs/SEPARATED_DEPLOYMENT_SUMMARY.md`
+- ✅ `build-checklist.md` → `docs/build-checklist.md`
+- ✅ `docker-build-guide.md` → `docs/docker-build-guide.md`
+- ✅ `dockerfile-configuration.md` → `docs/dockerfile-configuration.md`
+- ✅ `分离式前后端部署指南.md` → `docs/分离式前后端部署指南.md`
 
 ### 5. 配置模板 → `config/templates/`
 - ✅ `.env.production.template` → `config/templates/.env.production.template`
@@ -52,10 +56,11 @@ ProjectContractLedger/
 ├── 📁 config/                  # 配置文件
 │   └── 📁 templates/           # 环境配置模板
 ├── 📁 database/               # 数据库相关
-├── 📁 deployment/             # 部署配置
+├── 📁 deployment/             # 部署配置和脚本
 ├── 📁 docs/                   # 项目文档
-│   ├── 📁 deployment/         # 部署相关文档
 │   ├── 📁 fixes/             # 问题修复文档
+│   ├── 📄 DEPLOYMENT_GUIDE.md # 部署指南
+│   ├── 📄 DOCKER_DEPLOYMENT_SUMMARY.md
 │   └── 📄 GITHUB_RELEASE_GUIDE.md
 ├── 📁 scripts/                # 构建和部署脚本
 ├── 📁 tools/                  # 工具脚本

@@ -131,7 +131,7 @@ jobs:
         echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "- **后端镜像**: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
         echo "- **前端镜像**: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
-        if [[ "${{ contains(fromJson('[\"main\", \"master\", \"develop\"]'), github.ref_name) }}" == "true" ]]; then
+        if [[ "${{ contains(fromJson('["main", "master", "develop"]'), github.ref_name) }}" == "true" ]]; then
           echo "- **Status**: ✅ 构建并推送到镜像仓库" >> $GITHUB_STEP_SUMMARY
         else
           echo "- **Status**: ✅ 构建成功 (仅测试)" >> $GITHUB_STEP_SUMMARY
