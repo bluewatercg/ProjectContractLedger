@@ -296,15 +296,17 @@ tail -f apps/backend/logs/midway-core.log
 ## 📚 文档导航
 
 ### 🚀 快速开始
-- [**用户指南**](./docs/USER_GUIDE.md) - 完整的使用指南（开发、部署、常用命令）
-- [故障排除](./docs/TROUBLESHOOTING.md) - 常见问题解决方案
+- [⚡ **快速入门指南**](./docs/QUICK_START.md) - 5分钟快速体验系统
+- [📖 **用户指南**](./docs/USER_GUIDE.md) - 完整的使用指南（开发、部署、常用命令）
+- [🛠️ **开发环境设置**](./docs/DEVELOPMENT_SETUP.md) - 详细的开发环境配置指南
+- [🔧 故障排除](./docs/TROUBLESHOOTING.md) - 常见问题解决方案
 
 ### 📖 详细文档
 - [📁 **完整文档索引**](./docs/README.md) - 所有文档的分类索引和导航
+- [🚀 **部署文档中心**](./docs/deployment/README.md) - 完整的部署方案导航
 - [产品需求文档](./docs/user-guide/PRD.md) - 系统设计和功能规划
 - [业务逻辑说明](./docs/user-guide/业务状态关系说明.md) - 业务流程和状态管理
 - [API开发指南](./docs/development/API_Development_Guide.md) - 后端开发详细指南
-- [Docker部署指南](./docs/development/Docker_Deployment.md) - 容器化部署方案
 
 ## 🤝 贡献指南
 

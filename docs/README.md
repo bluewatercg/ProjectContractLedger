@@ -163,9 +163,9 @@ docs/
 4. [🤝 贡献指南](CONTRIBUTING.md) - 如何参与项目开发
 
 ### 🛠️ 运维人员
-1. [📋 部署指南](DEPLOYMENT_GUIDE.md) - 生产环境部署
-2. [🔧 故障排除](TROUBLESHOOTING.md) - 常见问题解决
-3. [🏗️ Docker构建指南](docker-build-guide.md) - 镜像构建流程
+1. [🚀 部署文档中心](deployment/README.md) - 完整部署方案导航
+2. [📋 生产环境部署](deployment/production-deployment.md) - 生产环境部署
+3. [🔧 故障排除](TROUBLESHOOTING.md) - 常见问题解决
 
 ### 📊 产品经理
 1. [📋 产品需求文档](user-guide/PRD.md) - 完整产品规划
