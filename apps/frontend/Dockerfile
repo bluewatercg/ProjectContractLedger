@@ -1,5 +1,5 @@
 # 构建阶段
-FROM node:18-alpine AS build
+FROM node:23.10.0-alpine AS build
 
 # 安装必要的构建工具
 RUN apk add --no-cache python3 make g++
@@ -13,8 +13,7 @@ COPY yarn.lock* ./
 
 # 安装依赖
 RUN echo "Installing frontend dependencies..." && \
-    rm -f yarn.lock && \
-    yarn install --network-timeout 100000 && \
+    yarn install --frozen-lockfile --network-timeout 100000 && \
     echo "Frontend dependencies installed successfully"
 
 # 复制源代码和配置文件
