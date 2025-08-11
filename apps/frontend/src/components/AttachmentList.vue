@@ -81,11 +81,9 @@
           alt="预览图片"
           class="preview-image"
         />
-        <iframe
+        <PdfViewer
           v-else-if="previewType === 'pdf'"
-          :src="previewUrl"
-          class="preview-pdf"
-          frameborder="0"
+          :file-url="previewUrl"
         />
       </div>
     </el-dialog>
@@ -96,7 +94,8 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, Picture, Download, View, Delete } from '@element-plus/icons-vue'
-import { attachmentApi } from '@/api/attachment'
+// import { attachmentApi } from '@/api/attachment' // 路径待确认
+import PdfViewer from './PdfViewer.vue'
 
 // Types
 interface Attachment {
@@ -192,8 +191,11 @@ const previewFile = (attachment: Attachment) => {
   previewFileData.value = attachment
   previewType.value = isPdf(attachment.file_name) ? 'pdf' : 'image'
 
-  // 使用API模块的预览URL生成方法，确保使用正确的基础URL
-  previewUrl.value = attachmentApi.getAttachmentPreviewUrl(attachment.attachment_id)
+  // 待 attachmentApi 路径修复后，使用以下代码
+  // previewUrl.value = attachmentApi.getAttachmentPreviewUrl(attachment.attachment_id)
+
+  // 临时方案：直接构建 URL
+  previewUrl.value = `/api/v1/attachments/${attachment.attachment_id}/download`
   previewVisible.value = true
 }
 
