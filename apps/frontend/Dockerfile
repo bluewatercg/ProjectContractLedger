@@ -13,7 +13,8 @@ COPY yarn.lock* ./
 
 # 安装依赖
 RUN echo "Installing frontend dependencies..." && \
-    yarn install --frozen-lockfile --network-timeout 100000 && \
+    rm -f yarn.lock && \
+    yarn install --network-timeout 100000 && \
     echo "Frontend dependencies installed successfully"
 
 # 复制源代码和配置文件
