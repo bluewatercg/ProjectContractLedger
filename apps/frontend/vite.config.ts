@@ -4,6 +4,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { resolve } from 'path'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
   plugins: [
@@ -16,6 +17,14 @@ export default defineConfig({
     Components({
       resolvers: [ElementPlusResolver()],
       dts: true
+    }),
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
+          dest: 'assets'
+        }
+      ]
     })
   ],
   resolve: {

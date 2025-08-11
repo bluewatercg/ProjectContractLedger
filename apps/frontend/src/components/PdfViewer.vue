@@ -80,6 +80,8 @@ const loadPdfDocument = async () => {
 
   loading.value = true;
   pdfDoc.value = null; // 重置
+  pageCount.value = 0;
+  pageNum.value = 0;
   errorState.value = null;
 
   try {
