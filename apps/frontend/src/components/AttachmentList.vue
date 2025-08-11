@@ -187,16 +187,28 @@ const downloadFile = async (attachment: Attachment) => {
   }
 }
 
-const previewFile = (attachment: Attachment) => {
+const previewFile = async (attachment: Attachment) => {
   previewFileData.value = attachment
   previewType.value = isPdf(attachment.file_name) ? 'pdf' : 'image'
 
-  // 待 attachmentApi 路径修复后，使用以下代码
-  // previewUrl.value = attachmentApi.getAttachmentPreviewUrl(attachment.attachment_id)
+  try {
+    const response = await fetch(`/api/v1/attachments/${attachment.attachment_id}/download`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
 
-  // 临时方案：直接构建 URL
-  previewUrl.value = `/api/v1/attachments/${attachment.attachment_id}/download`
-  previewVisible.value = true
+    if (!response.ok) {
+      throw new Error('获取文件失败')
+    }
+
+    const blob = await response.blob()
+    previewUrl.value = URL.createObjectURL(blob)
+    previewVisible.value = true
+  } catch (error) {
+    console.error('Preview error:', error)
+    ElMessage.error('无法加载预览')
+  }
 }
 
 const closePreview = () => {

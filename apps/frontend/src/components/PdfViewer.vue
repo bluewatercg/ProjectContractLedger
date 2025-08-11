@@ -42,11 +42,11 @@ import { ref, onMounted, watch } from 'vue';
 import { ElButton, ElButtonGroup, ElInputNumber, ElIcon } from 'element-plus';
 import { Loading, CircleCloseFilled } from '@element-plus/icons-vue';
 // 待环境修复后取消注释
-// import * as pdfjsLib from 'pdfjs-dist';
-// import type { PDFDocumentProxy } from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 
 const pdfCanvas = ref<HTMLCanvasElement | null>(null);
-const pdfDoc = ref<any>(null); // PDFDocumentProxy
+const pdfDoc = ref<PDFDocumentProxy | null>(null);
 const pageNum = ref(1);
 const pageCount = ref(0);
 const loading = ref(false);
@@ -62,11 +62,10 @@ interface Props {
 const props = defineProps<Props>();
 
 onMounted(() => {
-  // 待环境修复后取消注释
-  // pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  //   'pdfjs-dist/build/pdf.worker.min.mjs',
-  //   import.meta.url
-  // ).toString();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
   loadPdfDocument();
 });
 
@@ -85,20 +84,11 @@ const loadPdfDocument = async () => {
 
   try {
     // 待环境修复后取消注释
-    // const doc = await pdfjsLib.getDocument(props.fileUrl).promise;
-    // pdfDoc.value = doc;
-    // pageCount.value = doc.numPages;
-    // pageNum.value = 1;
-    // renderPage(pageNum.value);
-
-    // --- 模拟数据，用于UI开发 ---
-    if (props.fileUrl.includes('error')) {
-      throw new Error('模拟PDF加载失败');
-    }
-    console.log(`[模拟] 正在加载 PDF: ${props.fileUrl}`);
-    pageCount.value = 10; // 假设有10页
-    renderPage(1);
-    // --- 模拟数据结束 ---
+    const doc = await pdfjsLib.getDocument(props.fileUrl).promise;
+    pdfDoc.value = doc;
+    pageCount.value = doc.numPages;
+    pageNum.value = 1;
+    renderPage(pageNum.value);
 
   } catch (error: any) {
     console.error('PDF 加载失败:', error);
@@ -111,21 +101,6 @@ const loadPdfDocument = async () => {
 const renderPage = async (num: number) => {
   if (!pdfCanvas.value) return;
   
-  // --- 模拟渲染 ---
-  const ctx = pdfCanvas.value.getContext('2d');
-  if (ctx) {
-    pdfCanvas.value.width = 800 * scale.value;
-    pdfCanvas.value.height = 1100 * scale.value;
-    ctx.clearRect(0, 0, pdfCanvas.value.width, pdfCanvas.value.height);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, pdfCanvas.value.width, pdfCanvas.value.height);
-    ctx.fillStyle = 'black';
-    ctx.textAlign = 'center';
-    ctx.font = `${48 * scale.value}px sans-serif`;
-    ctx.fillText(`[模拟] PDF 第 ${num} / ${pageCount.value} 页`, pdfCanvas.value.width / 2, pdfCanvas.value.height / 2);
-  }
-  // --- 模拟渲染结束 ---
-
   if (!pdfDoc.value) return;
 
   try {
@@ -141,6 +116,7 @@ const renderPage = async (num: number) => {
     const renderContext = {
       canvasContext,
       viewport,
+      canvas: pdfCanvas.value,
     };
     await page.render(renderContext).promise;
   } catch (error) {
@@ -205,6 +181,7 @@ const zoomOut = () => {
 .page-indicator {
   display: flex;
   align-items: center;
+
   gap: 8px;
 }
 
