@@ -526,15 +526,10 @@ export class AttachmentController {
         return { success: false, message: '附件不存在', code: 404 };
       }
 
-      // 生成 JWT token，并包含附件类型
-      const token = jwt.sign(
-        { attachmentId: attachmentId, type: attachmentType },
-        this.jwtConfig.secret,
-        { expiresIn: '5m' } // Token 5分钟后过期
-      );
-
       // 构建公开预览 URL
-      const previewUrl = `/api/v1/attachments/public-preview?token=${token}`;
+      const previewUrl = `/api/v1/attachments/public-preview?attachmentId=${attachmentId}&type=${attachmentType}`;
+
+      console.log('Generated preview URL:', previewUrl);
 
       return {
         success: true,
@@ -553,21 +548,17 @@ export class AttachmentController {
    * 提供公开的附件预览文件流
    */
   @Get('/attachments/public-preview')
-  async servePublicAttachment(@Query('token') token: string) {
-    if (!token) {
+  async servePublicAttachment(
+    @Query('attachmentId') attachmentId: number,
+    @Query('type') type: 'contract' | 'invoice'
+  ) {
+    if (!attachmentId || !type) {
       this.ctx.status = 401;
       this.ctx.body = { success: false, message: '缺少访问令牌' };
       return;
     }
 
     try {
-      // 验证 JWT token，并获取附件ID和类型
-      const decoded = jwt.verify(token, this.jwtConfig.secret) as {
-        attachmentId: number;
-        type: 'contract' | 'invoice';
-      };
-      const { attachmentId, type } = decoded;
-
       let attachment;
       // 根据类型精确查找附件
       if (type === 'contract') {
@@ -619,16 +610,8 @@ export class AttachmentController {
       // 返回文件流
       this.ctx.body = fs.createReadStream(filePath);
     } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        this.ctx.status = 401;
-        this.ctx.body = { success: false, message: '预览链接已过期' };
-      } else if (error instanceof jwt.JsonWebTokenError) {
-        this.ctx.status = 401;
-        this.ctx.body = { success: false, message: '无效的预览链接' };
-      } else {
-        this.ctx.status = 500;
-        this.ctx.body = { success: false, message: '预览文件失败' };
-      }
+      this.ctx.status = 500;
+      this.ctx.body = { success: false, message: '预览文件失败' };
     }
   }
 }
