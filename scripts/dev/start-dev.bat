@@ -26,7 +26,7 @@ start "Midway Backend - Port 8080" cmd /k "yarn dev"
 
 echo.
 echo 2. Waiting 5 seconds before starting frontend...
-timeout /t 5 /nobreak > nul
+ping -n 6 127.0.0.1 > nul
 
 cd ..\frontend
 start "Midway Frontend - Port 8000" cmd /k "yarn dev"

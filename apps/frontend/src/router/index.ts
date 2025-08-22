@@ -11,6 +11,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false, title: '登录' }
   },
   {
+    path: '/pdf-preview',
+    name: 'PdfPreview',
+    component: () => import('@/views/PdfPreview.vue'),
+    meta: { requiresAuth: true, title: 'PDF 预览' }
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     redirect: '/dashboard',

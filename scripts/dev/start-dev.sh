@@ -1,19 +1,23 @@
 #!/bin/bash
 
+# 获取脚本所在的目录，并切换到项目根目录 (上两级)
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "$SCRIPT_DIR/../.."
+
 echo "启动客户合同管理系统 - Midway版本"
 echo "====================================="
 
 echo ""
 echo "1. 启动后端服务..."
 cd apps/backend
-gnome-terminal --title="Midway Backend" -- bash -c "yarn dev; exec bash" &
+start "Midway Backend" cmd /d /k "yarn dev"
 
 echo ""
 echo "2. 等待3秒后启动前端服务..."
 sleep 3
 
 cd ../frontend
-gnome-terminal --title="Midway Frontend" -- bash -c "yarn dev; exec bash" &
+start "Midway Frontend" cmd /d /k "yarn dev"
 
 echo ""
 echo "服务启动完成！"

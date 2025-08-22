@@ -78,11 +78,9 @@ export const attachmentApi = {
   },
 
   /**
-   * 获取附件预览URL
+   * 获取附件的安全临时预览URL
    */
-  getAttachmentPreviewUrl(attachmentId: number): string {
-    const token = localStorage.getItem('token')
-    const baseURL = apiClient.defaults.baseURL || '/api/v1'
-    return `${baseURL}/attachments/${attachmentId}/download?token=${token}`
+  async getAttachmentPreviewUrl(attachmentId: number): Promise<ApiResponse<{ preview_url: string }>> {
+    return apiClient.get(`/attachments/${attachmentId}/preview`).then(res => res.data);
   }
 }

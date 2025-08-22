@@ -67,35 +67,14 @@
       </div>
     </div>
 
-    <!-- 文件预览对话框 -->
-    <el-dialog
-      v-model="previewVisible"
-      :title="previewFileData?.file_name"
-      width="80%"
-      :before-close="closePreview"
-    >
-      <div class="preview-container">
-        <img
-          v-if="previewType === 'image'"
-          :src="previewUrl"
-          alt="预览图片"
-          class="preview-image"
-        />
-        <PdfViewer
-          v-else-if="previewType === 'pdf'"
-          :file-url="previewUrl"
-        />
       </div>
-    </el-dialog>
-  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, Picture, Download, View, Delete } from '@element-plus/icons-vue'
-// import { attachmentApi } from '@/api/attachment' // 路径待确认
-import PdfViewer from './PdfViewer.vue'
+import { attachmentApi } from '@/api/attachment'
 
 // Types
 interface Attachment {
@@ -127,10 +106,6 @@ const emit = defineEmits<Emits>()
 
 // Refs
 const deleting = ref(false)
-const previewVisible = ref(false)
-const previewFileData = ref<Attachment | null>(null)
-const previewUrl = ref('')
-const previewType = ref<'image' | 'pdf'>('image')
 
 // Methods
 const isPdf = (fileName: string): boolean => {
@@ -188,34 +163,42 @@ const downloadFile = async (attachment: Attachment) => {
 }
 
 const previewFile = async (attachment: Attachment) => {
-  previewFileData.value = attachment
-  previewType.value = isPdf(attachment.file_name) ? 'pdf' : 'image'
-
-  try {
-    const response = await fetch(`/api/v1/attachments/${attachment.attachment_id}/download`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error('获取文件失败')
+  // 对于图片，我们暂时保留旧的、工作良好的 blob 预览方式
+  if (isImage(attachment.file_name)) {
+    try {
+      const response = await fetch(`/api/v1/attachments/${attachment.attachment_id}/download`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!response.ok) throw new Error('获取图片失败');
+      const blob = await response.blob();
+      const imageUrl = URL.createObjectURL(blob);
+      window.open(imageUrl, '_blank');
+    } catch (error) {
+      console.error('Image preview error:', error);
+      ElMessage.error('无法加载图片预览');
     }
-
-    const blob = await response.blob()
-    previewUrl.value = URL.createObjectURL(blob)
-    previewVisible.value = true
-  } catch (error) {
-    console.error('Preview error:', error)
-    ElMessage.error('无法加载预览')
+    return;
   }
-}
 
-const closePreview = () => {
-  previewVisible.value = false
-  previewFileData.value = null
-  previewUrl.value = ''
-}
+  // 对于 PDF，调用我们新的、安全的预览接口
+  if (isPdf(attachment.file_name)) {
+    try {
+      const response = await attachmentApi.getAttachmentPreviewUrl(attachment.attachment_id);
+      if (response.success && response.data?.preview_url) {
+        const publicUrl = response.data.preview_url;
+        const previewPageUrl = `/pdf-preview?url=${encodeURIComponent(publicUrl)}`;
+        window.open(previewPageUrl, '_blank');
+      } else {
+        throw new Error(response.message || '获取预览链接失败');
+      }
+    } catch (error) {
+      console.error('PDF preview error:', error);
+      const message = error instanceof Error ? error.message : '无法获取 PDF 预览链接';
+      ElMessage.error(message);
+    }
+  }
+};
+
 
 const deleteFile = async (attachment: Attachment) => {
   try {

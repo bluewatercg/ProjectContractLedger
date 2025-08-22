@@ -15,6 +15,10 @@ import { InvoiceAttachmentService } from '../service/invoice-attachment.service'
 import { ApiResponse } from '../interface';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as jwt from 'jsonwebtoken';
+import { Config } from '@midwayjs/core';
+import { ContractAttachment } from '../entity/contract-attachment.entity';
+import { InvoiceAttachment } from '../entity/invoice-attachment.entity';
 
 @Controller('/api/v1')
 export class AttachmentController {
@@ -26,6 +30,9 @@ export class AttachmentController {
 
   @Inject()
   ctx: Context;
+
+  @Config('jwt')
+  jwtConfig: { secret: string; expiresIn: string };
 
   /**
    * 上传合同附件
@@ -77,7 +84,7 @@ export class AttachmentController {
         targetPath: filePath,
         originalExists: fs.existsSync(file.data),
         targetDirExists: fs.existsSync(path.dirname(filePath)),
-        fileSize: fileSize
+        fileSize: fileSize,
       });
 
       // 确保目标目录存在
@@ -99,9 +106,10 @@ export class AttachmentController {
 
         const copiedFileSize = fs.statSync(filePath).size;
         if (copiedFileSize !== fileSize) {
-          throw new Error(`文件大小不匹配: 原始${fileSize}, 复制后${copiedFileSize}`);
+          throw new Error(
+            `文件大小不匹配: 原始${fileSize}, 复制后${copiedFileSize}`
+          );
         }
-
       } catch (copyError) {
         console.error('文件复制失败:', copyError);
         throw new Error(`文件保存失败: ${copyError.message}`);
@@ -176,9 +184,8 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      const success = await this.contractAttachmentService.deleteAttachment(
-        attachmentId
-      );
+      const success =
+        await this.contractAttachmentService.deleteAttachment(attachmentId);
 
       if (!success) {
         return {
@@ -251,7 +258,7 @@ export class AttachmentController {
         targetPath: filePath,
         originalExists: fs.existsSync(file.data),
         targetDirExists: fs.existsSync(path.dirname(filePath)),
-        fileSize: fileSize
+        fileSize: fileSize,
       });
 
       // 确保目标目录存在
@@ -273,9 +280,10 @@ export class AttachmentController {
 
         const copiedFileSize = fs.statSync(filePath).size;
         if (copiedFileSize !== fileSize) {
-          throw new Error(`文件大小不匹配: 原始${fileSize}, 复制后${copiedFileSize}`);
+          throw new Error(
+            `文件大小不匹配: 原始${fileSize}, 复制后${copiedFileSize}`
+          );
         }
-
       } catch (copyError) {
         console.error('发票文件复制失败:', copyError);
         throw new Error(`文件保存失败: ${copyError.message}`);
@@ -350,9 +358,8 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      const success = await this.invoiceAttachmentService.deleteAttachment(
-        attachmentId
-      );
+      const success =
+        await this.invoiceAttachmentService.deleteAttachment(attachmentId);
 
       if (!success) {
         return {
@@ -403,9 +410,8 @@ export class AttachmentController {
       // 暂时跳过详细验证，实际项目中应该验证token有效性
 
       // 先尝试从合同附件中查找
-      const attachment = await this.contractAttachmentService.getAttachmentById(
-        attachmentId
-      );
+      const attachment =
+        await this.contractAttachmentService.getAttachmentById(attachmentId);
       let fileName = '';
       let filePath = '';
 
@@ -435,7 +441,7 @@ export class AttachmentController {
         filePath,
         fileExists: fs.existsSync(filePath),
         isPreview: !!token,
-        uploadDir: process.env.UPLOAD_DIR || '/app/uploads'
+        uploadDir: process.env.UPLOAD_DIR || '/app/uploads',
       });
 
       // 检查文件是否存在
@@ -443,8 +449,9 @@ export class AttachmentController {
         console.error('文件不存在:', {
           filePath,
           dirExists: fs.existsSync(path.dirname(filePath)),
-          dirContents: fs.existsSync(path.dirname(filePath)) ?
-            fs.readdirSync(path.dirname(filePath)) : '目录不存在'
+          dirContents: fs.existsSync(path.dirname(filePath))
+            ? fs.readdirSync(path.dirname(filePath))
+            : '目录不存在',
         });
 
         this.ctx.status = 404;
@@ -491,6 +498,137 @@ export class AttachmentController {
         success: false,
         message: error.message || '下载文件失败',
       };
+    }
+  }
+
+  /**
+   * 生成附件的临时预览 URL
+   */
+  @Get('/attachments/:attachmentId/preview')
+  async getAttachmentPreviewUrl(
+    @Param('attachmentId') attachmentId: number
+  ): Promise<ApiResponse> {
+    try {
+      // 优先查找合同附件
+      let attachment: ContractAttachment | InvoiceAttachment =
+        await this.contractAttachmentService.getAttachmentById(attachmentId);
+      let attachmentType = 'contract';
+
+      // 如果未找到，再查找发票附件
+      if (!attachment) {
+        attachment =
+          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+        attachmentType = 'invoice';
+      }
+
+      // 如果都未找到，则返回错误
+      if (!attachment) {
+        return { success: false, message: '附件不存在', code: 404 };
+      }
+
+      // 生成 JWT token，并包含附件类型
+      const token = jwt.sign(
+        { attachmentId: attachmentId, type: attachmentType },
+        this.jwtConfig.secret,
+        { expiresIn: '5m' } // Token 5分钟后过期
+      );
+
+      // 构建公开预览 URL
+      const previewUrl = `/api/v1/attachments/public-preview?token=${token}`;
+
+      return {
+        success: true,
+        data: { preview_url: previewUrl },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '生成预览链接失败',
+        code: 500,
+      };
+    }
+  }
+
+  /**
+   * 提供公开的附件预览文件流
+   */
+  @Get('/attachments/public-preview')
+  async servePublicAttachment(@Query('token') token: string) {
+    if (!token) {
+      this.ctx.status = 401;
+      this.ctx.body = { success: false, message: '缺少访问令牌' };
+      return;
+    }
+
+    try {
+      // 验证 JWT token，并获取附件ID和类型
+      const decoded = jwt.verify(token, this.jwtConfig.secret) as {
+        attachmentId: number;
+        type: 'contract' | 'invoice';
+      };
+      const { attachmentId, type } = decoded;
+
+      let attachment;
+      // 根据类型精确查找附件
+      if (type === 'contract') {
+        attachment =
+          await this.contractAttachmentService.getAttachmentById(attachmentId);
+      } else {
+        attachment =
+          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+      }
+
+      if (!attachment || !attachment.file_path || !attachment.file_name) {
+        this.ctx.status = 404;
+        this.ctx.body = { success: false, message: '附件不存在或数据不完整' };
+        return;
+      }
+
+      const filePath = attachment.file_path;
+      const fileName = attachment.file_name;
+
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        this.ctx.status = 404;
+        this.ctx.body = { success: false, message: '文件不存在' };
+        return;
+      }
+
+      // 设置响应头以内联方式打开
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = 'application/octet-stream';
+      switch (ext) {
+        case '.pdf':
+          contentType = 'application/pdf';
+          break;
+        case '.jpg':
+        case '.jpeg':
+          contentType = 'image/jpeg';
+          break;
+        case '.png':
+          contentType = 'image/png';
+          break;
+      }
+
+      this.ctx.set('Content-Type', contentType);
+      this.ctx.set(
+        'Content-Disposition',
+        `inline; filename="${encodeURIComponent(fileName)}"`
+      );
+
+      // 返回文件流
+      this.ctx.body = fs.createReadStream(filePath);
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        this.ctx.status = 401;
+        this.ctx.body = { success: false, message: '预览链接已过期' };
+      } else if (error instanceof jwt.JsonWebTokenError) {
+        this.ctx.status = 401;
+        this.ctx.body = { success: false, message: '无效的预览链接' };
+      } else {
+        this.ctx.status = 500;
+        this.ctx.body = { success: false, message: '预览文件失败' };
+      }
     }
   }
 }
