@@ -15,7 +15,6 @@ import { InvoiceAttachmentService } from '../service/invoice-attachment.service'
 import { ApiResponse } from '../interface';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as jwt from 'jsonwebtoken';
 import { Config } from '@midwayjs/core';
 import { ContractAttachment } from '../entity/contract-attachment.entity';
 import { InvoiceAttachment } from '../entity/invoice-attachment.entity';
