@@ -78,9 +78,21 @@ export const attachmentApi = {
   },
 
   /**
-   * 获取附件的安全临时预览URL
+   * 获取附件的安全临时预览URL（旧方法，保留兼容性）
    */
   async getAttachmentPreviewUrl(attachmentId: number): Promise<ApiResponse<{ preview_url: string }>> {
     return apiClient.get(`/attachments/${attachmentId}/preview`).then(res => res.data);
+  },
+
+  /**
+   * 获取PDF附件的Base64编码数据（新预览方案）
+   */
+  async getAttachmentBase64(attachmentId: number): Promise<ApiResponse<{ 
+    base64: string; 
+    contentType: string; 
+    size: number; 
+    fileName: string; 
+  }>> {
+    return apiClient.get(`/attachments/${attachmentId}/base64`).then(res => res.data);
   }
 }

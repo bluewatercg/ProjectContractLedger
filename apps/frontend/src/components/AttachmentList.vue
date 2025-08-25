@@ -163,7 +163,7 @@ const downloadFile = async (attachment: Attachment) => {
 }
 
 const previewFile = async (attachment: Attachment) => {
-  // 对于图片，我们暂时保留旧的、工作良好的 blob 预览方式
+  // 对于图片，使用原有的blob预览方式
   if (isImage(attachment.file_name)) {
     try {
       const response = await fetch(`/api/v1/attachments/${attachment.attachment_id}/download`, {
@@ -180,20 +180,15 @@ const previewFile = async (attachment: Attachment) => {
     return;
   }
 
-  // 对于 PDF，调用我们新的、安全的预览接口
+  // 对于PDF，使用新的简单预览方式
   if (isPdf(attachment.file_name)) {
     try {
-      const response = await attachmentApi.getAttachmentPreviewUrl(attachment.attachment_id);
-      if (response.success && response.data?.preview_url) {
-        const publicUrl = response.data.preview_url;
-        const previewPageUrl = `/pdf-preview?url=${encodeURIComponent(publicUrl)}`;
-        window.open(previewPageUrl, '_blank');
-      } else {
-        throw new Error(response.message || '获取预览链接失败');
-      }
+      // 直接跳转到新的PDF预览页面，传递附件ID
+      const previewPageUrl = `/simple-pdf-preview?attachmentId=${attachment.attachment_id}`;
+      window.open(previewPageUrl, '_blank');
     } catch (error) {
       console.error('PDF preview error:', error);
-      const message = error instanceof Error ? error.message : '无法获取 PDF 预览链接';
+      const message = error instanceof Error ? error.message : '无法打开 PDF 预览';
       ElMessage.error(message);
     }
   }

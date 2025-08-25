@@ -1,32 +1,35 @@
 <template>
   <div class="pdf-preview-page">
-    <EmbedPdfViewer v-if="pdfUrl" :url="pdfUrl" />
-    <div v-else class="loading-container">
-      <p v-if="errorMessage">{{ errorMessage }}</p>
-      <p v-else>正在加载预览...</p>
+    <div class="deprecated-notice">
+      <h3>此页面已弃用</h3>
+      <p>请使用新的PDF预览功能，将自动重定向...</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import EmbedPdfViewer from '@/components/EmbedPdfViewer.vue';
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const route = useRoute();
-const pdfUrl = ref<string | null>(null);
-const errorMessage = ref<string | null>(null);
+const route = useRoute()
+const router = useRouter()
 
+// 自动重定向到新的预览页面
 onMounted(() => {
-  const urlFromQuery = route.query.url;
-  if (typeof urlFromQuery === 'string' && urlFromQuery) {
-    // 解码 URL，以防 URL 本身被编码过
-    pdfUrl.value = decodeURIComponent(urlFromQuery);
-  } else {
-    console.error('No PDF URL provided in the query string.');
-    errorMessage.value = '错误：未提供有效的 PDF 文件链接。';
+  // 如果有附件ID参数，转换并重定向
+  const urlParam = route.query.url
+  if (typeof urlParam === 'string' && urlParam.includes('attachmentId=')) {
+    const match = urlParam.match(/attachmentId=(\d+)/)
+    if (match) {
+      const attachmentId = match[1]
+      router.replace(`/simple-pdf-preview?attachmentId=${attachmentId}`)
+      return
+    }
   }
-});
+  
+  // 如果无法解析，显示错误信息
+  console.warn('Unable to parse PDF preview URL, showing deprecated notice')
+})
 </script>
 
 <style scoped>
@@ -35,19 +38,28 @@ onMounted(() => {
   height: 100vh;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* 确保预览器占满整个屏幕 */
-}
-
-.pdf-preview-page > :first-child {
-    height: 100vh; /* 让 EmbedPdfViewer 组件占满屏幕高度 */
-}
-
-.loading-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  font-size: 1.2rem;
-  color: #888;
+  background-color: #f5f5f5;
+}
+
+.deprecated-notice {
+  text-align: center;
+  padding: 40px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+}
+
+.deprecated-notice h3 {
+  color: #f56c6c;
+  margin-bottom: 16px;
+}
+
+.deprecated-notice p {
+  color: #666;
+  margin: 0;
 }
 </style>

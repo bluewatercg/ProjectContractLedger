@@ -52,6 +52,7 @@ declare module 'vue' {
     InvoiceSelect: typeof import('./src/components/InvoiceSelect.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SimplePdfViewer: typeof import('./src/components/SimplePdfViewer.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

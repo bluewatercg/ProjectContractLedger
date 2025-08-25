@@ -17,6 +17,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'PDF 预览' }
   },
   {
+    path: '/simple-pdf-preview',
+    name: 'SimplePdfPreview',
+    component: () => import('@/views/SimplePdfPreview.vue'),
+    meta: { requiresAuth: true, title: 'PDF 预览' }
+  },
+  {
+    path: '/pdf-test',
+    name: 'PdfTest',
+    component: () => import('@/views/PdfTestPage.vue'),
+    meta: { requiresAuth: false, title: 'PDF预览测试' }
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     redirect: '/dashboard',

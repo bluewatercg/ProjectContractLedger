@@ -19,6 +19,7 @@ import { Config } from '@midwayjs/core';
 import { ContractAttachment } from '../entity/contract-attachment.entity';
 import { InvoiceAttachment } from '../entity/invoice-attachment.entity';
 
+
 @Controller('/api/v1')
 export class AttachmentController {
   @Inject()
@@ -32,6 +33,9 @@ export class AttachmentController {
 
   @Config('jwt')
   jwtConfig: { secret: string; expiresIn: string };
+
+  @Config('upload')
+  uploadConfig: { uploadDir: string };
 
   /**
    * 上传合同附件
@@ -538,6 +542,136 @@ export class AttachmentController {
       return {
         success: false,
         message: error.message || '生成预览链接失败',
+        code: 500,
+      };
+    }
+  }
+
+  /**
+   * 获取PDF附件的Base64编码数据（新的预览方案）
+   * 临时移除认证，仅用于测试
+   */
+  @Get('/attachments/:attachmentId/base64')
+  async getAttachmentBase64(
+    @Param('attachmentId') attachmentId: number
+  ): Promise<ApiResponse> {
+    try {
+      console.log('PDF Base64预览请求 - 无认证模式', {
+        attachmentId,
+        timestamp: new Date().toISOString()
+      });
+
+      // 验证附件ID的有效性
+      if (!attachmentId || attachmentId <= 0) {
+        return {
+          success: false,
+          message: '无效的附件ID',
+          code: 400,
+        };
+      }
+
+      // 查找附件记录
+      let attachment: ContractAttachment | InvoiceAttachment | null = await this.contractAttachmentService.getAttachmentById(attachmentId);
+      
+      if (!attachment) {
+        attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+      }
+
+      if (!attachment) {
+        return {
+          success: false,
+          message: '附件不存在',
+          code: 404,
+        };
+      }
+
+      // 验证文件路径的安全性
+      const filePath = attachment.file_path;
+      const fileName = attachment.file_name;
+
+      // 确保文件路径在允许的上传目录内，防止路径遍历攻击
+      const uploadDir = this.uploadConfig?.uploadDir || '/app/uploads';
+      const normalizedFilePath = path.resolve(filePath);
+      const normalizedUploadDir = path.resolve(uploadDir);
+      
+      if (!normalizedFilePath.startsWith(normalizedUploadDir)) {
+        console.error('安全警告：检测到潜在的路径遍历攻击', {
+          filePath,
+          normalizedFilePath,
+          uploadDir: normalizedUploadDir
+        });
+        return {
+          success: false,
+          message: '文件访问被拒绝',
+          code: 403,
+        };
+      }
+
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        console.error('文件不存在', {
+          filePath,
+          attachmentId
+        });
+        return {
+          success: false,
+          message: '文件不存在',
+          code: 404,
+        };
+      }
+
+      // 验证文件类型
+      const ext = path.extname(fileName).toLowerCase();
+      if (ext !== '.pdf') {
+        return {
+          success: false,
+          message: '只支持PDF文件的Base64预览',
+          code: 400,
+        };
+      }
+
+      // 验证文件大小（防止过大文件导致内存问题）
+      const fileStats = fs.statSync(filePath);
+      const maxSizeForBase64 = 50 * 1024 * 1024; // 50MB限制
+      if (fileStats.size > maxSizeForBase64) {
+        return {
+          success: false,
+          message: 'PDF文件过大，无法进行Base64预览（最大50MB）',
+          code: 413,
+        };
+      }
+
+      // 读取文件并转换为Base64
+      const fileBuffer = fs.readFileSync(filePath);
+      const base64Data = fileBuffer.toString('base64');
+
+      // 记录访问日志
+      console.log('PDF Base64预览成功', {
+        attachmentId,
+        fileName,
+        fileSize: fileStats.size,
+        timestamp: new Date().toISOString()
+      });
+
+      return {
+        success: true,
+        data: {
+          base64: base64Data,
+          contentType: 'application/pdf',
+          size: fileBuffer.length,
+          fileName: fileName,
+        },
+        message: 'PDF Base64数据获取成功',
+      };
+    } catch (error) {
+      console.error('获取PDF Base64数据异常', {
+        attachmentId,
+        error: error.message,
+        stack: error.stack
+      });
+      return {
+        success: false,
+        message: error.message || '获取PDF Base64数据失败',
         code: 500,
       };
     }

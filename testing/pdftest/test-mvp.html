@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Base64 Proxy MVP 测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .url-input-section {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .url-input-section label {
+            font-weight: bold;
+            color: #333;
+        }
+        .url-input-section input {
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        .url-input-section input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .loading { background: #d1ecf1; color: #0c5460; }
+        .pdf-container {
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            height: 600px;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .api-demo {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .preset-urls {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+        .preset-urls h4 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .preset-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 2px;
+        }
+        .preset-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 PDF Base64 Proxy MVP 测试</h1>
+        
+        <div class="info">
+            <h3>🎯 MVP特性测试：</h3>
+            <ul>
+                <li>✅ Base64编码传输，防IDM拦截</li>
+                <li>✅ JSON API响应格式</li>
+                <li>✅ CORS跨域支持</li>
+                <li>✅ 前端Blob URL转换</li>
+            </ul>
+            
+            <div class="preset-urls">
+                <h4>🔗 快速测试URL：</h4>
+                <button class="preset-btn" onclick="setUrl('/invoice.pdf')">本地测试PDF</button>
+                <button class="preset-btn" onclick="setUrl('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')">W3C测试PDF</button>
+                <button class="preset-btn" onclick="setUrl('https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf')">Adobe样例</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="url-input-section">
+                <label for="pdfUrlInput">PDF URL:</label>
+                <input type="url" id="pdfUrlInput" placeholder="输入PDF文件的完整URL，如: https://example.com/file.pdf" 
+                       value="/invoice.pdf" style="width: 400px; padding: 8px; margin: 0 10px;">
+            </div>
+            <button id="loadPdfBtn">加载测试PDF</button>
+            <button id="testApiBtn">测试API响应</button>
+            <button id="clearBtn">清空显示</button>
+        </div>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div class="api-demo" id="apiDemo" style="display: none;">
+            <strong>API响应数据：</strong>
+            <pre id="apiResponse"></pre>
+        </div>
+        
+        <div class="pdf-container" id="pdfContainer" style="display: none;">
+            <iframe id="pdfIframe" src=""></iframe>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3003';
+        
+        function getPdfPath() {
+            const input = document.getElementById('pdfUrlInput');
+            return input.value.trim();
+        }
+        
+        function setUrl(url) {
+            const input = document.getElementById('pdfUrlInput');
+            input.value = url;
+            showStatus(`已设置URL: ${url}`, 'success');
+        }
+        
+        function showStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+        }
+        
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+        
+        function showApiDemo(data) {
+            const demoEl = document.getElementById('apiDemo');
+            const responseEl = document.getElementById('apiResponse');
+            
+            // 显示API响应的简化版本（不显示完整的Base64数据）
+            const displayData = {
+                success: data.success,
+                contentType: data.contentType,
+                size: data.size + ' bytes',
+                dataLength: data.data ? data.data.length + ' chars (Base64)' : 'N/A',
+                dataPreview: data.data ? data.data.substring(0, 100) + '...' : 'N/A'
+            };
+            
+            responseEl.textContent = JSON.stringify(displayData, null, 2);
+            demoEl.style.display = 'block';
+        }
+        
+        async function loadPDF() {
+            try {
+                const pdfPath = getPdfPath();
+                if (!pdfPath) {
+                    showStatus('请输入有效的PDF URL', 'error');
+                    return;
+                }
+                
+                showStatus('正在加载PDF文件...');
+                
+                const response = await fetch(API_BASE + pdfPath);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || '服务器返回错误');
+                }
+                
+                showStatus('PDF加载成功，正在转换为显示格式...', 'success');
+                
+                // 显示API响应
+                showApiDemo(data);
+                
+                // 将Base64转换为Blob URL
+                const binaryString = atob(data.data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(blob);
+                
+                // 在iframe中显示PDF
+                const iframe = document.getElementById('pdfIframe');
+                iframe.src = pdfUrl;
+                
+                document.getElementById('pdfContainer').style.display = 'block';
+                
+                showStatus(`PDF显示成功！文件大小: ${data.size} bytes`, 'success');
+                
+            } catch (error) {
+                console.error('加载PDF失败:', error);
+                showStatus(`加载失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAPI() {
+            try {
+                const pdfPath = getPdfPath();
+                if (!pdfPath) {
+                    showStatus('请输入有效的PDF URL', 'error');
+                    return;
+                }
+                
+                showStatus('正在测试API...');
+                
+                const response = await fetch(API_BASE + pdfPath);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 显示API响应
+                showApiDemo(data);
+                
+                showStatus('API测试成功！', 'success');
+                
+            } catch (error) {
+                console.error('API测试失败:', error);
+                showStatus(`API测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearDisplay() {
+            document.getElementById('pdfContainer').style.display = 'none';
+            document.getElementById('apiDemo').style.display = 'none';
+            hideStatus();
+            
+            // 清理Blob URL
+            const iframe = document.getElementById('pdfIframe');
+            if (iframe.src && iframe.src.startsWith('blob:')) {
+                URL.revokeObjectURL(iframe.src);
+            }
+            iframe.src = '';
+        }
+        
+        // 事件监听器
+        document.getElementById('loadPdfBtn').addEventListener('click', loadPDF);
+        document.getElementById('testApiBtn').addEventListener('click', testAPI);
+        document.getElementById('clearBtn').addEventListener('click', clearDisplay);
+        
+        // 页面加载完成后的提示
+        window.addEventListener('load', () => {
+            showStatus('MVP测试准备就绪。请确保 pdf-base64-server.js 正在端口 3003 运行。', 'success');
+        });
+    </script>
+</body>
+</html>
