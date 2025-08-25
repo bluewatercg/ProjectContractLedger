@@ -90,10 +90,12 @@ interface Attachment {
 interface Props {
   attachments: Attachment[]
   loading?: boolean
+  attachmentType?: 'contract' | 'invoice' // 新增附件类型参数
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
+  loading: false,
+  attachmentType: 'contract' // 默认为合同附件
 })
 
 // Emits
@@ -135,17 +137,7 @@ const formatDate = (dateString: string): string => {
 
 const downloadFile = async (attachment: Attachment) => {
   try {
-    const response = await fetch(`/api/v1/attachments/${attachment.attachment_id}/download`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error('下载失败')
-    }
-
-    const blob = await response.blob()
+    const blob = await attachmentApi.downloadAttachment(attachment.attachment_id, props.attachmentType)
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -163,14 +155,10 @@ const downloadFile = async (attachment: Attachment) => {
 }
 
 const previewFile = async (attachment: Attachment) => {
-  // 对于图片，使用原有的blob预览方式
+  // 对于图片，使用统一API进行预览
   if (isImage(attachment.file_name)) {
     try {
-      const response = await fetch(`/api/v1/attachments/${attachment.attachment_id}/download`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (!response.ok) throw new Error('获取图片失败');
-      const blob = await response.blob();
+      const blob = await attachmentApi.downloadAttachment(attachment.attachment_id, props.attachmentType);
       const imageUrl = URL.createObjectURL(blob);
       window.open(imageUrl, '_blank');
     } catch (error) {
@@ -183,8 +171,8 @@ const previewFile = async (attachment: Attachment) => {
   // 对于PDF，使用新的简单预览方式
   if (isPdf(attachment.file_name)) {
     try {
-      // 直接跳转到新的PDF预览页面，传递附件ID
-      const previewPageUrl = `/simple-pdf-preview?attachmentId=${attachment.attachment_id}`;
+      // 直接跳转到新的PDF预览页面，传递附件ID和类型
+      const previewPageUrl = `/simple-pdf-preview?attachmentId=${attachment.attachment_id}&type=${props.attachmentType}`;
       window.open(previewPageUrl, '_blank');
     } catch (error) {
       console.error('PDF preview error:', error);

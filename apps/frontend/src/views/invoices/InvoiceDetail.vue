@@ -124,6 +124,7 @@
         <AttachmentList
           :attachments="attachments"
           :loading="attachmentsLoading"
+          attachment-type="invoice"
           @delete="handleDeleteAttachment"
           @refresh="fetchAttachments"
         />

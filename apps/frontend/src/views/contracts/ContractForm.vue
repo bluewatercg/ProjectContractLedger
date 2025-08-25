@@ -210,6 +210,7 @@
         <AttachmentList
           :attachments="attachments"
           :loading="attachmentsLoading"
+          attachment-type="contract"
           @delete="handleDeleteAttachment"
           @refresh="fetchAttachments"
         />

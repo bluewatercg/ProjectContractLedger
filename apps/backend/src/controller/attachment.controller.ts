@@ -391,7 +391,8 @@ export class AttachmentController {
   @Get('/attachments/:attachmentId/download')
   async downloadAttachment(
     @Param('attachmentId') attachmentId: number,
-    @Query('token') token?: string
+    @Query('token') token?: string,
+    @Query('type') type?: 'contract' | 'invoice'
   ) {
     try {
       // 验证token（支持查询参数和Authorization头）
@@ -412,22 +413,36 @@ export class AttachmentController {
       // 这里可以添加token验证逻辑
       // 暂时跳过详细验证，实际项目中应该验证token有效性
 
-      // 先尝试从合同附件中查找
-      const attachment =
-        await this.contractAttachmentService.getAttachmentById(attachmentId);
+      // 根据type参数精确查找附件
       let fileName = '';
       let filePath = '';
-
-      if (attachment) {
-        fileName = attachment.file_name;
-        filePath = attachment.file_path;
+      
+      if (type === 'contract') {
+        // 明确指定查找合同附件
+        const attachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        if (attachment) {
+          fileName = attachment.file_name;
+          filePath = attachment.file_path;
+        }
+      } else if (type === 'invoice') {
+        // 明确指定查找发票附件
+        const attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+        if (attachment) {
+          fileName = attachment.file_name;
+          filePath = attachment.file_path;
+        }
       } else {
-        // 如果没找到，再从发票附件中查找
-        const invoiceAttachment =
-          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
-        if (invoiceAttachment) {
-          fileName = invoiceAttachment.file_name;
-          filePath = invoiceAttachment.file_path;
+        // 如果没有指定类型，则按原来的逻辑查找（为了向后兼容）
+        const contractAttachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        if (contractAttachment) {
+          fileName = contractAttachment.file_name;
+          filePath = contractAttachment.file_path;
+        } else {
+          const invoiceAttachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+          if (invoiceAttachment) {
+            fileName = invoiceAttachment.file_name;
+            filePath = invoiceAttachment.file_path;
+          }
         }
       }
 
@@ -512,25 +527,33 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      // 优先查找合同附件
-      let attachment: ContractAttachment | InvoiceAttachment =
-        await this.contractAttachmentService.getAttachmentById(attachmentId);
-      let attachmentType = 'contract';
-
-      // 如果未找到，再查找发票附件
-      if (!attachment) {
-        attachment =
-          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
-        attachmentType = 'invoice';
-      }
-
-      // 如果都未找到，则返回错误
-      if (!attachment) {
+      // 同时查找合同附件和发票附件
+      const [contractAttachment, invoiceAttachment] = await Promise.all([
+        this.contractAttachmentService.getAttachmentById(attachmentId),
+        this.invoiceAttachmentService.getAttachmentById(attachmentId)
+      ]);
+      
+      let selectedType: string;
+      
+      if (contractAttachment && invoiceAttachment) {
+        // 如果两种类型都找到了相同ID的附件，这是数据异常
+        console.warn('发现ID冲突的附件', {
+          attachmentId,
+          contractAttachment: contractAttachment.file_name,
+          invoiceAttachment: invoiceAttachment.file_name
+        });
+        // 优先使用合同附件
+        selectedType = 'contract';
+      } else if (contractAttachment) {
+        selectedType = 'contract';
+      } else if (invoiceAttachment) {
+        selectedType = 'invoice';
+      } else {
         return { success: false, message: '附件不存在', code: 404 };
       }
 
       // 构建公开预览 URL
-      const previewUrl = `/api/v1/attachments/public-preview?attachmentId=${attachmentId}&type=${attachmentType}`;
+      const previewUrl = `/api/v1/attachments/public-preview?attachmentId=${attachmentId}&type=${selectedType}`;
 
       console.log('Generated preview URL:', previewUrl);
 
@@ -553,11 +576,13 @@ export class AttachmentController {
    */
   @Get('/attachments/:attachmentId/base64')
   async getAttachmentBase64(
-    @Param('attachmentId') attachmentId: number
+    @Param('attachmentId') attachmentId: number,
+    @Query('type') type?: 'contract' | 'invoice'
   ): Promise<ApiResponse> {
     try {
       console.log('PDF Base64预览请求 - 无认证模式', {
         attachmentId,
+        type,
         timestamp: new Date().toISOString()
       });
 
@@ -570,11 +595,26 @@ export class AttachmentController {
         };
       }
 
-      // 查找附件记录
-      let attachment: ContractAttachment | InvoiceAttachment | null = await this.contractAttachmentService.getAttachmentById(attachmentId);
+      let attachment: ContractAttachment | InvoiceAttachment | null = null;
+      let attachmentType = '';
       
-      if (!attachment) {
+      if (type === 'contract') {
+        // 明确指定查找合同附件
+        attachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        attachmentType = 'contract';
+      } else if (type === 'invoice') {
+        // 明确指定查找发票附件
         attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+        attachmentType = 'invoice';
+      } else {
+        // 如果没有指定类型，则按原来的逻辑查找（为了向后兼容）
+        attachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        if (attachment) {
+          attachmentType = 'contract';
+        } else {
+          attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+          attachmentType = 'invoice';
+        }
       }
 
       if (!attachment) {
@@ -648,6 +688,7 @@ export class AttachmentController {
       // 记录访问日志
       console.log('PDF Base64预览成功', {
         attachmentId,
+        attachmentType,
         fileName,
         fileSize: fileStats.size,
         timestamp: new Date().toISOString()

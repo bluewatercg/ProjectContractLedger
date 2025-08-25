@@ -9,7 +9,8 @@
     
     <SimplePdfViewer 
       v-if="attachmentId" 
-      :attachment-id="attachmentId" 
+      :attachment-id="attachmentId"
+      :attachment-type="attachmentType"
       class="preview-content"
     />
     
@@ -26,14 +27,21 @@ import SimplePdfViewer from '@/components/SimplePdfViewer.vue'
 
 const route = useRoute()
 const attachmentId = ref<number | null>(null)
+const attachmentType = ref<'contract' | 'invoice'>('contract')
 
 onMounted(() => {
   const idFromQuery = route.query.attachmentId
+  const typeFromQuery = route.query.type
+  
   if (typeof idFromQuery === 'string' && idFromQuery) {
     const parsedId = parseInt(idFromQuery, 10)
     if (!isNaN(parsedId)) {
       attachmentId.value = parsedId
     }
+  }
+  
+  if (typeof typeFromQuery === 'string' && (typeFromQuery === 'contract' || typeFromQuery === 'invoice')) {
+    attachmentType.value = typeFromQuery
   }
 })
 

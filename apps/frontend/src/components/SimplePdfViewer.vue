@@ -35,6 +35,7 @@ import { attachmentApi } from '@/api/attachment'
 // 定义 props
 interface Props {
   attachmentId: number
+  attachmentType?: 'contract' | 'invoice' // 新增附件类型参数
 }
 
 const props = defineProps<Props>()
@@ -55,10 +56,10 @@ const loadPdfPreview = async () => {
   errorMessage.value = null
 
   try {
-    console.log('开始加载PDF预览，附件ID:', props.attachmentId);
+    console.log('开始加载PDF预览，附件ID:', props.attachmentId, '类型:', props.attachmentType);
     
     // 直接调用API接口（无认证模式）
-    const response = await attachmentApi.getAttachmentBase64(props.attachmentId)
+    const response = await attachmentApi.getAttachmentBase64(props.attachmentId, props.attachmentType)
     
     console.log('API响应:', response);
     

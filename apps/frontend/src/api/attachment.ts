@@ -71,8 +71,9 @@ export const attachmentApi = {
   /**
    * 下载附件
    */
-  downloadAttachment(attachmentId: number): Promise<Blob> {
-    return apiClient.get(`/attachments/${attachmentId}/download`, {
+  downloadAttachment(attachmentId: number, type?: 'contract' | 'invoice'): Promise<Blob> {
+    const params = type ? `?type=${type}` : '';
+    return apiClient.get(`/attachments/${attachmentId}/download${params}`, {
       responseType: 'blob'
     }).then(res => res.data)
   },
@@ -87,12 +88,13 @@ export const attachmentApi = {
   /**
    * 获取PDF附件的Base64编码数据（新预览方案）
    */
-  async getAttachmentBase64(attachmentId: number): Promise<ApiResponse<{ 
+  async getAttachmentBase64(attachmentId: number, type?: 'contract' | 'invoice'): Promise<ApiResponse<{ 
     base64: string; 
     contentType: string; 
     size: number; 
     fileName: string; 
   }>> {
-    return apiClient.get(`/attachments/${attachmentId}/base64`).then(res => res.data);
+    const params = type ? `?type=${type}` : '';
+    return apiClient.get(`/attachments/${attachmentId}/base64${params}`).then(res => res.data);
   }
 }
