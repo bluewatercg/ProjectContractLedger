@@ -48,16 +48,16 @@ export class Contract {
   @Column({
     type: 'boolean',
     default: false,
-    comment: '是否续签合同：true-需要续签，false-不需要续签'
+    comment: '是否续签合同：true-需要续签，false-不需要续签',
   })
   is_renewable: boolean;
 
-  @Column({ 
+  @Column({
     type: 'enum',
     enum: ['5', '30', '60'],
     nullable: true,
     default: '30',
-    comment: '续签提醒天数：5天、30天、60天（仅在is_renewable=true时有效）'
+    comment: '续签提醒天数：5天、30天、60天（仅在is_renewable=true时有效）',
   })
   renewal_reminder_days: string;
 

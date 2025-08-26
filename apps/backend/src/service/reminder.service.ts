@@ -7,7 +7,11 @@ import { Payment } from '../entity/payment.entity';
 
 export interface ReminderItem {
   id: number;
-  type: 'contract_renewal' | 'contract_fulfillment' | 'invoice_needed' | 'payment_collection';
+  type:
+    | 'contract_renewal'
+    | 'contract_fulfillment'
+    | 'invoice_needed'
+    | 'payment_collection';
   priority: 'high' | 'medium' | 'low';
   title: string;
   description: string;
@@ -51,28 +55,26 @@ export class ReminderService {
    * 3. 收款类（财务收款流程）：收款提醒
    */
   async getAllReminders(): Promise<ReminderSummary> {
-    const [
-      fulfillmentReminders,
-      invoiceReminders,
-      paymentReminders
-    ] = await Promise.all([
-      this.getContractFulfillmentReminders(),
-      this.getInvoiceNeededReminders(),
-      this.getPaymentNeededReminders()
-    ]);
+    const [fulfillmentReminders, invoiceReminders, paymentReminders] =
+      await Promise.all([
+        this.getContractFulfillmentReminders(),
+        this.getInvoiceNeededReminders(),
+        this.getPaymentNeededReminders(),
+      ]);
 
     const allItems = [
       ...fulfillmentReminders,
       ...invoiceReminders,
-      ...paymentReminders
+      ...paymentReminders,
     ];
 
     // 按优先级和到期时间排序
     allItems.sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
-      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+      const priorityDiff =
+        priorityOrder[a.priority] - priorityOrder[b.priority];
       if (priorityDiff !== 0) return priorityDiff;
-      
+
       // 同优先级按到期时间排序
       if (a.daysUntilDue !== undefined && b.daysUntilDue !== undefined) {
         return a.daysUntilDue - b.daysUntilDue;
@@ -85,7 +87,7 @@ export class ReminderService {
       high: allItems.filter(item => item.priority === 'high').length,
       medium: allItems.filter(item => item.priority === 'medium').length,
       low: allItems.filter(item => item.priority === 'low').length,
-      items: allItems.slice(0, 20) // 最多返回20条
+      items: allItems.slice(0, 20), // 最多返回20条
     };
 
     return summary;
@@ -111,20 +113,21 @@ export class ReminderService {
 
     return expiringContracts.map(contract => {
       const daysUntilDue = Math.ceil(
-        (new Date(contract.end_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(contract.end_date).getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24)
       );
-      
+
       let priority: 'high' | 'medium' | 'low' = 'low';
       let type: 'contract_renewal' | 'contract_fulfillment';
       let title: string;
       let description: string;
-      
+
       if (contract.is_renewable) {
         // 续签合同的提醒
         const reminderDays = parseInt(contract.renewal_reminder_days || '30');
         if (daysUntilDue <= 5) priority = 'high';
         else if (daysUntilDue <= reminderDays) priority = 'medium';
-        
+
         type = 'contract_renewal';
         title = '合同即将到期，需要续签';
         description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请联系客户安排续签事宜`;
@@ -132,7 +135,7 @@ export class ReminderService {
         // 一次性合同的履约完成提醒
         if (daysUntilDue <= 7) priority = 'high';
         else if (daysUntilDue <= 15) priority = 'medium';
-        
+
         type = 'contract_fulfillment';
         title = '合同即将到期，请确认履约完成';
         description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请确认项目履约完成情况`;
@@ -152,7 +155,7 @@ export class ReminderService {
         contractNumber: contract.contract_number,
         dueDate: contract.end_date,
         actionUrl: `/contracts/${contract.id}`,
-        category: 'fulfillment' as const
+        category: 'fulfillment' as const,
       };
     });
   }
@@ -175,9 +178,10 @@ export class ReminderService {
 
     return contractsNeedingInvoice.map(contract => {
       const daysSinceStart = Math.ceil(
-        (Date.now() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(contract.start_date).getTime()) /
+          (1000 * 60 * 60 * 24)
       );
-      
+
       let priority: 'high' | 'medium' | 'low' = 'medium';
       if (daysSinceStart > 30) priority = 'high';
       else if (daysSinceStart > 7) priority = 'medium';
@@ -196,7 +200,7 @@ export class ReminderService {
         customerName: contract.customer?.name,
         contractNumber: contract.contract_number,
         actionUrl: `/invoices/create?contractId=${contract.id}`,
-        category: 'invoice' as const
+        category: 'invoice' as const,
       };
     });
   }
@@ -212,16 +216,19 @@ export class ReminderService {
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoin('invoice.payments', 'payment')
-      .where('invoice.status IN (:...statuses)', { statuses: ['sent', 'overdue'] })
+      .where('invoice.status IN (:...statuses)', {
+        statuses: ['sent', 'overdue'],
+      })
       .groupBy('invoice.id')
       .having('COALESCE(SUM(payment.amount), 0) < invoice.total_amount') // 未完全收款
       .getMany();
 
     return unpaidInvoices.map(invoice => {
       const daysSinceIssue = Math.ceil(
-        (Date.now() - new Date(invoice.issue_date).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(invoice.issue_date).getTime()) /
+          (1000 * 60 * 60 * 24)
       );
-      
+
       let priority: 'high' | 'medium' | 'low' = 'medium';
       if (daysSinceIssue > 60) priority = 'high';
       else if (daysSinceIssue > 30) priority = 'medium';
@@ -241,7 +248,7 @@ export class ReminderService {
         contractNumber: invoice.contract?.contract_number,
         invoiceNumber: invoice.invoice_number,
         actionUrl: `/payments/create?invoiceId=${invoice.id}`,
-        category: 'payment' as const
+        category: 'payment' as const,
       };
     });
   }
@@ -264,8 +271,9 @@ export class ReminderService {
         return (await this.getPaymentNeededReminders()).length;
       case 'contract_renewal':
       case 'contract_fulfillment':
-        return (await this.getContractFulfillmentReminders())
-          .filter(item => item.type === type).length;
+        return (await this.getContractFulfillmentReminders()).filter(
+          item => item.type === type
+        ).length;
       case 'invoice_needed':
         return (await this.getInvoiceNeededReminders()).length;
       case 'payment_collection':

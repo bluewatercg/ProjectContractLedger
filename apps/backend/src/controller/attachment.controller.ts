@@ -19,7 +19,6 @@ import { Config } from '@midwayjs/core';
 import { ContractAttachment } from '../entity/contract-attachment.entity';
 import { InvoiceAttachment } from '../entity/invoice-attachment.entity';
 
-
 @Controller('/api/v1')
 export class AttachmentController {
   @Inject()
@@ -187,8 +186,9 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      const success =
-        await this.contractAttachmentService.deleteAttachment(attachmentId);
+      const success = await this.contractAttachmentService.deleteAttachment(
+        attachmentId
+      );
 
       if (!success) {
         return {
@@ -361,8 +361,9 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      const success =
-        await this.invoiceAttachmentService.deleteAttachment(attachmentId);
+      const success = await this.invoiceAttachmentService.deleteAttachment(
+        attachmentId
+      );
 
       if (!success) {
         return {
@@ -416,29 +417,33 @@ export class AttachmentController {
       // 根据type参数精确查找附件
       let fileName = '';
       let filePath = '';
-      
+
       if (type === 'contract') {
         // 明确指定查找合同附件
-        const attachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        const attachment =
+          await this.contractAttachmentService.getAttachmentById(attachmentId);
         if (attachment) {
           fileName = attachment.file_name;
           filePath = attachment.file_path;
         }
       } else if (type === 'invoice') {
         // 明确指定查找发票附件
-        const attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+        const attachment =
+          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
         if (attachment) {
           fileName = attachment.file_name;
           filePath = attachment.file_path;
         }
       } else {
         // 如果没有指定类型，则按原来的逻辑查找（为了向后兼容）
-        const contractAttachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        const contractAttachment =
+          await this.contractAttachmentService.getAttachmentById(attachmentId);
         if (contractAttachment) {
           fileName = contractAttachment.file_name;
           filePath = contractAttachment.file_path;
         } else {
-          const invoiceAttachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+          const invoiceAttachment =
+            await this.invoiceAttachmentService.getAttachmentById(attachmentId);
           if (invoiceAttachment) {
             fileName = invoiceAttachment.file_name;
             filePath = invoiceAttachment.file_path;
@@ -530,17 +535,17 @@ export class AttachmentController {
       // 同时查找合同附件和发票附件
       const [contractAttachment, invoiceAttachment] = await Promise.all([
         this.contractAttachmentService.getAttachmentById(attachmentId),
-        this.invoiceAttachmentService.getAttachmentById(attachmentId)
+        this.invoiceAttachmentService.getAttachmentById(attachmentId),
       ]);
-      
+
       let selectedType: string;
-      
+
       if (contractAttachment && invoiceAttachment) {
         // 如果两种类型都找到了相同ID的附件，这是数据异常
         console.warn('发现ID冲突的附件', {
           attachmentId,
           contractAttachment: contractAttachment.file_name,
-          invoiceAttachment: invoiceAttachment.file_name
+          invoiceAttachment: invoiceAttachment.file_name,
         });
         // 优先使用合同附件
         selectedType = 'contract';
@@ -583,7 +588,7 @@ export class AttachmentController {
       console.log('PDF Base64预览请求 - 无认证模式', {
         attachmentId,
         type,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // 验证附件ID的有效性
@@ -597,22 +602,30 @@ export class AttachmentController {
 
       let attachment: ContractAttachment | InvoiceAttachment | null = null;
       let attachmentType = '';
-      
+
       if (type === 'contract') {
         // 明确指定查找合同附件
-        attachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        attachment = await this.contractAttachmentService.getAttachmentById(
+          attachmentId
+        );
         attachmentType = 'contract';
       } else if (type === 'invoice') {
         // 明确指定查找发票附件
-        attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+        attachment = await this.invoiceAttachmentService.getAttachmentById(
+          attachmentId
+        );
         attachmentType = 'invoice';
       } else {
         // 如果没有指定类型，则按原来的逻辑查找（为了向后兼容）
-        attachment = await this.contractAttachmentService.getAttachmentById(attachmentId);
+        attachment = await this.contractAttachmentService.getAttachmentById(
+          attachmentId
+        );
         if (attachment) {
           attachmentType = 'contract';
         } else {
-          attachment = await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+          attachment = await this.invoiceAttachmentService.getAttachmentById(
+            attachmentId
+          );
           attachmentType = 'invoice';
         }
       }
@@ -633,12 +646,12 @@ export class AttachmentController {
       const uploadDir = this.uploadConfig?.uploadDir || '/app/uploads';
       const normalizedFilePath = path.resolve(filePath);
       const normalizedUploadDir = path.resolve(uploadDir);
-      
+
       if (!normalizedFilePath.startsWith(normalizedUploadDir)) {
         console.error('安全警告：检测到潜在的路径遍历攻击', {
           filePath,
           normalizedFilePath,
-          uploadDir: normalizedUploadDir
+          uploadDir: normalizedUploadDir,
         });
         return {
           success: false,
@@ -651,7 +664,7 @@ export class AttachmentController {
       if (!fs.existsSync(filePath)) {
         console.error('文件不存在', {
           filePath,
-          attachmentId
+          attachmentId,
         });
         return {
           success: false,
@@ -691,7 +704,7 @@ export class AttachmentController {
         attachmentType,
         fileName,
         fileSize: fileStats.size,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return {
@@ -708,7 +721,7 @@ export class AttachmentController {
       console.error('获取PDF Base64数据异常', {
         attachmentId,
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return {
         success: false,
@@ -736,11 +749,13 @@ export class AttachmentController {
       let attachment;
       // 根据类型精确查找附件
       if (type === 'contract') {
-        attachment =
-          await this.contractAttachmentService.getAttachmentById(attachmentId);
+        attachment = await this.contractAttachmentService.getAttachmentById(
+          attachmentId
+        );
       } else {
-        attachment =
-          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
+        attachment = await this.invoiceAttachmentService.getAttachmentById(
+          attachmentId
+        );
       }
 
       if (!attachment || !attachment.file_path || !attachment.file_name) {
