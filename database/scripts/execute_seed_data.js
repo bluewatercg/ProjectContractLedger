@@ -2,15 +2,22 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-// 数据库配置
+// 数据库配置 - 从环境变量读取
 const DB_CONFIG = {
-  host: 'mysql.sqlpub.com',
-  port: 3306,
-  user: 'millerchen',
-  password: 'c3TyBrus2OmLeeIu',
-  database: 'procontractledger',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'procontractledger',
   multipleStatements: true
 };
+
+// 显示配置信息（隐藏密码）
+console.log('📋 数据库配置:');
+console.log(`   Host: ${DB_CONFIG.host}:${DB_CONFIG.port}`);
+console.log(`   User: ${DB_CONFIG.user}`);
+console.log(`   Database: ${DB_CONFIG.database}`);
+console.log(`   Password: ${'*'.repeat(DB_CONFIG.password.length)}\n`);
 
 async function executeSeedData() {
   let connection;

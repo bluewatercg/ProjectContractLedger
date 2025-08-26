@@ -1,12 +1,13 @@
-name: Build and Push Separate Frontend/Backend Docker Images
+name: Docker Build Fallback (AMD64 Only)
 
 on:
-  push:
-    branches: [ main, master, develop, midwayjs ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main, master, midwayjs ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:  # 手动触发
+    inputs:
+      force_build:
+        description: 'Force build even if multi-arch succeeded'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -34,12 +35,12 @@ jobs:
     - name: Install backend dependencies
       run: |
         cd apps/backend
-        yarn install --network-timeout 100000
+        yarn install --network-timeout 300000
 
     - name: Install frontend dependencies
       run: |
         cd apps/frontend
-        yarn install --network-timeout 100000
+        yarn install --network-timeout 300000
 
     - name: Fix backend code formatting
       run: |
@@ -61,8 +62,8 @@ jobs:
         cd apps/frontend
         yarn build
 
-  # 构建和推送后端镜像
-  build-and-push-backend:
+  # 构建和推送后端镜像 (仅AMD64)
+  build-and-push-backend-amd64:
     needs: build-check
     runs-on: ubuntu-latest
     permissions:
@@ -89,15 +90,13 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=sha,prefix={{branch}}-
+          type=ref,event=branch,suffix=-amd64
+          type=ref,event=pr,suffix=-amd64
+          type=semver,pattern={{version}},suffix=-amd64
+          type=raw,value=latest-amd64,enable={{is_default_branch}}
+          type=sha,prefix={{branch}}-amd64-
 
-    - name: Build and push backend image
+    - name: Build and push backend image (AMD64)
       id: backend-build
       uses: docker/build-push-action@v5
       with:
@@ -106,15 +105,13 @@ jobs:
         push: true
         tags: ${{ steps.backend-meta.outputs.tags }}
         labels: ${{ steps.backend-meta.outputs.labels }}
-        cache-from: type=gha,scope=backend
-        cache-to: type=gha,mode=max,scope=backend
-        platforms: linux/amd64,linux/arm64
-        build-args: |
-          BUILDKIT_INLINE_CACHE=1
+        cache-from: type=gha,scope=backend-amd64
+        cache-to: type=gha,mode=max,scope=backend-amd64
+        platforms: linux/amd64
         provenance: false
 
-  # 构建和推送前端镜像
-  build-and-push-frontend:
+  # 构建和推送前端镜像 (仅AMD64)
+  build-and-push-frontend-amd64:
     needs: build-check
     runs-on: ubuntu-latest
     permissions:
@@ -141,15 +138,13 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=sha,prefix={{branch}}-
+          type=ref,event=branch,suffix=-amd64
+          type=ref,event=pr,suffix=-amd64
+          type=semver,pattern={{version}},suffix=-amd64
+          type=raw,value=latest-amd64,enable={{is_default_branch}}
+          type=sha,prefix={{branch}}-amd64-
 
-    - name: Build and push frontend image
+    - name: Build and push frontend image (AMD64)
       id: frontend-build
       uses: docker/build-push-action@v5
       with:
@@ -158,39 +153,27 @@ jobs:
         push: true
         tags: ${{ steps.frontend-meta.outputs.tags }}
         labels: ${{ steps.frontend-meta.outputs.labels }}
-        cache-from: type=gha,scope=frontend
-        cache-to: type=gha,mode=max,scope=frontend
-        platforms: linux/amd64,linux/arm64
-        build-args: |
-          BUILDKIT_INLINE_CACHE=1
+        cache-from: type=gha,scope=frontend-amd64
+        cache-to: type=gha,mode=max,scope=frontend-amd64
+        platforms: linux/amd64
         provenance: false
 
   # 部署信息汇总
   deployment-info:
-    needs: [build-and-push-backend, build-and-push-frontend]
+    needs: [build-and-push-backend-amd64, build-and-push-frontend-amd64]
     runs-on: ubuntu-latest
     if: success()
 
     steps:
     - name: Display deployment information
       run: |
-        echo "=== 分离式前后端镜像构建完成 ==="
-        echo "后端镜像: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
-        echo "前端镜像: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest"
+        echo "=== AMD64单平台镜像构建完成 ==="
+        echo "后端镜像: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest-amd64"
+        echo "前端镜像: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest-amd64"
         echo ""
         echo "=== 部署信息 ==="
         echo "镜像已推送到 GitHub Container Registry"
+        echo "这是AMD64单平台构建，适用于x86_64服务器"
+        echo ""
         echo "使用以下命令部署到生产环境："
-        echo ""
-        echo "1. 后端部署："
-        echo "   cd apps/backend"
-        echo "   docker-compose pull"
-        echo "   docker-compose up -d"
-        echo ""
-        echo "2. 前端部署："
-        echo "   cd apps/frontend"
-        echo "   docker-compose pull"
-        echo "   docker-compose up -d"
-        echo ""
-        echo "3. 或使用统一部署配置："
-        echo "   docker-compose -f deployment/docker-compose.separated.yml up -d"
+        echo "docker-compose -f deployment/docker-compose.amd64.yml up -d"

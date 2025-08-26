@@ -338,6 +338,102 @@ SELECT
 FROM contracts
 WHERE is_renewable = TRUE AND renewal_reminder_days IS NULL;
 
+-- ========================================================================
+-- 常用业务查询示例
+-- ========================================================================
+
+SELECT '=================== 常用业务查询示例 ===================' as section_title;
+
+-- 客户管理查询
+SELECT '📋 客户管理 - 客户列表（带合同数量统计）' as query_example;
+-- 实际使用时取消注释：
+/*
+SELECT 
+    c.*,
+    COUNT(DISTINCT ct.contract_id) as contract_count,
+    SUM(ct.amount) as total_contract_amount
+FROM customers c
+LEFT JOIN contracts ct ON c.customer_id = ct.customer_id
+GROUP BY c.customer_id
+ORDER BY total_contract_amount DESC;
+*/
+
+SELECT '📋 合同管理 - 合同列表（带客户信息和收款统计）' as query_example;
+-- 实际使用时取消注释：
+/*
+SELECT 
+    ct.*,
+    c.name as customer_name,
+    c.contact_person,
+    COALESCE(SUM(p.amount), 0) as total_paid_amount,
+    (ct.amount - COALESCE(SUM(p.amount), 0)) as remaining_amount
+FROM contracts ct
+JOIN customers c ON ct.customer_id = c.customer_id
+LEFT JOIN invoices i ON ct.contract_id = i.contract_id
+LEFT JOIN payments p ON i.invoice_id = p.invoice_id
+GROUP BY ct.contract_id, c.name, c.contact_person
+ORDER BY remaining_amount DESC;
+*/
+
+SELECT '💰 财务管理 - 收款情况统计（按合同）' as query_example;
+-- 实际使用时取消注释：
+/*
+SELECT 
+    ct.contract_id,
+    ct.name as contract_name,
+    ct.amount as contract_amount,
+    COALESCE(SUM(p.amount), 0) as paid_amount,
+    (ct.amount - COALESCE(SUM(p.amount), 0)) as remaining_amount,
+    CASE 
+        WHEN COALESCE(SUM(p.amount), 0) = 0 THEN '未收款'
+        WHEN COALESCE(SUM(p.amount), 0) < ct.amount THEN '部分收款'
+        ELSE '已收完'
+    END as payment_status
+FROM contracts ct
+LEFT JOIN invoices i ON ct.contract_id = i.contract_id
+LEFT JOIN payments p ON i.invoice_id = p.invoice_id
+GROUP BY ct.contract_id, ct.name, ct.amount
+ORDER BY remaining_amount DESC;
+*/
+
+SELECT '📊 业务分析 - 月度收款趋势' as query_example;
+-- 实际使用时取消注释：
+/*
+SELECT 
+    DATE_FORMAT(p.payment_date, '%Y-%m') as payment_month,
+    COUNT(*) as payment_count,
+    SUM(p.amount) as total_amount,
+    AVG(p.amount) as avg_amount
+FROM payments p
+WHERE p.payment_date >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+GROUP BY DATE_FORMAT(p.payment_date, '%Y-%m')
+ORDER BY payment_month DESC;
+*/
+
+SELECT '🔔 提醒管理 - 续签提醒查询（实用版）' as query_example;
+-- 实际使用时取消注释：
+/*
+SELECT 
+    c.contract_number as '合同编号',
+    c.name as '合同名称',
+    cu.name as '客户名称',
+    c.end_date as '到期日期',
+    DATEDIFF(c.end_date, NOW()) as '剩余天数',
+    c.renewal_reminder_days as '提醒设置',
+    CASE 
+        WHEN DATEDIFF(c.end_date, NOW()) <= 5 THEN '🔴 紧急处理'
+        WHEN DATEDIFF(c.end_date, NOW()) <= 30 THEN '🟡 需要关注'
+        WHEN DATEDIFF(c.end_date, NOW()) <= 60 THEN '🟢 提前准备'
+        ELSE '⚪ 正常状态'
+    END as '优先级'
+FROM contracts c
+JOIN customers cu ON c.customer_id = cu.customer_id
+WHERE c.is_renewable = TRUE 
+  AND c.status = 'active'
+  AND c.end_date > NOW()
+ORDER BY c.end_date ASC;
+*/
+
 SELECT '=================== 数据库结构查询完成 ===================' as completion_message, NOW() as query_time;
 
 -- ========================================================================
@@ -363,7 +459,12 @@ SELECT '=================== 数据库结构查询完成 ===================' as 
    - 关注索引的使用情况
    - 监控提醒查询的性能
 
-5. 定期维护：
+5. 常用查询：
+   - 脚本末尾提供了常用业务查询示例
+   - 取消注释即可直接使用
+   - 可根据实际需求修改查询条件
+
+6. 定期维护：
    - 建议每周运行一次此脚本
    - 根据业务发展调整合同的续签标识
    - 优化索引配置以提升查询性能

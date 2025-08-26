@@ -2,7 +2,7 @@
 FROM node:18-alpine AS base
 
 # 安装必要的构建工具
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ curl
 
 # 设置工作目录
 WORKDIR /app
@@ -10,9 +10,17 @@ WORKDIR /app
 # 复制package.json和yarn.lock
 COPY package.json yarn.lock ./
 
-# 安装依赖
+# 优化yarn配置和安装依赖
 RUN echo "Installing backend dependencies..." && \
-    yarn install --frozen-lockfile --production=false --network-timeout 100000 && \
+    yarn config set network-timeout 300000 && \
+    yarn config set registry https://registry.npmjs.org/ && \
+    yarn config set child-concurrency 1 && \
+    yarn install --frozen-lockfile --production=false --network-timeout 300000 --verbose || \
+    (echo "First attempt failed, retrying..." && \
+     yarn install --frozen-lockfile --production=false --network-timeout 300000 --verbose) || \
+    (echo "Second attempt failed, trying with network concurrency 1..." && \
+     yarn config set network-concurrency 1 && \
+     yarn install --frozen-lockfile --production=false --network-timeout 300000 --verbose) && \
     echo "Backend dependencies installed successfully"
 
 # 复制源代码和配置文件
@@ -43,7 +51,14 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 
 # 只安装生产依赖
-RUN yarn install --frozen-lockfile --production=true && yarn cache clean
+RUN yarn config set network-timeout 300000 && \
+    yarn config set registry https://registry.npmjs.org/ && \
+    yarn config set child-concurrency 1 && \
+    yarn install --frozen-lockfile --production=true --network-timeout 300000 || \
+    (echo "Production install failed, retrying..." && \
+     yarn config set network-concurrency 1 && \
+     yarn install --frozen-lockfile --production=true --network-timeout 300000) && \
+    yarn cache clean
 
 # 从构建阶段复制构建产物
 COPY --from=base /app/dist ./dist

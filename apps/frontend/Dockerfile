@@ -2,7 +2,7 @@
 FROM node:23.10.0-alpine AS build
 
 # 安装必要的构建工具
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ curl
 
 # 设置工作目录
 WORKDIR /app
@@ -11,9 +11,17 @@ WORKDIR /app
 COPY package.json ./
 COPY yarn.lock* ./
 
-# 安装依赖
+# 优化yarn配置和安装依赖
 RUN echo "Installing frontend dependencies..." && \
-    yarn install --frozen-lockfile --network-timeout 100000 && \
+    yarn config set network-timeout 300000 && \
+    yarn config set registry https://registry.npmjs.org/ && \
+    yarn config set child-concurrency 1 && \
+    yarn install --frozen-lockfile --network-timeout 300000 --verbose || \
+    (echo "First attempt failed, retrying..." && \
+     yarn install --frozen-lockfile --network-timeout 300000 --verbose) || \
+    (echo "Second attempt failed, trying with network concurrency 1..." && \
+     yarn config set network-concurrency 1 && \
+     yarn install --frozen-lockfile --network-timeout 300000 --verbose) && \
     echo "Frontend dependencies installed successfully"
 
 # 复制源代码和配置文件

@@ -1,0 +1,116 @@
+# ARM64优化版本的后端Dockerfile
+# 使用官方Node.js运行时作为基础镜像
+FROM node:18-alpine AS base
+
+# 安装必要的构建工具和网络工具
+RUN apk add --no-cache python3 make g++ curl wget
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置环境变量优化ARM64构建
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV CYPRESS_INSTALL_BINARY=0
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+# 复制package.json和yarn.lock
+COPY package.json yarn.lock ./
+
+# ARM64特殊优化：分步安装依赖，减少内存压力
+RUN echo "Configuring yarn for ARM64..." && \
+    yarn config set network-timeout 600000 && \
+    yarn config set registry https://registry.npmjs.org/ && \
+    yarn config set child-concurrency 1 && \
+    yarn config set network-concurrency 1 && \
+    yarn config set prefer-offline false && \
+    yarn config set ignore-engines true
+
+# 预清理和准备
+RUN echo "Preparing for dependency installation..." && \
+    yarn cache clean && \
+    rm -rf node_modules
+
+# 分阶段安装依赖以减少内存压力
+RUN echo "Installing core dependencies..." && \
+    timeout 600 yarn install --frozen-lockfile --production=false --network-timeout 600000 --verbose --ignore-optional || \
+    (echo "First attempt failed, cleaning and retrying..." && \
+     yarn cache clean && \
+     rm -rf node_modules && \
+     timeout 600 yarn install --frozen-lockfile --production=false --network-timeout 600000 --no-bin-links --ignore-scripts) || \
+    (echo "Second attempt failed, trying minimal install..." && \
+     yarn cache clean && \
+     rm -rf node_modules && \
+     yarn install --production=false --network-timeout 600000 --no-frozen-lockfile --ignore-engines --ignore-platform) && \
+    echo "Backend dependencies installed successfully"
+
+# 复制源代码和配置文件
+COPY . .
+
+# 验证关键文件存在
+RUN echo "Verifying build files..." && \
+    ls -la package.json && \
+    ls -la tsconfig.json && \
+    ls -la bootstrap.js && \
+    ls -la src/
+
+# 构建应用
+RUN echo "Building backend application..." && \
+    yarn build && \
+    echo "Backend build completed successfully" && \
+    ls -la dist/ && \
+    echo "Build output:" && \
+    find dist -type f | head -10
+
+# 生产阶段
+FROM node:18-alpine AS production
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制package.json和yarn.lock
+COPY package.json yarn.lock ./
+
+# 生产环境依赖安装优化
+RUN echo "Installing production dependencies..." && \
+    yarn config set network-timeout 600000 && \
+    yarn config set registry https://registry.npmjs.org/ && \
+    yarn config set child-concurrency 1 && \
+    yarn config set network-concurrency 1 && \
+    yarn config set ignore-engines true && \
+    timeout 600 yarn install --frozen-lockfile --production=true --network-timeout 600000 --ignore-optional || \
+    (echo "Production install failed, retrying..." && \
+     yarn cache clean && \
+     rm -rf node_modules && \
+     yarn install --production=true --network-timeout 600000 --no-frozen-lockfile --ignore-engines) && \
+    yarn cache clean && \
+    echo "Production dependencies installed successfully"
+
+# 从构建阶段复制构建产物
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/bootstrap.js ./bootstrap.js
+
+# 创建非root用户
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S midway -u 1001
+
+# 创建上传目录并设置权限
+RUN mkdir -p /app/uploads && \
+    mkdir -p /app/logs && \
+    chown -R midway:nodejs /app && \
+    chmod -R 755 /app/uploads && \
+    chmod -R 755 /app/logs
+
+USER midway
+
+# 暴露端口
+EXPOSE 8080
+
+# 设置环境变量
+ENV NODE_ENV=production
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# 启动应用
+CMD ["node", "bootstrap.js"]
