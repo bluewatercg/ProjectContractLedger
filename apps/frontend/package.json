@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "serve": "http-server dist -p 8000",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.1.0",
@@ -21,7 +21,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.41.0",
+    "@typescript-eslint/parser": "^8.41.0",
     "@vitejs/plugin-vue": "^4.4.0",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "eslint": "^9.34.0",
+    "eslint-plugin-vue": "^10.4.0",
     "http-server": "^14.1.1",
     "typescript": "^5.2.0",
     "unplugin-auto-import": "^0.16.0",

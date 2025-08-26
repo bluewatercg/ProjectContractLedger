@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS customers (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_name (name),
     INDEX idx_phone (phone),
-    INDEX idx_email (email)
+    INDEX idx_email (email),
+    INDEX idx_customers_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户信息表';
 
 -- 发票信息表
@@ -98,7 +99,10 @@ CREATE TABLE IF NOT EXISTS invoices (
     INDEX idx_invoice_info_id (invoice_info_id),
     INDEX idx_invoice_number (invoice_number),
     INDEX idx_status (status),
-    INDEX idx_dates (issue_date, due_date)
+    INDEX idx_dates (issue_date, due_date),
+    INDEX idx_invoices_status_amount (status, amount),
+    INDEX idx_invoices_created_at (created_at),
+    INDEX idx_invoices_contract_status (contract_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发票记录表';
 
 -- 付款表
@@ -114,7 +118,8 @@ CREATE TABLE IF NOT EXISTS payments (
     FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id),
     INDEX idx_invoice_id (invoice_id),
     INDEX idx_payment_date (payment_date),
-    INDEX idx_payment_method (payment_method)
+    INDEX idx_payment_method (payment_method),
+    INDEX idx_payments_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='付款记录表';
 
 -- 合同附件表
@@ -123,6 +128,8 @@ CREATE TABLE IF NOT EXISTS contract_attachments (
     contract_id INT NOT NULL COMMENT '合同ID',
     file_name VARCHAR(255) NOT NULL COMMENT '文件名',
     file_path VARCHAR(255) NOT NULL COMMENT '文件路径',
+    file_type VARCHAR(50) NULL COMMENT '文件类型',
+    file_size INT NULL COMMENT '文件大小(字节)',
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
     FOREIGN KEY (contract_id) REFERENCES contracts(contract_id) ON DELETE CASCADE,
     INDEX idx_contract_id (contract_id)
@@ -134,6 +141,8 @@ CREATE TABLE IF NOT EXISTS invoice_attachments (
     invoice_id INT NOT NULL COMMENT '发票ID',
     file_name VARCHAR(255) NOT NULL COMMENT '文件名',
     file_path VARCHAR(255) NOT NULL COMMENT '文件路径',
+    file_type VARCHAR(50) NULL COMMENT '文件类型',
+    file_size INT NULL COMMENT '文件大小(字节)',
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
     FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id) ON DELETE CASCADE,
     INDEX idx_invoice_id (invoice_id)

@@ -1,6 +1,38 @@
 # 数据库初始化脚本更新日志
 
-## 更新概述
+## 最新更新 (2025-08-26 第二次更新)
+- **更新日期**: 2025-08-26
+- **更新文件**: `database/scripts/mysql_init.sql`
+- **更新内容**: 合并迁移脚本到初始化脚本
+
+### 本次合并的迁移脚本：
+
+#### 1. `add_attachment_fields.sql` - 附件表字段增强
+- **合并内容**: 为附件表添加文件类型和大小字段
+- **影响表**: `contract_attachments`, `invoice_attachments`
+- **新增字段**:
+  - `file_type VARCHAR(50) NULL` - 文件类型
+  - `file_size INT NULL` - 文件大小（字节）
+
+#### 2. `add_performance_indexes.sql` - 性能优化索引
+- **合并内容**: 为各表添加常用查询的性能优化索引
+- **影响表**: `customers`, `invoices`, `payments`
+- **新增索引**:
+  - `customers`: `idx_customers_created_at`
+  - `invoices`: `idx_invoices_status_amount`, `idx_invoices_created_at`, `idx_invoices_contract_status`
+  - `payments`: `idx_payments_created_at`
+
+### 未合并的迁移脚本（原因说明）：
+
+#### 运维管理脚本（不适合合并）：
+- `add_contract_indexes_*.sql` - 索引管理脚本（已包含在初始化脚本中）
+- `drop_contract_indexes*.sql` - 索引删除脚本（运维用途）
+
+#### 数据修复脚本（不适合合并）：
+- `recreate_attachment_tables.sql` - 表重建脚本（数据修复用途）
+- `rollback_contract_reminder_fields.sql` - 功能回滚脚本（回滚用途）
+
+## 历史更新 (2025-08-26 第一次更新)
 - **更新日期**: 2025-08-26
 - **更新文件**: `database/scripts/mysql_init.sql`
 - **更新内容**: 添加合同提醒功能相关字段和索引

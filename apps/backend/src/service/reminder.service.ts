@@ -143,13 +143,13 @@ export class ReminderService {
 
       return {
         id: contract.id,
-        type,
-        priority,
-        title,
-        description,
+        type: type,
+        priority: priority,
+        title: title,
+        description: description,
         targetId: contract.id,
         targetType: 'contract' as const,
-        daysUntilDue,
+        daysUntilDue: daysUntilDue,
         amount: contract.total_amount,
         customerName: contract.customer?.name,
         contractNumber: contract.contract_number,
@@ -180,12 +180,15 @@ export class ReminderService {
     for (const contract of activeContracts) {
       // 计算已开票金额
       const invoicedAmount = contract.invoices
-        ? contract.invoices.reduce((sum, invoice) => sum + Number(invoice.total_amount), 0)
+        ? contract.invoices.reduce(
+            (sum, invoice) => sum + Number(invoice.total_amount),
+            0
+          )
         : 0;
-      
+
       const contractAmount = Number(contract.total_amount);
       const pendingAmount = contractAmount - invoicedAmount; // 待开票金额
-      
+
       // 只有待开票金额大于0的才需要提醒
       if (pendingAmount > 0) {
         const daysSinceStart = Math.ceil(
@@ -201,13 +204,17 @@ export class ReminderService {
         reminders.push({
           id: contract.id,
           type: 'invoice_needed',
-          priority,
+          priority: priority,
           title: '需要开具发票',
-          description: `合同 ${contract.contract_number} 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(2)}（已开票 ¥${invoicedAmount.toFixed(2)}）`,
+          description: `合同 ${
+            contract.contract_number
+          } 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(
+            2
+          )}（已开票 ¥${invoicedAmount.toFixed(2)}）`,
           targetId: contract.id,
           targetType: 'contract' as const,
           daysUntilDue: daysSinceStart,
-          amount: pendingAmount, // 显示待开票金额而不是合同总额
+          amount: pendingAmount,
           customerName: contract.customer?.name,
           contractNumber: contract.contract_number,
           actionUrl: `/invoices/create?contractId=${contract.id}`,
@@ -230,7 +237,12 @@ export class ReminderService {
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
-      .leftJoinAndSelect('invoice.payments', 'payment', 'payment.status = :paymentStatus', { paymentStatus: 'completed' })
+      .leftJoinAndSelect(
+        'invoice.payments',
+        'payment',
+        'payment.status = :paymentStatus',
+        { paymentStatus: 'completed' }
+      )
       .where('invoice.status IN (:...statuses)', {
         statuses: ['sent', 'overdue'],
       })
@@ -241,12 +253,15 @@ export class ReminderService {
     for (const invoice of invoices) {
       // 计算已收款金额（只计算已完成的收款）
       const paidAmount = invoice.payments
-        ? invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+        ? invoice.payments.reduce(
+            (sum, payment) => sum + Number(payment.amount),
+            0
+          )
         : 0;
-      
+
       const invoiceAmount = Number(invoice.total_amount);
       const pendingAmount = invoiceAmount - paidAmount; // 待收款金额
-      
+
       // 只有待收款金额大于0的才需要提醒
       if (pendingAmount > 0) {
         const daysSinceIssue = Math.ceil(
@@ -262,13 +277,17 @@ export class ReminderService {
         reminders.push({
           id: invoice.id,
           type: 'payment_collection',
-          priority,
+          priority: priority,
           title: '需要跟进收款',
-          description: `发票 ${invoice.invoice_number} 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(2)}（已收款 ¥${paidAmount.toFixed(2)}）`,
+          description: `发票 ${
+            invoice.invoice_number
+          } 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(
+            2
+          )}（已收款 ¥${paidAmount.toFixed(2)}）`,
           targetId: invoice.id,
           targetType: 'invoice' as const,
           daysUntilDue: daysSinceIssue,
-          amount: pendingAmount, // 显示待收款金额而不是发票总额
+          amount: pendingAmount,
           customerName: invoice.contract?.customer?.name,
           contractNumber: invoice.contract?.contract_number,
           invoiceNumber: invoice.invoice_number,
