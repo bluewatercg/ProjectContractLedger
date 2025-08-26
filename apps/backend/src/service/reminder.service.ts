@@ -163,94 +163,122 @@ export class ReminderService {
   /**
    * 获取需要开票提醒（开票类）
    * 签订合同后就应该开始开票流程，与合同履约状态无关
+   * 排除已开票的金额，只提醒未开票的部分
    */
   async getInvoiceNeededReminders(): Promise<ReminderItem[]> {
-    // 查找已签署但没有发票或发票金额不足的合同
-    const contractsNeedingInvoice = await this.contractRepository
+    // 查找已签署的活跃合同
+    const activeContracts = await this.contractRepository
       .createQueryBuilder('contract')
       .leftJoinAndSelect('contract.customer', 'customer')
-      .leftJoin('contract.invoices', 'invoice')
+      .leftJoinAndSelect('contract.invoices', 'invoice')
       .where('contract.status = :status', { status: 'active' })
       .andWhere('contract.start_date <= :today', { today: new Date() })
-      .groupBy('contract.id')
-      .having('COALESCE(SUM(invoice.total_amount), 0) < contract.total_amount') // 发票金额不足合同总额
       .getMany();
 
-    return contractsNeedingInvoice.map(contract => {
-      const daysSinceStart = Math.ceil(
-        (Date.now() - new Date(contract.start_date).getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
+    const reminders: ReminderItem[] = [];
 
-      let priority: 'high' | 'medium' | 'low' = 'medium';
-      if (daysSinceStart > 30) priority = 'high';
-      else if (daysSinceStart > 7) priority = 'medium';
-      else priority = 'low';
+    for (const contract of activeContracts) {
+      // 计算已开票金额
+      const invoicedAmount = contract.invoices
+        ? contract.invoices.reduce((sum, invoice) => sum + Number(invoice.total_amount), 0)
+        : 0;
+      
+      const contractAmount = Number(contract.total_amount);
+      const pendingAmount = contractAmount - invoicedAmount; // 待开票金额
+      
+      // 只有待开票金额大于0的才需要提醒
+      if (pendingAmount > 0) {
+        const daysSinceStart = Math.ceil(
+          (Date.now() - new Date(contract.start_date).getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
 
-      return {
-        id: contract.id,
-        type: 'invoice_needed',
-        priority,
-        title: '需要开具发票',
-        description: `合同 ${contract.contract_number} 已生效 ${daysSinceStart} 天，需要开具发票或补充开票`,
-        targetId: contract.id,
-        targetType: 'contract' as const,
-        daysUntilDue: daysSinceStart,
-        amount: contract.total_amount,
-        customerName: contract.customer?.name,
-        contractNumber: contract.contract_number,
-        actionUrl: `/invoices/create?contractId=${contract.id}`,
-        category: 'invoice' as const,
-      };
-    });
+        let priority: 'high' | 'medium' | 'low' = 'medium';
+        if (daysSinceStart > 30) priority = 'high';
+        else if (daysSinceStart > 7) priority = 'medium';
+        else priority = 'low';
+
+        reminders.push({
+          id: contract.id,
+          type: 'invoice_needed',
+          priority,
+          title: '需要开具发票',
+          description: `合同 ${contract.contract_number} 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(2)}（已开票 ¥${invoicedAmount.toFixed(2)}）`,
+          targetId: contract.id,
+          targetType: 'contract' as const,
+          daysUntilDue: daysSinceStart,
+          amount: pendingAmount, // 显示待开票金额而不是合同总额
+          customerName: contract.customer?.name,
+          contractNumber: contract.contract_number,
+          actionUrl: `/invoices/create?contractId=${contract.id}`,
+          category: 'invoice' as const,
+        });
+      }
+    }
+
+    return reminders;
   }
 
   /**
    * 获取需要收款提醒（收款类）
    * 已开票但未完全收款的发票需要跟进催收
+   * 排除已收款的费用，只提醒未收款的部分
    */
   async getPaymentNeededReminders(): Promise<ReminderItem[]> {
-    // 查找已开票但未收款的发票
-    const unpaidInvoices = await this.invoiceRepository
+    // 查找已开票但可能未完全收款的发票
+    const invoices = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
-      .leftJoin('invoice.payments', 'payment')
+      .leftJoinAndSelect('invoice.payments', 'payment', 'payment.status = :paymentStatus', { paymentStatus: 'completed' })
       .where('invoice.status IN (:...statuses)', {
         statuses: ['sent', 'overdue'],
       })
-      .groupBy('invoice.id')
-      .having('COALESCE(SUM(payment.amount), 0) < invoice.total_amount') // 未完全收款
       .getMany();
 
-    return unpaidInvoices.map(invoice => {
-      const daysSinceIssue = Math.ceil(
-        (Date.now() - new Date(invoice.issue_date).getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
+    const reminders: ReminderItem[] = [];
 
-      let priority: 'high' | 'medium' | 'low' = 'medium';
-      if (daysSinceIssue > 60) priority = 'high';
-      else if (daysSinceIssue > 30) priority = 'medium';
-      else priority = 'low';
+    for (const invoice of invoices) {
+      // 计算已收款金额（只计算已完成的收款）
+      const paidAmount = invoice.payments
+        ? invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+        : 0;
+      
+      const invoiceAmount = Number(invoice.total_amount);
+      const pendingAmount = invoiceAmount - paidAmount; // 待收款金额
+      
+      // 只有待收款金额大于0的才需要提醒
+      if (pendingAmount > 0) {
+        const daysSinceIssue = Math.ceil(
+          (Date.now() - new Date(invoice.issue_date).getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
 
-      return {
-        id: invoice.id,
-        type: 'payment_collection',
-        priority,
-        title: '需要跟进收款',
-        description: `发票 ${invoice.invoice_number} 已开具 ${daysSinceIssue} 天，请跟进收款进度`,
-        targetId: invoice.id,
-        targetType: 'invoice' as const,
-        daysUntilDue: daysSinceIssue,
-        amount: invoice.total_amount,
-        customerName: invoice.contract?.customer?.name,
-        contractNumber: invoice.contract?.contract_number,
-        invoiceNumber: invoice.invoice_number,
-        actionUrl: `/payments/create?invoiceId=${invoice.id}`,
-        category: 'payment' as const,
-      };
-    });
+        let priority: 'high' | 'medium' | 'low' = 'medium';
+        if (daysSinceIssue > 60) priority = 'high';
+        else if (daysSinceIssue > 30) priority = 'medium';
+        else priority = 'low';
+
+        reminders.push({
+          id: invoice.id,
+          type: 'payment_collection',
+          priority,
+          title: '需要跟进收款',
+          description: `发票 ${invoice.invoice_number} 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(2)}（已收款 ¥${paidAmount.toFixed(2)}）`,
+          targetId: invoice.id,
+          targetType: 'invoice' as const,
+          daysUntilDue: daysSinceIssue,
+          amount: pendingAmount, // 显示待收款金额而不是发票总额
+          customerName: invoice.contract?.customer?.name,
+          contractNumber: invoice.contract?.contract_number,
+          invoiceNumber: invoice.invoice_number,
+          actionUrl: `/payments/create?invoiceId=${invoice.id}`,
+          category: 'payment' as const,
+        });
+      }
+    }
+
+    return reminders;
   }
 
   /**
