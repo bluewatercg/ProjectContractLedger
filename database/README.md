@@ -26,15 +26,16 @@ database/
 
 ## 🔄 Migrations 文件夹 (`database/migrations/`)
 
-### 迁移文件
+### 迁移文件 (已完全清理)
 | 文件路径 | 作用 | 维护状态 |
 |---------|------|----------|
-| `add_performance_indexes.sql` | 性能优化索引迁移 | ✅ 生产就绪 |
+| `MIGRATION_CLEANUP_SUMMARY.md` | 迁移文件清理总结报告 | ✅ 文档记录 |
 
 **说明**：
-- 包含数据库结构变更的迁移文件
-- 按时间顺序执行，确保数据库结构一致性
-- 主要用于性能优化和结构调整
+- 迁移文件已100%集成到 `mysql_init.sql` 初始化脚本
+- 所有表结构、字段、索引均已合并，无需单独迁移
+- 新数据库直接使用 `mysql_init.sql` 一步到位
+- 现有数据库可参考初始化脚本手动补充缺失内容
 
 ## 📜 Scripts 文件夹 (`database/scripts/`)
 
