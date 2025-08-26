@@ -308,6 +308,22 @@ export class CreateContractDto {
     maxLength: 500,
   })
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: '是否续签合同',
+    example: false,
+    type: 'boolean',
+    default: false
+  })
+  is_renewable?: boolean;
+
+  @ApiPropertyOptional({
+    description: '续签提醒天数（仅在是否续签=true时有效）',
+    example: '30',
+    enum: ['5', '30', '60'],
+    default: '30'
+  })
+  renewal_reminder_days?: string;
 }
 
 export class UpdateContractDto {
@@ -374,6 +390,20 @@ export class UpdateContractDto {
     enum: ['draft', 'active', 'completed', 'cancelled', 'suspended'],
   })
   status?: string;
+
+  @ApiPropertyOptional({
+    description: '是否续签合同',
+    example: false,
+    type: 'boolean'
+  })
+  is_renewable?: boolean;
+
+  @ApiPropertyOptional({
+    description: '续签提醒天数（仅在是否续签=true时有效）',
+    example: '30',
+    enum: ['5', '30', '60']
+  })
+  renewal_reminder_days?: string;
 }
 
 /**

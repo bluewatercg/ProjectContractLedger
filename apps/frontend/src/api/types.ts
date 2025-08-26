@@ -96,6 +96,8 @@ export interface Contract {
   start_date: string
   end_date: string
   status: string
+  is_renewable: boolean
+  renewal_reminder_days?: string
   terms?: string
   notes?: string
   created_at: string
@@ -111,6 +113,8 @@ export interface CreateContractDto {
   total_amount: number
   start_date: string
   end_date: string
+  is_renewable: boolean
+  renewal_reminder_days?: string
   terms?: string
   notes?: string
 }

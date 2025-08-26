@@ -61,6 +61,38 @@
           />
         </el-form-item>
         
+        <!-- 续签配置 -->
+        <el-divider content-position="left">续签配置</el-divider>
+        
+        <el-form-item label="是否续签" prop="is_renewable">
+          <el-radio-group v-model="form.is_renewable">
+            <el-radio :label="false">否，一次性合同（如开发项目、咨询服务等）</el-radio>
+            <el-radio :label="true">是，需要续签（如运维服务、年度支持等）</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        
+        <el-form-item 
+          v-if="form.is_renewable" 
+          label="续签提醒" 
+          prop="renewal_reminder_days"
+        >
+          <el-select 
+            v-model="form.renewal_reminder_days" 
+            placeholder="请选择提醒时间"
+            style="width: 100%"
+          >
+            <el-option label="提前5天提醒（紧急项目）" value="5" />
+            <el-option label="提前30天提醒（常规服务）" value="30" />
+            <el-option label="提前60天提醒（重要客户）" value="60" />
+          </el-select>
+          <div class="form-tip">
+            <el-icon><InfoFilled /></el-icon>
+            系统将在合同到期前按选定天数发送续签提醒
+          </div>
+        </el-form-item>
+        
+        <!-- 合同条款 -->
+        
         <el-form-item label="合同条款" prop="terms">
           <el-input
             v-model="form.terms"
@@ -223,6 +255,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 import { contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
 import type { CreateContractDto, UpdateContractDto, Customer } from '@/api/types'
@@ -296,6 +329,8 @@ const form = reactive<CreateContractDto>({
   total_amount: 0,
   start_date: '',
   end_date: '',
+  is_renewable: false,
+  renewal_reminder_days: '30',
   terms: '',
   notes: ''
 })
@@ -432,7 +467,10 @@ const fetchContract = async () => {
       Object.assign(form, {
         ...contract,
         start_date: parseDate(contract.start_date),
-        end_date: parseDate(contract.end_date)
+        end_date: parseDate(contract.end_date),
+        // 确保续签字段正确加载
+        is_renewable: contract.is_renewable || false,
+        renewal_reminder_days: contract.renewal_reminder_days || '30'
       })
     }
   } catch (error) {
@@ -705,5 +743,23 @@ onMounted(async () => {
 
 .invoice-link:hover {
   text-decoration: underline;
+}
+
+/* 续签配置样式 */
+.form-tip {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #f0f9ff;
+  border-left: 3px solid #409eff;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #606266;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-tip .el-icon {
+  color: #409eff;
 }
 </style>

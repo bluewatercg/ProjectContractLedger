@@ -5,6 +5,7 @@ export { contractApi } from './contract'
 export { invoiceApi } from './invoice'
 export { paymentApi } from './payment'
 export { statisticsApi } from './statistics'
+export { reminderApi } from './reminder'
 
 // 导出类型
 export * from './types'
