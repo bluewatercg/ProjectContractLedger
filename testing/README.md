@@ -1,4 +1,8 @@
-# Testing 测试目录
+# 🧪 Testing 测试目录
+
+> **最新更新**: 2025-08-26  
+> **维护状态**: ✅ 活跃维护  
+> **兼容版本**: v2.2.0+
 
 本目录包含项目的完整测试体系，涵盖单元测试、集成测试、性能测试和端到端测试，确保代码质量和系统稳定性。
 
@@ -249,7 +253,42 @@ module.exports = {
 
 ## 🔗 相关文档
 
-- [测试使用说明](docs/测试使用说明.md)
-- [测试计划](docs/测试计划.md)
-- [API开发指南](../docs/development/API_Development_Guide.md)
-- [性能监控框架](../docs/development/Metrics_Framework.md)
+### 📚 测试文档
+- [📝 **测试使用说明**](docs/测试使用说明.md) - 测试执行指南
+- [📊 **测试计划**](docs/测试计划.md) - 测试策略和计划
+- [🔧 **API开发指南**](../docs/development/API_Development_Guide.md) - API相关测试指南
+- [📊 **性能监控框架**](../docs/development/Metrics_Framework.md) - 性能测试框架
+
+### 🔗 项目文档
+- [📚 **项目文档中心**](../docs/README.md) - 完整的文档导航
+- [🛠️ **开发指南**](../docs/development/) - 开发环境和技术文档
+- [🚀 **部署指南**](../docs/DEPLOYMENT_GUIDE.md) - 生产环境部署配置
+- [🔧 **故障排除**](../docs/TROUBLESHOOTING.md) - 常见问题解决方案
+
+### 🔧 工具链接
+- [📜 **脚本工具**](../scripts/) - 自动化脚本和部署工具
+- [🐳 **Docker工具**](../tools/docker/) - Docker部署和管理工具
+- [💾 **备份工具**](../tools/backup/) - 系统备份和恢复方案
+
+### 🔄 最新更新 (v2.2.0 - 2025-08-26)
+- ✅ **ESLint集成**: 完善前后端ESLint配置和代码质量检查
+- ✅ **Docker测试**: 优化Docker构建测试脚本，支持多架构
+- ✅ **TypeScript修复**: 解决TypeScript语法错误和装饰器问题
+- ✅ **测试框架**: 推荐使用Vitest作Vue3组件测试框架
+
+### 🐛 代码质量保障
+- **ESLint规范**: 统一的代码风格和质量检查
+- **TypeScript支持**: 类型安全的测试代码
+- **自动化测试**: CI/CD集成的自动化测试流程
+- **多环境支持**: 支持开发、测试、生产环境
+
+---
+
+**ProjectContractLedger Testing** - 保障代码质量，确保系统稳定！
+
+> 📝 如需添加新测试或修改现有测试，请参考[测试文档](./docs/)并遵循项目测试规范。  
+> 🧪 推荐使用Jest作后端测试框架，Vitest作前端测试框架。
+
+**文档版本**: v2.2.0  
+**最后更新**: 2025-08-26  
+**维护状态**: ✅ 活跃维护

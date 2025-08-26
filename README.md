@@ -1,11 +1,18 @@
 # 🏢 ProjectContractLedger
 
 > 现代化企业级合同管理系统，让合同管理更简单、更智能！
+> Modern Enterprise Contract Management System - Make contract management simpler and smarter!
 
 [![GitHub release](https://img.shields.io/github/release/bluewatercg/projectcontractledger.svg)](https://github.com/bluewatercg/projectcontractledger/releases)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/bluewatercg/projectcontractledger)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
+
+**[English](#english-version) | [中文](#中文版本)**
+
+---
+
+## 中文版本
 
 基于 **Midway.js + Vue3** 的现代化合同管理系统，采用前后端分离架构，专为中小企业设计，支持完整的合同生命周期管理。
 
@@ -202,6 +209,25 @@ yarn start-sh
 
 ## 🔧 最新功能更新
 
+### v2.2.0 (2025-08-26) - 构建优化与文档整理
+
+#### 🔧 构建系统优化
+- ✅ **Docker多架构支持**: 优化了ARM64和AMD64双平台构建
+- ✅ **依赖安装优化**: 解决了yarn网络超时问题，提供多重安装策略
+- ✅ **构建缓存优化**: 改进GitHub Actions缓存机制
+- ✅ **网络连接优化**: 增加连接超时配置和重试机制
+
+#### 📚 文档系统重构
+- ✅ **文档结构整理**: 删除7个重复和过时文档，建立统一文档规范
+- ✅ **导航优化**: 创建文档导航中心，提供清晰的使用路径
+- ✅ **多语言支持**: 优化中英双语文档结构
+- ✅ **维护效率**: 降低文档维护成本，建立定期更新机制
+
+#### 🐛 代码质量提升
+- ✅ **ESLint配置**: 完善前后端ESLint配置，统一代码规范
+- ✅ **TypeScript修复**: 修复装饰器导入和对象字面量语法问题
+- ✅ **依赖管理**: 优化包管理器配置，提升安装成功率
+
 ### v2.1.0 (2025-06-16) - 附件管理功能
 
 #### 📎 附件管理系统
@@ -281,6 +307,14 @@ yarn start-sh
 4. **开发环境API调用失败**
    - ✅ 已修复：统一开发和生产环境API路由配置
 
+5. **Docker构建失败（ARM64平台）**
+   - ✅ 已修复：优化yarn安装策略，支持多重重试机制
+   - 解决方案：增加网络超时配置，提供NPM备用安装方案
+
+6. **ESLint配置错误**
+   - ✅ 已修复：统一前后端ESLint配置，提供完整的配置模板
+   - 解决方案：自动创建.gitignore和.eslintrc.json文件
+
 ### 开发调试
 ```bash
 # 检查后端服务状态
@@ -302,11 +336,13 @@ tail -f apps/backend/logs/midway-core.log
 - [🔧 故障排除](./docs/TROUBLESHOOTING.md) - 常见问题解决方案
 
 ### 📖 详细文档
-- [📁 **完整文档索引**](./docs/README.md) - 所有文档的分类索引和导航
+- [📁 **完整文档索引**](./docs/README.md) - 所有文档的分类索引和导航（已重构）
 - [🚀 **部署文档中心**](./docs/deployment/README.md) - 完整的部署方案导航
 - [产品需求文档](./docs/user-guide/PRD.md) - 系统设计和功能规划
 - [业务逻辑说明](./docs/user-guide/业务状态关系说明.md) - 业务流程和状态管理
 - [API开发指南](./docs/development/API_Development_Guide.md) - 后端开发详细指南
+
+> 📝 **文档系统已重构**: 删除了7个重复/过时文档，建立统一规范，提供清晰导航。详见[Markdown整理报告](./MARKDOWN_ORGANIZATION_SUMMARY.md)。
 
 ## 🤝 贡献指南
 
@@ -385,6 +421,12 @@ docker-compose ps
 
 # 查看资源使用
 docker stats
+
+# 构建多架构镜像（开发者）
+docker buildx build --platform linux/amd64,linux/arm64 -t your-image:latest .
+
+# 检查构建缓存
+docker buildx du
 ```
 
 ### 日志管理
@@ -499,3 +541,103 @@ docker-compose exec app wget --spider http://localhost/health
 **ProjectContractLedger** - 让合同管理更简单、更智能！
 
 > 🌟 如果这个项目对您有帮助，请给我们一个Star！
+
+---
+
+## English Version
+
+**ProjectContractLedger** is a modern enterprise-level contract management system designed specifically for small and medium-sized enterprises. Built with **Midway.js + Vue3** and featuring a complete frontend-backend separation architecture, it provides comprehensive contract lifecycle management.
+
+### 🚀 Quick Deployment
+
+#### 🐳 Docker One-Click Deployment (Recommended)
+
+**Complete deployment solution using Docker Compose with data persistence and log management.**
+
+##### Development Environment
+```bash
+# 1. Clone the project
+git clone https://github.com/bluewatercg/projectcontractledger.git
+cd projectcontractledger
+
+# 2. Start development environment
+cd tools/docker
+./start-dev.sh
+```
+
+##### Production Environment
+```bash
+# 1. Enter Docker directory
+cd tools/docker
+
+# 2. Configure environment variables
+cp .env.example .env
+# Edit .env file, set database password, JWT key, etc.
+
+# 3. Start production environment
+./start-prod.sh
+```
+
+**Access URLs**: 
+- Development: http://localhost
+- Production: http://your-server-ip
+
+### ✨ Core Features
+
+#### Business Functions
+- 🏢 **Customer Management** - Customer information maintenance, status management, intelligent filtering
+- 📋 **Contract Management** - Contract creation, status tracking, lifecycle management, attachment upload
+- 🧾 **Invoice Management** - Invoice issuance, status updates, contract association, attachment management
+- 💰 **Payment Management** - Payment records, status tracking, automatic reconciliation
+- 📄 **Statistical Analysis** - Real-time dashboard, revenue analysis, business insights
+- 📎 **Attachment Management** - File upload, preview, download, secure storage
+
+#### Technical Features
+- ⚡ **Smart Caching** - Automatic cache invalidation mechanism, real-time data updates
+- 🔄 **Status Automation** - Automatic business status transitions, reduced manual operations
+- 🎯 **Precise Filtering** - Multi-dimensional data filtering, enhanced user experience
+- 📱 **Responsive Design** - Adapts to various devices, manage anytime, anywhere
+- 🔐 **Security Authentication** - JWT authentication, access control, data security
+- 📁 **File Management** - Multi-format file upload support, secure storage, online preview
+
+### 🛠 Technology Stack
+
+#### Backend (Midway-backend)
+- **Framework**: Midway v3 + Koa
+- **Language**: TypeScript
+- **Database**: MySQL + TypeORM
+- **Authentication**: JWT
+- **Documentation**: Swagger
+- **Caching**: Memory cache + automatic invalidation mechanism
+
+#### Frontend (Midway-frontend)
+- **Framework**: Vue 3 + TypeScript
+- **Build Tool**: Vite
+- **UI Components**: Element Plus
+- **State Management**: Pinia
+- **Routing**: Vue Router 4
+- **HTTP Client**: Axios
+
+### 📚 Documentation
+
+For detailed documentation, please visit:
+- [Quick Start Guide](./docs/QUICK_START.md)
+- [User Guide](./docs/USER_GUIDE.md)
+- [Development Setup](./docs/DEVELOPMENT_SETUP.md)
+- [Deployment Guide](./docs/DEPLOYMENT_GUIDE.md)
+- [API Documentation](./docs/api/)
+- [Troubleshooting](./docs/TROUBLESHOOTING.md)
+
+### 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details.
+
+### 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+**ProjectContractLedger** - Make contract management simpler and smarter!
+
+> 🌟 If this project helps you, please give us a Star!

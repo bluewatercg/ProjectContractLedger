@@ -1,6 +1,10 @@
-# Database 文件夹说明
+# 🗄️ Database 数据库目录
 
-本文件夹包含数据库相关的脚本、迁移文件和设计文档。
+> **最新更新**: 2025-08-26  
+> **维护状态**: ✅ 活跃维护  
+> **兼容版本**: v2.2.0+
+
+本目录包含数据库相关的脚本、迁移文件和设计文档，为项目提供完整的数据库管理方案。
 
 ## 📁 文件夹结构
 
@@ -124,6 +128,12 @@ cat database/scripts/queries.sql
 
 ## 🔗 相关文档
 
-- [数据库设计文档](../docs/development/Database_Design.md)
-- [数据库设计更新说明](../docs/development/Database_Design_Update.md)
-- [API开发指南](../docs/development/API_Development_Guide.md)
+- [📊 **数据库设计文档**](../docs/development/Database_Design.md) - 完整的数据库设计和架构说明
+- [🔧 **API开发指南**](../docs/development/API_Development_Guide.md) - 数据库相关的API开发指南
+- [📚 **项目文档中心**](../docs/README.md) - 完整的项目文档导航
+
+---
+
+**ProjectContractLedger Database** - 为合同管理提供稳定可靠的数据存储方案！
+
+> 📝 如需更新数据库配置或添加新功能，请参考[开发文档](../docs/development/)并遵循项目规范。
