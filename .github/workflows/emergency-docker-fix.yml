@@ -1,0 +1,288 @@
+name: Emergency Docker Build Fix
+
+on:
+  workflow_dispatch:  # 手动触发
+    inputs:
+      build_strategy:
+        description: 'Build strategy to use'
+        required: true
+        default: 'conservative'
+        type: choice
+        options:
+        - conservative
+        - aggressive
+        - npm-only
+        - split-builds
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ${{ github.repository }}-backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository }}-frontend
+
+jobs:
+  # 保守策略：仅AMD64，基础优化
+  conservative-build:
+    if: github.event.inputs.build_strategy == 'conservative'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build backend (Conservative)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/backend
+        file: ./apps/backend/Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:emergency-fix
+        platforms: linux/amd64
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build frontend (Conservative)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/frontend
+        file: ./apps/frontend/Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:emergency-fix
+        platforms: linux/amd64
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # 激进策略：使用NPM替代Yarn
+  npm-only-build:
+    if: github.event.inputs.build_strategy == 'npm-only'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create NPM-only Dockerfiles
+      run: |
+        # 创建仅使用NPM的后端Dockerfile
+        cat > ./apps/backend/Dockerfile.npm << 'EOF'
+        FROM node:18-alpine AS base
+        RUN apk add --no-cache python3 make g++ curl wget
+        WORKDIR /app
+        COPY package.json ./
+        RUN npm config set registry https://registry.npmjs.org/ && \
+            npm config set network-timeout 600000 && \
+            npm config set fetch-retries 10 && \
+            npm config set fetch-retry-factor 3 && \
+            npm config set fetch-retry-mintimeout 20000 && \
+            npm config set fetch-retry-maxtimeout 120000 && \
+            npm install --verbose --legacy-peer-deps
+        COPY . .
+        RUN npm run build
+        
+        FROM node:18-alpine AS production
+        WORKDIR /app
+        COPY package.json ./
+        RUN npm config set registry https://registry.npmjs.org/ && \
+            npm config set network-timeout 600000 && \
+            npm config set fetch-retries 10 && \
+            npm install --production --verbose --legacy-peer-deps
+        COPY --from=base /app/dist ./dist
+        COPY --from=base /app/bootstrap.js ./bootstrap.js
+        RUN addgroup -g 1001 -S nodejs && \
+            adduser -S midway -u 1001 && \
+            mkdir -p /app/uploads /app/logs && \
+            chown -R midway:nodejs /app
+        USER midway
+        EXPOSE 8080
+        ENV NODE_ENV=production
+        CMD ["node", "bootstrap.js"]
+        EOF
+
+        # 创建仅使用NPM的前端Dockerfile
+        cat > ./apps/frontend/Dockerfile.npm << 'EOF'
+        FROM node:18-alpine AS build
+        RUN apk add --no-cache python3 make g++ curl wget
+        WORKDIR /app
+        COPY package.json ./
+        RUN npm config set registry https://registry.npmjs.org/ && \
+            npm config set network-timeout 600000 && \
+            npm config set fetch-retries 10 && \
+            npm config set fetch-retry-factor 3 && \
+            npm config set fetch-retry-mintimeout 20000 && \
+            npm config set fetch-retry-maxtimeout 120000 && \
+            npm install --verbose --legacy-peer-deps
+        COPY . .
+        RUN npm run build
+        
+        FROM nginx:alpine AS production
+        COPY nginx.conf /etc/nginx/nginx.conf
+        COPY start.sh /start.sh
+        RUN chmod +x /start.sh
+        COPY --from=build /app/dist /usr/share/nginx/html
+        EXPOSE 80
+        CMD ["/start.sh"]
+        EOF
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build backend with NPM
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/backend
+        file: ./apps/backend/Dockerfile.npm
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:npm-fix
+        platforms: linux/amd64
+
+    - name: Build frontend with NPM
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/frontend
+        file: ./apps/frontend/Dockerfile.npm
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:npm-fix
+        platforms: linux/amd64
+
+  # 分离构建：先构建依赖，再构建应用
+  split-builds:
+    if: github.event.inputs.build_strategy == 'split-builds'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js locally first
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: Pre-install dependencies locally
+      run: |
+        cd apps/backend
+        npm install --legacy-peer-deps
+        cd ../frontend
+        npm install --legacy-peer-deps
+
+    - name: Create pre-built Dockerfiles
+      run: |
+        # 后端预构建Dockerfile
+        cat > ./apps/backend/Dockerfile.prebuilt << 'EOF'
+        FROM node:18-alpine AS production
+        WORKDIR /app
+        COPY package.json ./
+        COPY node_modules ./node_modules
+        COPY . .
+        RUN npm run build
+        RUN addgroup -g 1001 -S nodejs && \
+            adduser -S midway -u 1001 && \
+            mkdir -p /app/uploads /app/logs && \
+            chown -R midway:nodejs /app
+        USER midway
+        EXPOSE 8080
+        ENV NODE_ENV=production
+        CMD ["node", "bootstrap.js"]
+        EOF
+
+        # 前端预构建Dockerfile
+        cat > ./apps/frontend/Dockerfile.prebuilt << 'EOF'
+        FROM node:18-alpine AS build
+        WORKDIR /app
+        COPY package.json ./
+        COPY node_modules ./node_modules
+        COPY . .
+        RUN npm run build
+        
+        FROM nginx:alpine AS production
+        COPY nginx.conf /etc/nginx/nginx.conf
+        COPY start.sh /start.sh
+        RUN chmod +x /start.sh
+        COPY --from=build /app/dist /usr/share/nginx/html
+        EXPOSE 80
+        CMD ["/start.sh"]
+        EOF
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build backend (prebuilt deps)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/backend
+        file: ./apps/backend/Dockerfile.prebuilt
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:prebuilt-fix
+        platforms: linux/amd64
+
+    - name: Build frontend (prebuilt deps)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/frontend
+        file: ./apps/frontend/Dockerfile.prebuilt
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:prebuilt-fix
+        platforms: linux/amd64
+
+  # 部署信息汇总
+  deployment-summary:
+    needs: [conservative-build, npm-only-build, split-builds]
+    if: always() && (success() || failure())
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Display results
+      run: |
+        echo "=== Emergency Build Results ==="
+        echo "Strategy used: ${{ github.event.inputs.build_strategy }}"
+        echo ""
+        echo "Available image tags:"
+        if [[ "${{ github.event.inputs.build_strategy }}" == "conservative" ]]; then
+          echo "- ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:emergency-fix"
+          echo "- ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:emergency-fix"
+        elif [[ "${{ github.event.inputs.build_strategy }}" == "npm-only" ]]; then
+          echo "- ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:npm-fix"
+          echo "- ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:npm-fix"
+        elif [[ "${{ github.event.inputs.build_strategy }}" == "split-builds" ]]; then
+          echo "- ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:prebuilt-fix"
+          echo "- ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:prebuilt-fix"
+        fi
+        echo ""
+        echo "Use these images for deployment until the main build is fixed."

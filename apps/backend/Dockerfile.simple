@@ -1,0 +1,81 @@
+# 简化版后端Dockerfile - 避免复杂的重试逻辑
+FROM node:18-alpine AS base
+
+# 安装基础工具
+RUN apk add --no-cache python3 make g++
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置基础环境变量
+ENV NODE_ENV=development
+ENV YARN_CACHE_FOLDER=/tmp/.yarn-cache
+
+# 复制依赖文件
+COPY package.json yarn.lock ./
+
+# 清理和配置
+RUN rm -rf node_modules .yarn-cache && \
+    yarn config set network-timeout 900000 && \
+    yarn config set registry https://registry.npmjs.org/
+
+# 简单直接的依赖安装
+RUN yarn install --frozen-lockfile --production=false || \
+    (echo "Yarn failed, cleaning and retrying..." && \
+     rm -rf node_modules && \
+     yarn cache clean && \
+     yarn install --no-frozen-lockfile --production=false) || \
+    (echo "Yarn still failing, using npm..." && \
+     rm -rf node_modules && \
+     npm install --legacy-peer-deps)
+
+# 复制源码
+COPY . .
+
+# 构建应用
+RUN yarn build || npm run build
+
+# 生产阶段
+FROM node:18-alpine AS production
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY package.json yarn.lock ./
+
+# 安装生产依赖
+RUN yarn config set network-timeout 900000 && \
+    yarn config set registry https://registry.npmjs.org/ && \
+    yarn install --frozen-lockfile --production=true || \
+    (rm -rf node_modules && \
+     yarn cache clean && \
+     yarn install --no-frozen-lockfile --production=true) || \
+    (rm -rf node_modules && \
+     npm install --production --legacy-peer-deps) && \
+    yarn cache clean
+
+# 复制构建产物
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/bootstrap.js ./bootstrap.js
+
+# 创建用户和目录
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S midway -u 1001 && \
+    mkdir -p /app/uploads /app/logs && \
+    chown -R midway:nodejs /app
+
+USER midway
+
+# 暴露端口
+EXPOSE 8080
+
+# 设置环境变量
+ENV NODE_ENV=production
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# 启动应用
+CMD ["node", "bootstrap.js"]
