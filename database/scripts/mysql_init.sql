@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS contracts (
     start_date DATETIME NOT NULL COMMENT '开始日期',
     end_date DATETIME NOT NULL COMMENT '结束日期',
     status VARCHAR(20) NOT NULL COMMENT '状态：草稿、履行中、已完成、已逾期',
+    is_renewable BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否续签合同：true-需要续签（如运维、服务合同），false-不需要续签（如开发、一次性项目）',
+    renewal_reminder_days ENUM('5', '30', '60') NULL DEFAULT '30' COMMENT '续签提醒天数：5天-紧急提醒，30天-常规提醒，60天-提前预警（仅在is_renewable=true时有效）',
     notes TEXT COMMENT '备注',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -70,7 +72,11 @@ CREATE TABLE IF NOT EXISTS contracts (
     INDEX idx_customer_id (customer_id),
     INDEX idx_contract_number (contract_number),
     INDEX idx_status (status),
-    INDEX idx_dates (start_date, end_date)
+    INDEX idx_dates (start_date, end_date),
+    INDEX idx_contracts_renewable (is_renewable),
+    INDEX idx_contracts_renewable_status (is_renewable, status),
+    INDEX idx_contracts_end_date_renewable (end_date, is_renewable, status),
+    INDEX idx_contracts_start_date_status (start_date, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合同信息表';
 
 -- 发票表
