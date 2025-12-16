@@ -70,8 +70,7 @@ export class ContractService {
       .createQueryBuilder('contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('contract.invoices', 'invoice')
-      .leftJoin('invoice.payments', 'payment', 'payment.status = :paymentStatus', { paymentStatus: 'completed' })
-      .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalPaid');
+      .leftJoinAndSelect('invoice.payments', 'payment');
 
     // 过滤条件
     if (customerId) {
@@ -83,11 +82,6 @@ export class ContractService {
     if (status) {
       queryBuilder.andWhere('contract.status = :status', { status });
     }
-
-    // 分组
-    queryBuilder.groupBy('contract.id');
-    queryBuilder.addGroupBy('customer.id');
-    queryBuilder.addGroupBy('invoice.id');
 
     // 排序
     queryBuilder.orderBy(`contract.${sortBy}`, sortOrder);
