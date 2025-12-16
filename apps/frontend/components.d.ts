@@ -47,7 +47,6 @@ declare module 'vue' {
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
     ElUpload: typeof import('element-plus/es')['ElUpload']
-    EmbedPdfViewer: typeof import('./src/components/EmbedPdfViewer.vue')['default']
     FileUpload: typeof import('./src/components/FileUpload.vue')['default']
     InvoiceSelect: typeof import('./src/components/InvoiceSelect.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

@@ -75,6 +75,64 @@
             </div>
           </div>
 
+          <!-- 合同续签提醒 - 独立区域 -->
+          <div class="renewal-section" v-loading="remindersLoading">
+            <div class="section-header">
+              <h3>
+                <el-icon class="renewal-icon"><Calendar /></el-icon>
+                合同续签提醒
+              </h3>
+              <div class="reminder-stats">
+                <el-tag v-if="renewalReminders.length > 0" type="warning" size="small">
+                  {{ renewalReminders.length }} 份合同即将到期
+                </el-tag>
+                <el-tag v-else type="success" size="small">
+                  暂无需续签合同
+                </el-tag>
+              </div>
+            </div>
+            
+            <div v-if="renewalReminders.length > 0" class="renewal-list">
+              <div 
+                v-for="item in renewalReminders" 
+                :key="`renewal-${item.id}`"
+                class="renewal-item"
+                :class="`priority-${item.priority}`"
+                @click="handleReminderClick(item)"
+              >
+                <div class="renewal-countdown" :class="getCountdownClass(item.daysUntilDue)">
+                  <span class="countdown-number">{{ item.daysUntilDue }}</span>
+                  <span class="countdown-label">天后到期</span>
+                </div>
+                
+                <div class="renewal-content">
+                  <div class="renewal-title">{{ item.contractNumber }}</div>
+                  <div class="renewal-customer">
+                    <el-icon><User /></el-icon>
+                    {{ item.customerName }}
+                  </div>
+                  <div class="renewal-amount">
+                    合同金额: ¥{{ formatCurrency(item.amount || 0) }}
+                  </div>
+                </div>
+                
+                <div class="renewal-actions">
+                  <el-button size="small" type="warning" @click.stop="handleReminderAction(item)">
+                    <el-icon><Refresh /></el-icon>
+                    联系续签
+                  </el-button>
+                  <el-button size="small" @click.stop="markAsHandled(item)">
+                    忽略
+                  </el-button>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="no-renewals">
+              <el-empty description="近期无需续签的合同" :image-size="80" />
+            </div>
+          </div>
+
           <!-- 提醒事项 -->
           <div class="reminders-section" v-loading="remindersLoading">
             <div class="section-header">
@@ -261,7 +319,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
@@ -289,6 +347,20 @@ const remindersLoading = ref(false)
 const stats = ref<DashboardStats>()
 const reminders = ref<ReminderSummary>()
 const loadTime = ref<number>()
+
+// 计算属性：筛选出续签类提醒
+const renewalReminders = computed(() => {
+  if (!reminders.value?.items) return []
+  return reminders.value.items.filter(item => item.type === 'contract_renewal')
+})
+
+// 获取倒计时样式类
+const getCountdownClass = (days: number | undefined) => {
+  if (days === undefined) return ''
+  if (days <= 7) return 'urgent'
+  if (days <= 30) return 'warning'
+  return 'normal'
+}
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
@@ -671,6 +743,140 @@ onMounted(() => {
   padding: 40px 20px;
 }
 
+/* 合同续签提醒区域样式 */
+.renewal-section {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+  margin-bottom: 32px;
+}
+
+.renewal-section .section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #856404;
+}
+
+.renewal-icon {
+  color: #ffc107;
+  font-size: 20px;
+}
+
+.renewal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.renewal-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #ffe69c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.renewal-item:hover {
+  border-color: #ffc107;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+  transform: translateY(-2px);
+}
+
+.renewal-item.priority-high {
+  border-left: 4px solid #dc3545;
+}
+
+.renewal-item.priority-medium {
+  border-left: 4px solid #ffc107;
+}
+
+.renewal-item.priority-low {
+  border-left: 4px solid #28a745;
+}
+
+.renewal-countdown {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+  flex-shrink: 0;
+}
+
+.renewal-countdown.urgent {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+}
+
+.renewal-countdown.warning {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #212529;
+}
+
+.renewal-countdown.normal {
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white;
+}
+
+.countdown-number {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.renewal-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.renewal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.renewal-customer {
+  font-size: 14px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.renewal-amount {
+  font-size: 13px;
+  color: #999;
+}
+
+.renewal-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.no-renewals {
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+}
+
 @media (max-width: 768px) {
   .action-buttons {
     flex-direction: column;
@@ -696,6 +902,34 @@ onMounted(() => {
   }
   
   .reminder-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* 续签区域响应式 */
+  .renewal-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .renewal-countdown {
+    width: 60px;
+    height: 60px;
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+
+  .countdown-number {
+    font-size: 22px;
+  }
+
+  .countdown-label {
+    font-size: 10px;
+  }
+
+  .renewal-actions {
     margin-left: 0;
     width: 100%;
     justify-content: flex-end;
