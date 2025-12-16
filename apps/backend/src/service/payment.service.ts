@@ -298,7 +298,10 @@ export class PaymentService {
 
   /**
    * 判断合同是否应该完成（带事务管理器）
-   * 完成条件：合同下所有发票都为paid状态 且 发票总额达到或超过合同金额
+   * 完成条件：
+   * 1. 合同到期日已过
+   * 2. 合同下所有发票都为paid状态
+   * 3. 发票总额达到或超过合同金额
    */
   private async shouldCompleteContractWithManager(
     manager: any,
@@ -312,6 +315,19 @@ export class PaymentService {
 
     if (!contract || !contract.invoices || contract.invoices.length === 0) {
       return false;
+    }
+
+    // 检查合同是否已到期（新增条件）
+    if (contract.end_date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // 只比较日期部分
+      const endDate = new Date(contract.end_date);
+      endDate.setHours(0, 0, 0, 0);
+
+      if (endDate > today) {
+        // 合同未到期，不自动完成（让合同保持active状态便于续签提醒等功能）
+        return false;
+      }
     }
 
     // 检查所有发票是否都已付款

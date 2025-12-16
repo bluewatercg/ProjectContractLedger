@@ -17,12 +17,19 @@
             width="250px"
             @change="handleCustomerFilter"
           />
-          <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
+          <el-select v-model="statusFilter" placeholder="合同状态" style="width: 120px" @change="handleFilter">
             <el-option label="全部" value="" />
             <el-option label="草稿" value="draft" />
             <el-option label="执行中" value="active" />
             <el-option label="已完成" value="completed" />
             <el-option label="已取消" value="cancelled" />
+          </el-select>
+          <el-select v-model="billingStatusFilter" placeholder="财务状态" style="width: 120px" @change="handleFilter">
+            <el-option label="全部" value="" />
+            <el-option label="待开票" value="pending_invoice" />
+            <el-option label="待收款" value="pending_payment" />
+            <el-option label="部分开票" value="partial_invoice" />
+            <el-option label="已完成" value="completed" />
           </el-select>
         </div>
       </div>
@@ -31,28 +38,67 @@
         v-loading="loading"
         :data="contracts"
         style="width: 100%"
+        :row-class-name="getRowClassName"
       >
-        <el-table-column prop="contract_number" label="合同编号" width="150" />
-        <el-table-column prop="title" label="合同标题" />
-        <el-table-column prop="customer.name" label="客户名称" />
+        <el-table-column prop="contract_number" label="合同编号" width="140" fixed />
+        <el-table-column prop="title" label="合同标题" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="customer.name" label="客户名称" width="150" show-overflow-tooltip />
         <el-table-column prop="total_amount" label="合同金额" width="120">
           <template #default="{ row }">
             ¥{{ formatCurrency(row.total_amount) }}
           </template>
         </el-table-column>
-        <el-table-column prop="start_date" label="开始日期" width="120" />
-        <el-table-column prop="end_date" label="结束日期" width="120" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column label="开票情况" width="180">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
+            <div class="financial-cell">
+              <span class="amount-paid">已开票: ¥{{ formatCurrency(row.invoicedAmount || 0) }}</span>
+              <span class="amount-unpaid" v-if="row.uninvoicedAmount > 0">未开票: ¥{{ formatCurrency(row.uninvoicedAmount) }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="收款情况" width="180">
+          <template #default="{ row }">
+            <div class="financial-cell">
+              <span class="amount-paid">已收款: ¥{{ formatCurrency(row.paidAmount || 0) }}</span>
+              <span class="amount-unpaid" v-if="row.unpaidAmount > 0">未收款: ¥{{ formatCurrency(row.unpaidAmount) }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="billingStatusText" label="财务状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getBillingStatusType(row.billingStatus)" size="small">
+              {{ row.billingStatusText || '-' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="end_date" label="到期日" width="110" />
+        <el-table-column prop="status" label="合同状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)" size="small">
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="viewContract(row.id)">查看</el-button>
             <el-button size="small" type="primary" @click="editContract(row.id)">编辑</el-button>
+            <el-button 
+              v-if="row.uninvoicedAmount > 0 && row.status === 'active'" 
+              size="small" 
+              type="warning" 
+              @click="goToInvoice(row.id)"
+            >
+              去开票
+            </el-button>
+            <el-button 
+              v-if="row.unpaidAmount > 0 && row.invoicedAmount > 0" 
+              size="small" 
+              type="success" 
+              @click="goToPayment(row.id)"
+            >
+              去收款
+            </el-button>
             <el-button size="small" type="danger" @click="deleteContract(row.id)">删除</el-button>
           </template>
         </el-table-column>
@@ -77,6 +123,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import { contractApi } from '@/api'
 import type { Contract, Customer } from '@/api/types'
 import CustomerSelect from '@/components/CustomerSelect.vue'
@@ -85,21 +132,22 @@ const router = useRouter()
 
 // 状态
 const loading = ref(false)
-const contracts = ref<Contract[]>([])
+const contracts = ref<any[]>([])
 const customerFilter = ref<number | null>(null)
 const statusFilter = ref('')
+const billingStatusFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN').format(amount)
+  return new Intl.NumberFormat('zh-CN').format(amount || 0)
 }
 
-// 获取状态类型
+// 获取合同状态类型
 const getStatusType = (status: string) => {
-  const statusMap = {
+  const statusMap: Record<string, string> = {
     draft: 'info',
     active: 'success',
     completed: 'primary',
@@ -108,15 +156,34 @@ const getStatusType = (status: string) => {
   return statusMap[status] || 'info'
 }
 
-// 获取状态文本
+// 获取合同状态文本
 const getStatusText = (status: string) => {
-  const statusMap = {
+  const statusMap: Record<string, string> = {
     draft: '草稿',
     active: '执行中',
     completed: '已完成',
     cancelled: '已取消'
   }
   return statusMap[status] || status
+}
+
+// 获取财务状态类型
+const getBillingStatusType = (status: string) => {
+  const statusMap: Record<string, string> = {
+    pending_invoice: 'warning',
+    pending_payment: 'danger',
+    partial_invoice: 'info',
+    completed: 'success'
+  }
+  return statusMap[status] || 'info'
+}
+
+// 获取行样式类
+const getRowClassName = ({ row }: { row: any }) => {
+  if (row.unpaidAmount > 0 && row.invoicedAmount > 0) {
+    return 'row-pending-payment'
+  }
+  return ''
 }
 
 // 处理客户筛选变化
@@ -134,7 +201,8 @@ const fetchContracts = async () => {
       page: currentPage.value,
       limit: pageSize.value,
       customerId: customerFilter.value || undefined,
-      status: statusFilter.value
+      status: statusFilter.value,
+      billingStatus: billingStatusFilter.value
     })
 
     if (response.success && response.data) {
@@ -174,6 +242,17 @@ const editContract = (id: number) => {
   router.push(`/contracts/${id}/edit`)
 }
 
+// 去开票
+const goToInvoice = (contractId: number) => {
+  router.push(`/invoices/create?contractId=${contractId}`)
+}
+
+// 去收款
+const goToPayment = (contractId: number) => {
+  // 先跳转到合同详情页的发票列表，用户可以选择对应发票进行收款
+  router.push(`/contracts/${contractId}`)
+}
+
 // 删除合同
 const deleteContract = async (id: number) => {
   try {
@@ -206,5 +285,28 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: center;
+}
+
+.financial-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.amount-paid {
+  color: #67c23a;
+}
+
+.amount-unpaid {
+  color: #f56c6c;
+}
+
+:deep(.row-pending-payment) {
+  background-color: #fef0f0 !important;
+}
+
+:deep(.row-pending-payment:hover > td) {
+  background-color: #fde2e2 !important;
 }
 </style>

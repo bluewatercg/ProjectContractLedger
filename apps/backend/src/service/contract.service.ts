@@ -51,10 +51,10 @@ export class ContractService {
   }
 
   /**
-   * 获取合同列表（分页）
+   * 获取合同列表（分页）- 包含财务统计信息
    */
   async getContracts(
-    query: PaginationQuery & { customerId?: number; status?: string }
+    query: PaginationQuery & { customerId?: number; status?: string; billingStatus?: string }
   ): Promise<PaginationResult<any>> {
     const {
       page = 1,
@@ -63,11 +63,15 @@ export class ContractService {
       sortOrder = 'DESC',
       customerId,
       status,
+      billingStatus,
     } = query;
 
     const queryBuilder = this.contractRepository
       .createQueryBuilder('contract')
-      .leftJoinAndSelect('contract.customer', 'customer');
+      .leftJoinAndSelect('contract.customer', 'customer')
+      .leftJoinAndSelect('contract.invoices', 'invoice')
+      .leftJoin('invoice.payments', 'payment', 'payment.status = :paymentStatus', { paymentStatus: 'completed' })
+      .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalPaid');
 
     // 过滤条件
     if (customerId) {
@@ -80,6 +84,11 @@ export class ContractService {
       queryBuilder.andWhere('contract.status = :status', { status });
     }
 
+    // 分组
+    queryBuilder.groupBy('contract.id');
+    queryBuilder.addGroupBy('customer.id');
+    queryBuilder.addGroupBy('invoice.id');
+
     // 排序
     queryBuilder.orderBy(`contract.${sortBy}`, sortOrder);
 
@@ -89,17 +98,93 @@ export class ContractService {
 
     const [items, total] = await queryBuilder.getManyAndCount();
 
-    // 格式化返回数据，处理日期字段
-    const formattedItems = items.map(item => this.formatContractResponse(item));
+    // 格式化返回数据，添加财务统计信息
+    const formattedItems = await Promise.all(
+      items.map(async item => {
+        const formatted = this.formatContractResponse(item);
+        const financialStats = this.calculateFinancialStats(item);
+        return {
+          ...formatted,
+          ...financialStats,
+        };
+      })
+    );
+
+    // 如果有财务状态筛选，在内存中过滤（因为财务状态是计算出来的）
+    let filteredItems = formattedItems;
+    if (billingStatus) {
+      filteredItems = formattedItems.filter(item => item.billingStatus === billingStatus);
+    }
 
     return {
-      items: formattedItems,
-      total,
+      items: filteredItems,
+      total: billingStatus ? filteredItems.length : total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil((billingStatus ? filteredItems.length : total) / limit),
     };
   }
+
+  /**
+   * 计算合同的财务统计信息
+   */
+  private calculateFinancialStats(contract: any): {
+    invoicedAmount: number;
+    uninvoicedAmount: number;
+    paidAmount: number;
+    unpaidAmount: number;
+    billingStatus: string;
+    billingStatusText: string;
+  } {
+    const contractAmount = parseFloat(contract.total_amount?.toString() || '0');
+
+    // 计算已开票金额
+    const invoicedAmount = contract.invoices?.reduce((sum: number, invoice: any) => {
+      return sum + parseFloat(invoice.total_amount?.toString() || '0');
+    }, 0) || 0;
+
+    // 计算未开票金额
+    const uninvoicedAmount = Math.max(0, contractAmount - invoicedAmount);
+
+    // 计算已收款金额（只计算已完成的支付）
+    const paidAmount = contract.invoices?.reduce((sum: number, invoice: any) => {
+      const invoicePayments = invoice.payments?.filter((p: any) => p.status === 'completed') || [];
+      return sum + invoicePayments.reduce((pSum: number, payment: any) => {
+        return pSum + parseFloat(payment.amount?.toString() || '0');
+      }, 0);
+    }, 0) || 0;
+
+    // 计算未收款金额（基于已开票金额）
+    const unpaidAmount = Math.max(0, invoicedAmount - paidAmount);
+
+    // 判断财务状态
+    let billingStatus: string;
+    let billingStatusText: string;
+
+    if (invoicedAmount === 0) {
+      billingStatus = 'pending_invoice';
+      billingStatusText = '待开票';
+    } else if (unpaidAmount > 0) {
+      billingStatus = 'pending_payment';
+      billingStatusText = '待收款';
+    } else if (uninvoicedAmount > 0) {
+      billingStatus = 'partial_invoice';
+      billingStatusText = '部分开票';
+    } else {
+      billingStatus = 'completed';
+      billingStatusText = '已完成';
+    }
+
+    return {
+      invoicedAmount,
+      uninvoicedAmount,
+      paidAmount,
+      unpaidAmount,
+      billingStatus,
+      billingStatusText,
+    };
+  }
+
 
   /**
    * 根据ID获取合同
