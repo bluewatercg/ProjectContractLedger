@@ -168,13 +168,13 @@
               <!-- 提醒列表 -->
               <div class="reminders-list">
                 <!-- 履约类提醒 -->
-                <div class="category-section" v-if="reminders.items.filter(item => item.category === 'fulfillment').length > 0">
+                <div class="category-section" v-if="reminders.items.filter(item => item.category === 'fulfillment' && item.type !== 'contract_renewal').length > 0">
                   <h4 class="category-title">
                     <el-icon><Calendar /></el-icon>
-                    合同履约类 ({{ reminders.items.filter(item => item.category === 'fulfillment').length }})
+                    合同履约类 ({{ reminders.items.filter(item => item.category === 'fulfillment' && item.type !== 'contract_renewal').length }})
                   </h4>
                   <div 
-                    v-for="item in reminders.items.filter(item => item.category === 'fulfillment')" 
+                    v-for="item in reminders.items.filter(item => item.category === 'fulfillment' && item.type !== 'contract_renewal')" 
                     :key="`${item.type}-${item.id}`"
                     class="reminder-item"
                     :class="`priority-${item.priority}`"

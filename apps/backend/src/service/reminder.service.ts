@@ -96,11 +96,13 @@ export class ReminderService {
   /**
    * 获取合同履约相关提醒（履约类）
    * 包括：续签提醒、履约完成提醒
+   * 续签合同：只有当剩余天数 <= 提醒天数时才产生提醒
+   * 一次性合同：剩余天数 <= 15天时产生提醒
    */
   async getContractFulfillmentReminders(): Promise<ReminderItem[]> {
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 90); // 提前90天检查
+    futureDate.setDate(today.getDate() + 90); // 提前90天检查（覆盖最大提醒天数60天）
 
     // 获取即将到期的合同（无论是否续签）
     const expiringContracts = await this.contractRepository
@@ -111,7 +113,9 @@ export class ReminderService {
       .andWhere('contract.end_date > :today', { today })
       .getMany();
 
-    return expiringContracts.map(contract => {
+    const reminders: ReminderItem[] = [];
+
+    for (const contract of expiringContracts) {
       const daysUntilDue = Math.ceil(
         (new Date(contract.end_date).getTime() - today.getTime()) /
           (1000 * 60 * 60 * 24)
@@ -121,43 +125,57 @@ export class ReminderService {
       let type: 'contract_renewal' | 'contract_fulfillment';
       let title: string;
       let description: string;
+      let shouldRemind = false;
 
       if (contract.is_renewable) {
-        // 续签合同的提醒
+        // 续签合同的提醒：只有当剩余天数 <= 提醒天数时才产生提醒
         const reminderDays = parseInt(contract.renewal_reminder_days || '30');
-        if (daysUntilDue <= 5) priority = 'high';
-        else if (daysUntilDue <= reminderDays) priority = 'medium';
+        
+        // 只有剩余天数在提醒范围内才添加提醒
+        if (daysUntilDue <= reminderDays) {
+          shouldRemind = true;
+          if (daysUntilDue <= 5) priority = 'high';
+          else if (daysUntilDue <= 15) priority = 'medium';
+          else priority = 'low';
 
-        type = 'contract_renewal';
-        title = '合同即将到期，需要续签';
-        description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请联系客户安排续签事宜`;
+          type = 'contract_renewal';
+          title = '合同即将到期，需要续签';
+          description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请联系客户安排续签事宜`;
+        }
       } else {
-        // 一次性合同的履约完成提醒
-        if (daysUntilDue <= 7) priority = 'high';
-        else if (daysUntilDue <= 15) priority = 'medium';
+        // 一次性合同的履约完成提醒：剩余天数 <= 15天时产生提醒
+        if (daysUntilDue <= 15) {
+          shouldRemind = true;
+          if (daysUntilDue <= 7) priority = 'high';
+          else priority = 'medium';
 
-        type = 'contract_fulfillment';
-        title = '合同即将到期，请确认履约完成';
-        description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请确认项目履约完成情况`;
+          type = 'contract_fulfillment';
+          title = '合同即将到期，请确认履约完成';
+          description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请确认项目履约完成情况`;
+        }
       }
 
-      return {
-        id: contract.id,
-        type: type,
-        priority: priority,
-        title: title,
-        description: description,
-        targetId: contract.id,
-        targetType: 'contract' as const,
-        daysUntilDue: daysUntilDue,
-        amount: contract.total_amount,
-        customerName: contract.customer?.name,
-        contractNumber: contract.contract_number,
-        dueDate: contract.end_date,
-        actionUrl: `/contracts/${contract.id}`,
-        category: 'fulfillment' as const,
-      };
-    });
+      if (shouldRemind) {
+        reminders.push({
+          id: contract.id,
+          type: type!,
+          priority: priority,
+          title: title!,
+          description: description!,
+          targetId: contract.id,
+          targetType: 'contract' as const,
+          daysUntilDue: daysUntilDue,
+          amount: contract.total_amount,
+          customerName: contract.customer?.name,
+          contractNumber: contract.contract_number,
+          dueDate: contract.end_date,
+          actionUrl: `/contracts/${contract.id}`,
+          category: 'fulfillment' as const,
+        });
+      }
+    }
+
+    return reminders;
   }
 
   /**
