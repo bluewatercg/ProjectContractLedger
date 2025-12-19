@@ -3,6 +3,7 @@ import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
+import { Payment } from '../entity/payment.entity';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,
@@ -245,7 +246,8 @@ export class InvoiceService {
    * 获取发票统计信息（优化版本）
    */
   async getInvoiceStats(): Promise<any> {
-    const result = await this.invoiceRepository
+    // 基础统计：发票状态分布和总额
+    const invoiceResult = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .select([
         'COUNT(*) as total',
@@ -253,21 +255,30 @@ export class InvoiceService {
         "SUM(CASE WHEN invoice.status = 'sent' THEN 1 ELSE 0 END) as sent",
         "SUM(CASE WHEN invoice.status = 'paid' THEN 1 ELSE 0 END) as paid",
         "SUM(CASE WHEN invoice.status = 'overdue' THEN 1 ELSE 0 END) as overdue",
-        'SUM(invoice.total_amount) as totalAmount',
-        "SUM(CASE WHEN invoice.status = 'paid' THEN invoice.total_amount ELSE 0 END) as paidAmount",
-        "SUM(CASE WHEN invoice.status IN ('sent', 'overdue') THEN invoice.total_amount ELSE 0 END) as unpaidAmount",
+        "SUM(CASE WHEN invoice.status <> 'cancelled' THEN invoice.total_amount ELSE 0 END) as totalAmount",
       ])
       .getRawOne();
 
+    // 实际已收款：从支付表统计已完成的支付
+    const paymentsResult = await this.dataSource
+      .getRepository(Payment)
+      .createQueryBuilder('payment')
+      .select('SUM(payment.amount)', 'total')
+      .where("payment.status = 'completed'")
+      .getRawOne();
+
+    const totalAmount = parseFloat(invoiceResult.totalAmount) || 0;
+    const paidAmount = parseFloat(paymentsResult.total) || 0;
+
     return {
-      total: parseInt(result.total) || 0,
-      draft: parseInt(result.draft) || 0,
-      sent: parseInt(result.sent) || 0,
-      paid: parseInt(result.paid) || 0,
-      overdue: parseInt(result.overdue) || 0,
-      totalAmount: parseFloat(result.totalAmount) || 0,
-      paidAmount: parseFloat(result.paidAmount) || 0,
-      unpaidAmount: parseFloat(result.unpaidAmount) || 0,
+      total: parseInt(invoiceResult.total) || 0,
+      draft: parseInt(invoiceResult.draft) || 0,
+      sent: parseInt(invoiceResult.sent) || 0,
+      paid: parseInt(invoiceResult.paid) || 0,
+      overdue: parseInt(invoiceResult.overdue) || 0,
+      totalAmount: totalAmount,
+      paidAmount: paidAmount,
+      unpaidAmount: Math.max(0, totalAmount - paidAmount),
     };
   }
 

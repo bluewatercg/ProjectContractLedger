@@ -92,8 +92,8 @@ export class StatisticsService {
       payments: paymentStats,
       summary: {
         totalRevenue: contractStats.totalAmount,
-        paidAmount: invoiceStats.paidAmount,
-        unpaidAmount: invoiceStats.unpaidAmount,
+        paidAmount: paymentStats.totalAmount, // 使用实际已收到的支付总额
+        unpaidAmount: Math.max(0, invoiceStats.totalAmount - paymentStats.totalAmount), // 待收款 = 已开票总额 - 已收到总额
         activeCustomers: customerStats.active,
         activeContracts: contractStats.active,
       },
