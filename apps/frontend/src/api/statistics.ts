@@ -44,16 +44,18 @@ export const statisticsApi = {
    * 获取月度收入趋势
    */
   getMonthlyRevenueTrend(months?: number): Promise<ApiResponse<any[]>> {
-    return apiClient.get('/statistics/revenue/trend', { 
-      params: { months } 
+    return apiClient.get('/statistics/revenue/trend', {
+      params: { months }
     }).then(res => res.data)
   },
 
   /**
-   * 获取客户分布统计
+   * 获取客户贡献统计
    */
-  getCustomerDistribution(): Promise<ApiResponse<any>> {
-    return apiClient.get('/statistics/customers/distribution').then(res => res.data)
+  getCustomerContribution(limit?: number): Promise<ApiResponse<any[]>> {
+    return apiClient.get('/statistics/customers/contribution', {
+      params: { limit }
+    }).then(res => res.data)
   },
 
   /**

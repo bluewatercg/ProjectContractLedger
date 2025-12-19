@@ -54,22 +54,25 @@ export class StatisticsController {
   }
 
   /**
-   * 获取客户分布统计
+   * 获取客户贡献统计（Top 5）
    */
-  @Get('/customers/distribution')
-  async getCustomerDistribution(): Promise<ApiResponse> {
+  @Get('/customers/contribution')
+  async getCustomerContribution(
+    @Query('limit') limit?: number
+  ): Promise<ApiResponse> {
     try {
-      const distribution =
-        await this.statisticsService.getCustomerDistribution();
+      const contribution = await this.statisticsService.getCustomerContribution(
+        limit || 5
+      );
       return {
         success: true,
-        data: distribution,
-        message: '获取客户分布统计成功',
+        data: contribution,
+        message: '获取客户贡献统计成功',
       };
     } catch (error) {
       return {
         success: false,
-        message: error.message || '获取客户分布统计失败',
+        message: error.message || '获取客户贡献统计失败',
         code: 500,
       };
     }

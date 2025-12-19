@@ -51,6 +51,43 @@
               <div class="stat-card-change">逾期: {{ stats?.invoices?.overdue || 0 }} 张</div>
             </div>
           </div>
+          
+          <!-- 图表区域 -->
+          <div class="charts-row" v-loading="loading">
+            <div class="chart-container large">
+              <div class="chart-header">
+                <h3>收入与收款趋势</h3>
+                <el-radio-group v-model="trendMonths" size="small" @change="fetchTrendData">
+                  <el-radio-button :label="6">6个月</el-radio-button>
+                  <el-radio-button :label="12">12个月</el-radio-button>
+                </el-radio-group>
+              </div>
+              <div ref="revenueTrendChart" class="chart-box"></div>
+            </div>
+            
+            <div class="chart-container small">
+              <div class="chart-header">
+                <h3>发票状态分布</h3>
+              </div>
+              <div ref="invoiceStatusChart" class="chart-box"></div>
+            </div>
+          </div>
+
+          <div class="charts-row" v-loading="loading">
+            <div class="chart-container medium">
+              <div class="chart-header">
+                <h3>核心客户贡献 (Top 5)</h3>
+              </div>
+              <div ref="customerContributionChart" class="chart-box"></div>
+            </div>
+            
+            <div class="chart-container medium">
+              <div class="chart-header">
+                <h3>合同状态分布</h3>
+              </div>
+              <div ref="contractStatusChart" class="chart-box"></div>
+            </div>
+          </div>
 
           <!-- 快速操作 -->
           <div class="quick-actions">
@@ -319,7 +356,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
@@ -347,6 +385,15 @@ const remindersLoading = ref(false)
 const stats = ref<DashboardStats>()
 const reminders = ref<ReminderSummary>()
 const loadTime = ref<number>()
+
+// 图表相关状态
+const revenueTrendChart = ref<HTMLElement>()
+const invoiceStatusChart = ref<HTMLElement>()
+const customerContributionChart = ref<HTMLElement>()
+const contractStatusChart = ref<HTMLElement>()
+const trendMonths = ref(12)
+
+let charts: echarts.ECharts[] = []
 
 // 计算属性：筛选出续签类提醒
 const renewalReminders = computed(() => {
@@ -400,11 +447,198 @@ const fetchStats = async (useCache: boolean = true) => {
 const refreshData = async () => {
   try {
     await statisticsApi.refreshDashboardStats()
-    await fetchStats(false)
+    await Promise.all([
+      fetchStats(false),
+      initAllCharts()
+    ])
     ElMessage.success('数据已刷新')
   } catch (error) {
     ElMessage.error('刷新数据失败')
   }
+}
+
+// 获取趋势数据
+const fetchTrendData = async () => {
+  await initRevenueTrendChart()
+}
+
+// 初始化所有图表
+const initAllCharts = async () => {
+  await nextTick()
+  charts.forEach(chart => chart.dispose())
+  charts = []
+  
+  await Promise.all([
+    initRevenueTrendChart(),
+    initInvoiceStatusChart(),
+    initCustomerContributionChart(),
+    initContractStatusChart()
+  ])
+}
+
+// 收入趋势图
+const initRevenueTrendChart = async () => {
+  if (!revenueTrendChart.value) return
+  
+  const chart = echarts.init(revenueTrendChart.value)
+  charts.push(chart)
+  chart.showLoading()
+  
+  try {
+    const res = await statisticsApi.getMonthlyRevenueTrend(trendMonths.value)
+    if (res.success) {
+      const data = res.data
+      chart.setOption({
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' }
+        },
+        legend: { data: ['应收金额', '实收金额'] },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: data.map(item => item.monthName)
+        },
+        yAxis: { type: 'value' },
+        series: [
+          {
+            name: '应收金额',
+            type: 'bar',
+            data: data.map(item => item.revenue),
+            itemStyle: { color: '#409eff' }
+          },
+          {
+            name: '实收金额',
+            type: 'line',
+            data: data.map(item => item.payments),
+            itemStyle: { color: '#67c23a' },
+            smooth: true
+          }
+        ]
+      })
+    }
+  } finally {
+    chart.hideLoading()
+  }
+}
+
+// 发票状态图
+const initInvoiceStatusChart = async () => {
+  if (!invoiceStatusChart.value) return
+  const chart = echarts.init(invoiceStatusChart.value)
+  charts.push(chart)
+  chart.showLoading()
+  
+  try {
+    const res = await statisticsApi.getInvoiceStatusDistribution()
+    if (res.success) {
+      const data = res.data.map(item => ({
+        name: item.status,
+        value: item.count
+      }))
+      chart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '5%', left: 'center' },
+        series: [
+          {
+            name: '发票状态',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false, position: 'center' },
+            emphasis: { label: { show: true, fontSize: '20', fontWeight: 'bold' } },
+            labelLine: { show: false },
+            data: data
+          }
+        ]
+      })
+    }
+  } finally {
+    chart.hideLoading()
+  }
+}
+
+// 客户贡献图
+const initCustomerContributionChart = async () => {
+  if (!customerContributionChart.value) return
+  const chart = echarts.init(customerContributionChart.value)
+  charts.push(chart)
+  chart.showLoading()
+  
+  try {
+    const res = await statisticsApi.getCustomerContribution(5)
+    if (res.success) {
+      const data = res.data.sort((a, b) => a.total - b.total)
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value' },
+        yAxis: {
+          type: 'category',
+          data: data.map(item => item.name)
+        },
+        series: [
+          {
+            name: '贡献总额',
+            type: 'bar',
+            data: data.map(item => item.total),
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                { offset: 0, color: '#83bff6' },
+                { offset: 0.5, color: '#188df0' },
+                { offset: 1, color: '#188df0' }
+              ])
+            }
+          }
+        ]
+      })
+    }
+  } finally {
+    chart.hideLoading()
+  }
+}
+
+// 合同状态图
+const initContractStatusChart = async () => {
+  if (!contractStatusChart.value) return
+  const chart = echarts.init(contractStatusChart.value)
+  charts.push(chart)
+  chart.showLoading()
+  
+  try {
+    const res = await statisticsApi.getContractStatusDistribution()
+    if (res.success) {
+      chart.setOption({
+        tooltip: { trigger: 'item' },
+        series: [
+          {
+            name: '合同状态',
+            type: 'pie',
+            radius: '50%',
+            data: res.data.map(item => ({
+              name: item.status,
+              value: item.count
+            })),
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+              }
+            }
+          }
+        ]
+      })
+    }
+  } finally {
+    chart.hideLoading()
+  }
+}
+
+// 监听窗口大小变化
+const handleResize = () => {
+  charts.forEach(chart => chart.resize())
 }
 
 // 获取提醒事项
@@ -488,6 +722,13 @@ const markAsHandled = async (item: ReminderItem) => {
 onMounted(() => {
   fetchStats()
   fetchReminders()
+  initAllCharts()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  charts.forEach(chart => chart.dispose())
 })
 </script>
 
@@ -498,7 +739,42 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+.charts-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container.large { flex: 2; }
+.chart-container.medium { flex: 1; }
+.chart-container.small { flex: 1; }
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.chart-box {
+  height: 300px;
+  width: 100%;
 }
 
 .stat-card {

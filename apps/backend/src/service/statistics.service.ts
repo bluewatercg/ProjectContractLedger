@@ -175,25 +175,45 @@ export class StatisticsService {
    * 获取月度收入趋势
    */
   async getMonthlyRevenueTrend(months = 12): Promise<any[]> {
-    // 这里需要根据实际需求实现月度收入统计
-    // 可以基于合同签订时间、发票开具时间或支付时间来统计
     const result = [];
     const now = new Date();
 
+    // 使用 QueryBuilder 进行分组统计
+    // 统计发票面额总计（应收）
+    const invoiceTrend = await this.invoiceService.invoiceRepository
+      .createQueryBuilder('invoice')
+      .select("DATE_FORMAT(invoice.issue_date, '%Y-%m')", 'month')
+      .addSelect('SUM(invoice.total_amount)', 'total')
+      .where("invoice.issue_date >= DATE_SUB(CURDATE(), INTERVAL :months MONTH)", { months })
+      .groupBy('month')
+      .orderBy('month', 'ASC')
+      .getRawMany();
+
+    // 统计支付总计（实收）
+    const paymentTrend = await this.paymentService.paymentRepository
+      .createQueryBuilder('payment')
+      .select("DATE_FORMAT(payment.payment_date, '%Y-%m')", 'month')
+      .addSelect('SUM(payment.amount)', 'total')
+      .where("payment.payment_date >= DATE_SUB(CURDATE(), INTERVAL :months MONTH)", { months })
+      .andWhere("payment.status = 'completed'")
+      .groupBy('month')
+      .orderBy('month', 'ASC')
+      .getRawMany();
+
+    // 合并数据
     for (let i = months - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = date.getFullYear();
-      const month = date.getMonth() + 1;
+      const monthStr = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-      // 这里应该查询数据库获取实际数据
-      // 暂时返回模拟数据
+      const inv = invoiceTrend.find(t => t.month === monthStr);
+      const pay = paymentTrend.find(t => t.month === monthStr);
+
       result.push({
-        year,
-        month,
-        monthName: date.toLocaleDateString('zh-CN', { month: 'long' }),
-        revenue: Math.random() * 100000,
-        contracts: Math.floor(Math.random() * 20),
-        payments: Math.floor(Math.random() * 30),
+        month: monthStr,
+        monthName: date.toLocaleDateString('zh-CN', { month: 'short' }),
+        revenue: parseFloat(inv?.total) || 0,
+        payments: parseFloat(pay?.total) || 0,
       });
     }
 
@@ -203,23 +223,22 @@ export class StatisticsService {
   /**
    * 获取客户分布统计
    */
-  async getCustomerDistribution(): Promise<any> {
-    // 按地区、行业等维度统计客户分布
-    // 这里需要根据实际的客户数据结构来实现
-    return {
-      byRegion: [
-        { region: '北京', count: 25 },
-        { region: '上海', count: 20 },
-        { region: '广州', count: 15 },
-        { region: '深圳', count: 18 },
-        { region: '其他', count: 22 },
-      ],
-      bySize: [
-        { size: '大型企业', count: 30 },
-        { size: '中型企业', count: 45 },
-        { size: '小型企业', count: 25 },
-      ],
-    };
+  async getCustomerContribution(limit = 5): Promise<any[]> {
+    const result = await this.invoiceService.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoin('invoice.contract', 'contract')
+      .leftJoin('contract.customer', 'customer')
+      .select('customer.name', 'name')
+      .addSelect('SUM(invoice.total_amount)', 'total')
+      .groupBy('customer.id')
+      .orderBy('total', 'DESC')
+      .limit(limit)
+      .getRawMany();
+
+    return result.map(r => ({
+      name: r.name,
+      total: parseFloat(r.total) || 0,
+    }));
   }
 
   /**
