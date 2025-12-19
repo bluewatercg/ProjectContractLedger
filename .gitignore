@@ -1,4 +1,17 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea/
+.vscode/
+.gemini/
+C:\Users\miller\.gemini\
 /node_api_service/node_modules
 /midway-backend/.env
 /apps/backend/.env
 deployment/.env
+package-lock.json

@@ -38,6 +38,9 @@ export class Invoice {
   @Column({ type: 'datetime', nullable: true })
   issue_date: Date;
 
+  @Column({ type: 'datetime', nullable: true })
+  due_date: Date;
+
   @Column({
     type: 'enum',
     enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],

@@ -441,6 +441,13 @@ export class CreateInvoiceDto {
   issue_date: string;
 
   @ApiPropertyOptional({
+    description: '到期日期',
+    example: '2024-02-15',
+    format: 'date',
+  })
+  due_date?: string;
+
+  @ApiPropertyOptional({
     description: '发票描述',
     example: '第一期款项发票',
     maxLength: 500,
@@ -485,6 +492,13 @@ export class UpdateInvoiceDto {
     format: 'date',
   })
   issue_date?: string;
+
+  @ApiPropertyOptional({
+    description: '到期日期',
+    example: '2024-02-15',
+    format: 'date',
+  })
+  due_date?: string;
 
   @ApiPropertyOptional({
     description: '发票描述',

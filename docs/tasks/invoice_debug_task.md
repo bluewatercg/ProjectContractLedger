@@ -1,0 +1,21 @@
+# Invoice System Debugging Task
+
+- [x] Investigate current implementation status
+    - [x] Check backend entity and interfaces
+    - [x] Check backend service logic
+    - [x] Check frontend form implementation
+    - [x] Verify date utility behavior
+- [x] Fix issues
+    - [x] Update frontend components
+        - [x] Update `ContractSelect.vue`
+        - [x] Update `InvoiceForm.vue`
+        - [x] Update `InvoiceList.vue`
+        - [x] Update `InvoiceDetail.vue`
+    - [x] Ensure `due_date` is correctly handled if null/undefined
+    - [x] Improve `ContractSelect` behavior when `customerId` changes
+    - [x] Verify frontend-backend integration for `due_date`
+- [x] Verification
+    - [x] Manual test of invoice creation with/without `due_date`
+    - [x] Manual test of customer/contract selection flow
+- [x] Deployment
+    - [x] Commit and push to GitHub
