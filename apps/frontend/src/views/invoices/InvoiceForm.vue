@@ -79,6 +79,15 @@
             style="width: 100%"
           />
         </el-form-item>
+
+        <el-form-item label="到期日期" prop="due_date">
+          <el-date-picker
+            v-model="form.due_date"
+            type="date"
+            placeholder="请选择到期日期"
+            style="width: 100%"
+          />
+        </el-form-item>
         
         <el-form-item label="发票描述" prop="description">
           <el-input
@@ -138,7 +147,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { invoiceApi } from '@/api'
+import { invoiceApi, contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
 import type { CreateInvoiceDto, UpdateInvoiceDto, Contract, Customer } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
@@ -165,11 +174,12 @@ const isEdit = computed(() => !!route.params.id)
 const invoiceId = computed(() => Number(route.params.id))
 
 // 表单数据
-const form = reactive<CreateInvoiceDto>({
+const form = reactive<UpdateInvoiceDto>({
   contract_id: 0,
   amount: 0,
   tax_rate: 0,
   issue_date: '',
+  due_date: '',
   description: '',
   notes: ''
 })
@@ -200,7 +210,10 @@ const rules: FormRules = {
 const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
   selectedCustomerId.value = customerId
   // 当客户变化时，重置合同选择
-  form.contract_id = 0
+  if (form.contract_id !== 0) {
+    form.contract_id = 0
+    ElMessage.info('已重置合同选择，请重新选择该客户下的合同')
+  }
   console.log('Selected customer:', customer)
 }
 
@@ -259,7 +272,8 @@ const fetchInvoice = async () => {
       // 处理日期字段，确保正确显示
       Object.assign(form, {
         ...invoiceData,
-        issue_date: parseDate(invoiceData.issue_date)
+        issue_date: parseDate(invoiceData.issue_date),
+        due_date: parseDate(invoiceData.due_date)
       })
 
       // 设置客户信息
@@ -286,7 +300,8 @@ const handleSubmit = async () => {
     // 格式化日期字段
     const submitData = {
       ...form,
-      issue_date: formatDate(form.issue_date)
+      issue_date: formatDate(form.issue_date),
+      due_date: formatDate(form.due_date)
     }
 
     let response
@@ -366,15 +381,32 @@ const handleDeleteAttachment = async (attachmentId: number) => {
 }
 
 // 组件挂载时获取数据
-onMounted(() => {
+onMounted(async () => {
   if (isEdit.value) {
-    fetchInvoice()
-    fetchAttachments()
+    await fetchInvoice()
+    await fetchAttachments()
   } else {
     // 新建模式下，检查是否有预填的合同ID
     const contractId = route.query.contractId
     if (contractId) {
-      form.contract_id = Number(contractId)
+      const id = Number(contractId)
+      form.contract_id = id
+      
+      // 获取合同详情以自动填充客户信息
+      try {
+        loading.value = true
+        const response = await contractApi.getContractById(id)
+        if (response.success && response.data) {
+          const contract = response.data
+          if (contract.customer) {
+            selectedCustomerId.value = contract.customer.id
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch contract details:', error)
+      } finally {
+        loading.value = false
+      }
     }
   }
 })

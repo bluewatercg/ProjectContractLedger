@@ -102,6 +102,36 @@ watch(() => props.modelValue, async (newValue) => {
   }
 })
 
+// 监听客户ID变化，重置列表
+watch(() => props.customerId, async (newCustomerId) => {
+  // 先检查当前选中的合同是否属于新客户
+  if (selectedValue.value) {
+    const selectedContract = contracts.value.find(c => c.id === selectedValue.value)
+    if (selectedContract) {
+      if (selectedContract.customer_id !== newCustomerId) {
+        selectedValue.value = null
+        emit('change', null, null)
+      }
+    } else {
+      // 如果不在当前列表中，需要通过API检查
+      try {
+        const response = await contractApi.getContractById(selectedValue.value)
+        if (response.success && response.data && response.data.customer_id !== newCustomerId) {
+          selectedValue.value = null
+          emit('change', null, null)
+        }
+      } catch (error) {
+        console.error('Failed to verify contract loyalty:', error)
+      }
+    }
+  }
+
+  // 重置列表
+  contracts.value = []
+  currentPage.value = 1
+  hasMore.value = true
+})
+
 // 监听内部值变化
 watch(selectedValue, (newValue) => {
   emit('update:modelValue', newValue)

@@ -133,6 +133,7 @@ export interface Invoice {
   tax_amount: number
   total_amount: number
   issue_date: string
+  due_date?: string
   status: string
   description?: string
   notes?: string
@@ -147,12 +148,15 @@ export interface CreateInvoiceDto {
   amount: number
   tax_rate?: number
   issue_date: string
+  due_date?: string
   description?: string
   notes?: string
 }
 
 export interface UpdateInvoiceDto extends Partial<CreateInvoiceDto> {
   status?: string
+  tax_amount?: number
+  total_amount?: number
 }
 
 // 支付相关类型
