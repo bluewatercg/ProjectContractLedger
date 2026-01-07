@@ -474,8 +474,8 @@ onMounted(() => {
 /* 卡片网格布局 */
 .contracts-grid {
   display: grid;
-  gap: 20px;
-  padding: 10px;
+  gap: 12px;
+  padding: 4px;
 }
 
 @media (min-width: 1920px) {
