@@ -97,44 +97,109 @@ export class ContractService {
       );
     }
 
-    // 排序
-    queryBuilder.orderBy(`contract.${sortBy}`, sortOrder);
-
-    // 分页
-    const offset = (page - 1) * limit;
-    queryBuilder.skip(offset).take(limit);
-
-    const [items, total] = await queryBuilder.getManyAndCount();
-
-    // 格式化返回数据，添加财务统计信息
-    const formattedItems = await Promise.all(
-      items.map(async item => {
-        const formatted = this.formatContractResponse(item);
-        const financialStats = this.calculateFinancialStats(item);
-        return {
-          ...formatted,
-          ...financialStats,
-        };
-      })
-    );
-
-    // 如果有财务状态筛选，在内存中过滤（因为财务状态是计算出来的）
-    let filteredItems = formattedItems;
+    // 如果有财务状态筛选，需要先获取所有数据进行过滤（因为财务状态是计算出来的）
     if (billingStatus) {
-      filteredItems = formattedItems.filter(
+      // 获取所有匹配的合同（不分页）
+      const allItems = await queryBuilder.getMany();
+
+      // 格式化并计算财务统计
+      const formattedItems = await Promise.all(
+        allItems.map(async item => {
+          const formatted = this.formatContractResponse(item);
+          const financialStats = this.calculateFinancialStats(item);
+          return {
+            ...formatted,
+            ...financialStats,
+          };
+        })
+      );
+
+      // 按财务状态过滤
+      const filteredItems = formattedItems.filter(
         item => item.billingStatus === billingStatus
       );
-    }
 
-    return {
-      items: filteredItems,
-      total: billingStatus ? filteredItems.length : total,
-      page,
-      limit,
-      totalPages: Math.ceil(
-        (billingStatus ? filteredItems.length : total) / limit
-      ),
-    };
+      // 按优先级排序：待收款 > 待开票 > 其他
+      filteredItems.sort((a, b) => {
+        const priorityMap = {
+          pending_payment: 3,
+          pending_invoice: 2,
+          partial_invoice: 1,
+          completed: 0,
+        };
+        const priorityA = priorityMap[a.billingStatus] || 0;
+        const priorityB = priorityMap[b.billingStatus] || 0;
+
+        if (priorityA !== priorityB) {
+          return priorityB - priorityA; // 优先级高的在前
+        }
+
+        // 优先级相同，按创建时间排序
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      // 手动分页
+      const total = filteredItems.length;
+      const offset = (page - 1) * limit;
+      const paginatedItems = filteredItems.slice(offset, offset + limit);
+
+      return {
+        items: paginatedItems,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } else {
+      // 没有财务状态筛选，按原逻辑进行数据库分页
+      // 排序
+      queryBuilder.orderBy(`contract.${sortBy}`, sortOrder);
+
+      // 分页
+      const offset = (page - 1) * limit;
+      queryBuilder.skip(offset).take(limit);
+
+      const [items, total] = await queryBuilder.getManyAndCount();
+
+      // 格式化返回数据，添加财务统计信息
+      const formattedItems = await Promise.all(
+        items.map(async item => {
+          const formatted = this.formatContractResponse(item);
+          const financialStats = this.calculateFinancialStats(item);
+          return {
+            ...formatted,
+            ...financialStats,
+          };
+        })
+      );
+
+      // 按优先级排序（客户端排序）
+      formattedItems.sort((a, b) => {
+        const priorityMap = {
+          pending_payment: 3,
+          pending_invoice: 2,
+          partial_invoice: 1,
+          completed: 0,
+        };
+        const priorityA = priorityMap[a.billingStatus] || 0;
+        const priorityB = priorityMap[b.billingStatus] || 0;
+
+        if (priorityA !== priorityB) {
+          return priorityB - priorityA;
+        }
+
+        // 优先级相同，保持数据库排序
+        return 0;
+      });
+
+      return {
+        items: formattedItems,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
   }
 
   /**
