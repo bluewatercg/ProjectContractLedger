@@ -11,6 +11,17 @@
     <div class="table-container">
       <div class="table-toolbar">
         <div class="table-search">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索合同编号或标题"
+            style="width: 250px"
+            clearable
+            @input="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
           <CustomerSelect
             v-model="customerFilter"
             placeholder="选择客户筛选（支持搜索）"
@@ -230,7 +241,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Plus } from "@element-plus/icons-vue";
+import { Plus, Search } from "@element-plus/icons-vue";
 import { contractApi } from "@/api";
 import type { Contract, Customer } from "@/api/types";
 import CustomerSelect from "@/components/CustomerSelect.vue";
@@ -245,6 +256,7 @@ const savedViewMode = localStorage.getItem("contractViewMode") as
 
 const loading = ref(false);
 const contracts = ref<any[]>([]);
+const searchQuery = ref('');
 const customerFilter = ref<number | null>(null);
 const statusFilter = ref("");
 const billingStatusFilter = ref("");
@@ -252,6 +264,8 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const total = ref(0);
 const viewMode = ref<"table" | "card">(savedViewMode || "table");
+
+let searchTimeout: NodeJS.Timeout | null = null;
 
 const viewOptions = [
   { label: "表格", value: "table" },
@@ -335,6 +349,17 @@ const handleCustomerFilter = (
   fetchContracts();
 };
 
+// 搜索处理（防抖）
+const handleSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1;
+    fetchContracts();
+  }, 500);
+};
+
 // 获取合同列表
 const fetchContracts = async () => {
   try {
@@ -345,6 +370,7 @@ const fetchContracts = async () => {
       customerId: customerFilter.value || undefined,
       status: statusFilter.value,
       billingStatus: billingStatusFilter.value,
+      search: searchQuery.value || undefined,
     });
 
     if (response.success && response.data) {

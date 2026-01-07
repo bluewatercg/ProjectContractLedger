@@ -1,18 +1,18 @@
 import apiClient from './config'
-import type { 
-  ApiResponse, 
-  PaginationQuery, 
-  PaginationResult, 
-  Contract, 
-  CreateContractDto, 
-  UpdateContractDto 
+import type {
+  ApiResponse,
+  PaginationQuery,
+  PaginationResult,
+  Contract,
+  CreateContractDto,
+  UpdateContractDto
 } from './types'
 
 export const contractApi = {
   /**
    * 获取合同列表
    */
-  getContracts(params: PaginationQuery & { customerId?: number; status?: string }): Promise<ApiResponse<PaginationResult<Contract>>> {
+  getContracts(params: PaginationQuery & { customerId?: number; status?: string; billingStatus?: string; search?: string }): Promise<ApiResponse<PaginationResult<Contract>>> {
     return apiClient.get('/contracts', { params }).then(res => res.data)
   },
 

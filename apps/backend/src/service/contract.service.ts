@@ -58,6 +58,7 @@ export class ContractService {
       customerId?: number;
       status?: string;
       billingStatus?: string;
+      search?: string;
     }
   ): Promise<PaginationResult<any>> {
     const {
@@ -68,6 +69,7 @@ export class ContractService {
       customerId,
       status,
       billingStatus,
+      search,
     } = query;
 
     const queryBuilder = this.contractRepository
@@ -85,6 +87,14 @@ export class ContractService {
 
     if (status) {
       queryBuilder.andWhere('contract.status = :status', { status });
+    }
+
+    // 搜索功能：支持合同编号和标题模糊查询
+    if (search) {
+      queryBuilder.andWhere(
+        '(contract.contract_number LIKE :search OR contract.title LIKE :search)',
+        { search: `%${search}%` }
+      );
     }
 
     // 排序

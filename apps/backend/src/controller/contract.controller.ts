@@ -54,7 +54,7 @@ export class ContractController {
    */
   @Get('/')
   async getContracts(
-    @Query() query: PaginationQuery & { customerId?: number; status?: string }
+    @Query() query: PaginationQuery & { customerId?: number; status?: string; search?: string }
   ): Promise<ApiResponse> {
     try {
       const result = await this.contractService.getContracts(query);
