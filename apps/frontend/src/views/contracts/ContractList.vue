@@ -510,15 +510,15 @@ onMounted(() => {
   }
 }
 
-@media (min-width: 1400px) and (max-width: 1919px) {
+@media (min-width: 1200px) and (max-width: 1919px) {
   .contracts-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
-@media (min-width: 768px) and (max-width: 1399px) {
+@media (min-width: 768px) and (max-width: 1199px) {
   .contracts-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 

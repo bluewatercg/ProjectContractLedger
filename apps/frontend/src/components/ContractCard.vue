@@ -204,8 +204,8 @@ const handleDelete = () => {
   border-radius: 10px;
   border: 1px solid #e4e7ed;
   padding: 16px;
-  min-width: 360px;
-  max-width: 400px;
+  min-width: 280px;
+  max-width: 320px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
