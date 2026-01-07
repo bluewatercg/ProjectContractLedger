@@ -5,9 +5,17 @@
         <div class="contract-number">{{ contract.contract_number }}</div>
         <div class="contract-title">{{ contract.title }}</div>
       </div>
-      <el-tag :type="getStatusType(contract.status)" size="large">
-        {{ getStatusText(contract.status) }}
-      </el-tag>
+      <div class="header-tags">
+        <el-tag :type="getStatusType(contract.status)" size="small">
+          {{ getStatusText(contract.status) }}
+        </el-tag>
+        <el-tag
+          :type="getBillingStatusType(contract.billingStatus)"
+          size="small"
+        >
+          {{ contract.billingStatusText }}
+        </el-tag>
+      </div>
     </div>
 
     <div class="customer-info">
@@ -21,108 +29,89 @@
       </span>
     </div>
 
-    <el-divider />
+    <el-divider style="margin: 12px 0" />
 
-    <div class="amount-section">
-      <div class="amount-label">💰 合同金额</div>
-      <div class="amount-value">
-        ¥{{ formatCurrency(contract.total_amount) }}
-      </div>
-    </div>
-
-    <div class="financial-section">
-      <div class="section-title">财务状况</div>
-
-      <el-tag
-        :type="getBillingStatusType(contract.billingStatus)"
-        size="large"
-        class="billing-tag"
-      >
-        {{ contract.billingStatusText }}
-      </el-tag>
-
-      <div class="progress-section">
-        <div class="progress-header">
-          <span class="progress-label">📄 开票</span>
-          <span class="progress-info">
-            ¥{{ formatCurrency(contract.invoicedAmount || 0) }}
-            <span class="percent"
-              >({{
-                getInvoicePercent(
-                  contract.invoicedAmount,
-                  contract.total_amount,
-                )
-              }}%)</span
-            >
-          </span>
-        </div>
-        <div class="progress-track">
-          <div
-            class="progress-bar invoice"
-            :style="{
-              width: `${getInvoicePercent(contract.invoicedAmount, contract.total_amount)}%`,
-            }"
-          ></div>
-        </div>
+    <div class="financial-overview">
+      <div class="financial-header">
+        <span class="financial-title">💰 合同金额</span>
+        <span class="financial-amount"
+          >¥{{ formatCurrency(contract.total_amount) }}</span
+        >
       </div>
 
-      <div class="progress-section">
-        <div class="progress-header">
-          <span class="progress-label">💵 收款</span>
-          <span class="progress-info">
-            ¥{{ formatCurrency(contract.paidAmount || 0) }}
-            <span class="percent"
-              >({{
-                getPaymentPercent(contract.paidAmount, contract.total_amount)
-              }}%)</span
-            >
-          </span>
+      <div class="financial-progress">
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span class="progress-label">📄 已开票</span>
+            <span class="progress-value"
+              >¥{{ formatCurrency(contract.invoicedAmount || 0) }}
+              <span class="progress-percent"
+                >({{ getInvoicePercent(contract.invoicedAmount, contract.total_amount) }}%)</span
+              >
+            </span>
+          </div>
+          <div class="progress-bar-wrapper">
+            <div
+              class="progress-bar invoice"
+              :style="{
+                width: `${getInvoicePercent(contract.invoicedAmount, contract.total_amount)}%`,
+              }"
+            ></div>
+          </div>
         </div>
-        <div class="progress-track">
-          <div
-            class="progress-bar payment"
-            :style="{
-              width: `${getPaymentPercent(contract.paidAmount, contract.total_amount)}%`,
-            }"
-          ></div>
+
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span class="progress-label">💵 已收款</span>
+            <span class="progress-value"
+              >¥{{ formatCurrency(contract.paidAmount || 0) }}
+              <span class="progress-percent"
+                >({{ getPaymentPercent(contract.paidAmount, contract.total_amount) }}%)</span
+              >
+            </span>
+          </div>
+          <div class="progress-bar-wrapper">
+            <div
+              class="progress-bar payment"
+              :style="{
+                width: `${getPaymentPercent(contract.paidAmount, contract.total_amount)}%`,
+              }"
+            ></div>
+          </div>
         </div>
       </div>
 
       <div
-        v-if="contract.unpaidAmount > 0 || contract.uninvoicedAmount > 0"
-        class="remaining-section"
+        v-if="contract.unpaidAmount > 0"
+        class="financial-footer"
       >
-        <span v-if="contract.uninvoicedAmount > 0" class="remaining-item">
-          未开票: ¥{{ formatCurrency(contract.uninvoicedAmount) }}
-        </span>
-        <span v-if="contract.unpaidAmount > 0" class="remaining-item danger">
-          未收款: ¥{{ formatCurrency(contract.unpaidAmount) }}
-        </span>
+        <span class="unpaid-amount">未收款: ¥{{ formatCurrency(contract.unpaidAmount) }}</span>
       </div>
     </div>
 
     <div class="card-actions">
-      <el-button size="default" @click.stop="handleView"> 查看详情 </el-button>
-      <el-button size="default" type="primary" @click.stop="handleEdit">
+      <el-button size="small" @click.stop="handleEdit">
+        <el-icon><Edit /></el-icon>
         编辑
       </el-button>
       <el-button
-        v-if="contract.uninvoicedAmount > 0 && contract.status === 'active'"
-        size="default"
+        size="small"
         type="warning"
         @click.stop="handleInvoice"
       >
-        去开票
+        <el-icon><Document /></el-icon>
+        开票
       </el-button>
       <el-button
-        v-if="contract.unpaidAmount > 0 && contract.invoicedAmount > 0"
-        size="default"
+        size="small"
         type="success"
         @click.stop="handlePayment"
       >
-        去收款
+        <el-icon><Money /></el-icon>
+        收款
       </el-button>
-      <el-button size="default" type="danger" @click.stop="handleDelete">
+      <el-button size="small" type="danger" @click.stop="handleDelete">
+        <el-icon><Delete /></el-icon>
         删除
       </el-button>
     </div>
@@ -130,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { User, Calendar } from "@element-plus/icons-vue";
+import { User, Calendar, Money, Document, Edit, Delete } from "@element-plus/icons-vue";
 
 const props = defineProps<{
   contract: any;
@@ -212,11 +201,11 @@ const handleDelete = () => {
 <style scoped>
 .contract-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e4e7ed;
-  padding: 20px;
-  min-width: 380px;
-  max-width: 420px;
+  padding: 16px;
+  min-width: 360px;
+  max-width: 400px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -246,33 +235,40 @@ const handleDelete = () => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .header-left {
   flex: 1;
-  margin-right: 12px;
+  margin-right: 8px;
+}
+
+.header-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
 }
 
 .contract-number {
-  font-size: 12px;
+  font-size: 11px;
   color: #909399;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .contract-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #303133;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .customer-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  font-size: 13px;
+  margin-bottom: 10px;
+  font-size: 12px;
 }
 
 .customer-name {
@@ -293,117 +289,145 @@ const handleDelete = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: 10px 12px;
   background: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: 6px;
+  margin-bottom: 12px;
 }
 
 .amount-label {
-  font-size: 14px;
+  font-size: 13px;
   color: #606266;
   font-weight: 500;
 }
 
 .amount-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.financial-overview {
+  margin-bottom: 12px;
+}
+
+.financial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 6px;
+  border-left: 3px solid #ffa940;
+}
+
+.financial-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+}
+
+.financial-amount {
   font-size: 20px;
   font-weight: 700;
   color: #303133;
 }
 
-.financial-section {
-  margin-bottom: 16px;
+.financial-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 12px;
+.progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.billing-tag {
-  margin-bottom: 16px;
-}
-
-.progress-section {
-  margin-bottom: 12px;
-}
-
-.progress-header {
+.progress-label-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  align-items: baseline;
 }
 
 .progress-label {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   color: #606266;
-  font-weight: 500;
 }
 
-.progress-info {
+.progress-value {
   font-size: 13px;
+  font-weight: 600;
   color: #303133;
-  font-weight: 500;
 }
 
-.percent {
+.progress-percent {
   font-size: 11px;
   color: #909399;
-  margin-left: 4px;
   font-weight: 400;
+  margin-left: 4px;
 }
 
-.progress-track {
-  height: 8px;
-  background: #e4e7ed;
-  border-radius: 4px;
+.progress-bar-wrapper {
+  height: 10px;
+  background: #f0f2f5;
+  border-radius: 5px;
   overflow: hidden;
+  position: relative;
 }
 
 .progress-bar {
   height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
+  border-radius: 5px;
+  transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
 }
 
 .progress-bar.invoice {
-  background: linear-gradient(90deg, #409eff 0%, #66b1ff 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
 }
 
 .progress-bar.payment {
-  background: linear-gradient(90deg, #67c23a 0%, #85ce61 100%);
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
 }
 
-.remaining-section {
-  display: flex;
-  gap: 12px;
-  padding-top: 12px;
+.financial-footer {
+  padding-top: 8px;
   border-top: 1px dashed #e4e7ed;
 }
 
-.remaining-item {
+.unpaid-amount {
   font-size: 12px;
-  color: #909399;
-}
-
-.remaining-item.danger {
+  font-weight: 600;
   color: #f56c6c;
-  font-weight: 500;
 }
 
 .card-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 16px;
+  gap: 6px;
+  padding-top: 14px;
   border-top: 1px solid #e4e7ed;
 }
 
 .card-actions :deep(.el-button) {
   flex: 1;
-  min-width: calc(50% - 4px);
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.card-actions :deep(.el-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.card-actions :deep(.el-button .el-icon) {
+  margin-right: 2px;
+  font-size: 14px;
 }
 </style>
