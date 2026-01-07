@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AttachmentList: typeof import('./src/components/AttachmentList.vue')['default']
+    ContractCard: typeof import('./src/components/ContractCard.vue')['default']
     ContractSelect: typeof import('./src/components/ContractSelect.vue')['default']
     CustomerSelect: typeof import('./src/components/CustomerSelect.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
@@ -38,6 +39,7 @@ declare module 'vue' {
     ElRadio: typeof import('element-plus/es')['ElRadio']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElRow: typeof import('element-plus/es')['ElRow']
+    ElSegmented: typeof import('element-plus/es')['ElSegmented']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']

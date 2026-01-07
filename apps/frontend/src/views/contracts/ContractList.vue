@@ -42,9 +42,17 @@
             <el-option label="已完成" value="completed" />
           </el-select>
         </div>
+        <div class="view-switcher">
+          <el-segmented
+            v-model="viewMode"
+            :options="viewOptions"
+            @change="handleViewModeChange"
+          />
+        </div>
       </div>
 
       <el-table
+        v-if="viewMode === 'table'"
         v-loading="loading"
         :data="contracts"
         style="width: 100%"
@@ -166,17 +174,54 @@
         </el-table-column>
       </el-table>
 
+      <div v-else class="contracts-grid" v-loading="loading">
+        <ContractCard
+          v-for="contract in contracts"
+          :key="contract.id"
+          :contract="contract"
+          @view="viewContract"
+          @edit="editContract"
+          @invoice="goToInvoice"
+          @payment="goToPayment"
+          @delete="deleteContract"
+        />
+
+        <div v-if="!loading && contracts.length === 0" class="card-empty-state">
+          <div class="empty-icon">📦📝💰</div>
+          <div class="empty-text">还没有创建任何合同</div>
+          <el-button
+            type="primary"
+            size="large"
+            @click="$router.push('/contracts/create')"
+          >
+            新建第一个合同
+          </el-button>
+        </div>
+      </div>
+
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :total="total"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="
+            viewMode === 'table' ? [10, 20, 50, 100] : [12, 24, 48, 96]
+          "
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
       </div>
+
+      <el-empty
+        v-if="!loading && contracts.length === 0 && viewMode === 'table'"
+        description="暂无合同数据"
+        :image-size="200"
+      >
+        <el-button type="primary" @click="$router.push('/contracts/create')">
+          新建合同
+        </el-button>
+      </el-empty>
     </div>
   </div>
 </template>
@@ -189,10 +234,15 @@ import { Plus } from "@element-plus/icons-vue";
 import { contractApi } from "@/api";
 import type { Contract, Customer } from "@/api/types";
 import CustomerSelect from "@/components/CustomerSelect.vue";
+import ContractCard from "@/components/ContractCard.vue";
 
 const router = useRouter();
 
-// 状态
+const savedViewMode = localStorage.getItem("contractViewMode") as
+  | "table"
+  | "card"
+  | null;
+
 const loading = ref(false);
 const contracts = ref<any[]>([]);
 const customerFilter = ref<number | null>(null);
@@ -201,6 +251,20 @@ const billingStatusFilter = ref("");
 const currentPage = ref(1);
 const pageSize = ref(10);
 const total = ref(0);
+const viewMode = ref<"table" | "card">(savedViewMode || "table");
+
+const viewOptions = [
+  { label: "表格", value: "table" },
+  { label: "卡片", value: "card" },
+];
+
+const handleViewModeChange = (mode: "table" | "card") => {
+  viewMode.value = mode;
+  pageSize.value = mode === "table" ? 10 : 12;
+  localStorage.setItem("contractViewMode", mode);
+  currentPage.value = 1;
+  fetchContracts();
+};
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
@@ -377,6 +441,99 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: center;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.table-search {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: 1;
+}
+
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+:deep(.el-segmented) {
+  --el-segmented-bg-color: #f5f7fa;
+  --el-segmented-item-selected-bg-color: #409eff;
+}
+
+/* 卡片网格布局 */
+.contracts-grid {
+  display: grid;
+  gap: 20px;
+  padding: 10px;
+}
+
+@media (min-width: 1920px) {
+  .contracts-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1400px) and (max-width: 1919px) {
+  .contracts-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1399px) {
+  .contracts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .contracts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-search {
+    flex-direction: column;
+  }
+
+  .view-switcher {
+    justify-content: center;
+  }
+}
+
+/* 卡片空状态 */
+.card-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  grid-column: 1 / -1;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #909399;
+  margin-bottom: 24px;
 }
 
 /* 财务状况单元格样式 */
