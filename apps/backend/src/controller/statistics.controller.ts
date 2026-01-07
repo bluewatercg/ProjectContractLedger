@@ -11,9 +11,9 @@ export class StatisticsController {
    * 获取仪表板统计数据
    */
   @Get('/dashboard')
-  async getDashboardStats(): Promise<ApiResponse> {
+  async getDashboardStats(@Query('year') year?: number): Promise<ApiResponse> {
     try {
-      const stats = await this.statisticsService.getDashboardStats();
+      const stats = await this.statisticsService.getDashboardStats(year);
       return {
         success: true,
         data: stats,
@@ -29,16 +29,16 @@ export class StatisticsController {
   }
 
   /**
-   * 获取月度收入趋势
+   * 获取月度收入趋势（固定12个月）
    */
   @Get('/revenue/trend')
   async getMonthlyRevenueTrend(
-    @Query('months') months?: number
+    @Query('year') year?: number
   ): Promise<ApiResponse> {
     try {
-      const trend = await this.statisticsService.getMonthlyRevenueTrend(
-        months || 12
-      );
+      const targetYear = year || new Date().getFullYear();
+      const trend =
+        await this.statisticsService.getMonthlyRevenueTrend(targetYear);
       return {
         success: true,
         data: trend,
@@ -58,10 +58,13 @@ export class StatisticsController {
    */
   @Get('/customers/contribution')
   async getCustomerContribution(
+    @Query('year') year?: number,
     @Query('limit') limit?: number
   ): Promise<ApiResponse> {
     try {
+      const targetYear = year || new Date().getFullYear();
       const contribution = await this.statisticsService.getCustomerContribution(
+        targetYear,
         limit || 5
       );
       return {
@@ -82,10 +85,13 @@ export class StatisticsController {
    * 获取合同状态分布
    */
   @Get('/contracts/status')
-  async getContractStatusDistribution(): Promise<ApiResponse> {
+  async getContractStatusDistribution(
+    @Query('year') year?: number
+  ): Promise<ApiResponse> {
     try {
+      const targetYear = year || new Date().getFullYear();
       const distribution =
-        await this.statisticsService.getContractStatusDistribution();
+        await this.statisticsService.getContractStatusDistribution(targetYear);
       return {
         success: true,
         data: distribution,
@@ -104,10 +110,13 @@ export class StatisticsController {
    * 获取发票状态分布
    */
   @Get('/invoices/status')
-  async getInvoiceStatusDistribution(): Promise<ApiResponse> {
+  async getInvoiceStatusDistribution(
+    @Query('year') year?: number
+  ): Promise<ApiResponse> {
     try {
+      const targetYear = year || new Date().getFullYear();
       const distribution =
-        await this.statisticsService.getInvoiceStatusDistribution();
+        await this.statisticsService.getInvoiceStatusDistribution(targetYear);
       return {
         success: true,
         data: distribution,
@@ -179,6 +188,27 @@ export class StatisticsController {
       return {
         success: false,
         message: error.message || '缓存清除失败',
+        code: 500,
+      };
+    }
+  }
+
+  /**
+   * 获取可用年份列表
+   */
+  @Get('/available-years')
+  async getAvailableYears(): Promise<ApiResponse> {
+    try {
+      const years = await this.statisticsService.getAvailableYears();
+      return {
+        success: true,
+        data: years,
+        message: '获取可用年份列表成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '获取可用年份列表失败',
         code: 500,
       };
     }

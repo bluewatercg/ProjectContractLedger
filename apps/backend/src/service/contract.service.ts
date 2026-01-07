@@ -54,7 +54,11 @@ export class ContractService {
    * 获取合同列表（分页）- 包含财务统计信息
    */
   async getContracts(
-    query: PaginationQuery & { customerId?: number; status?: string; billingStatus?: string }
+    query: PaginationQuery & {
+      customerId?: number;
+      status?: string;
+      billingStatus?: string;
+    }
   ): Promise<PaginationResult<any>> {
     const {
       page = 1,
@@ -107,7 +111,9 @@ export class ContractService {
     // 如果有财务状态筛选，在内存中过滤（因为财务状态是计算出来的）
     let filteredItems = formattedItems;
     if (billingStatus) {
-      filteredItems = formattedItems.filter(item => item.billingStatus === billingStatus);
+      filteredItems = formattedItems.filter(
+        item => item.billingStatus === billingStatus
+      );
     }
 
     return {
@@ -115,7 +121,9 @@ export class ContractService {
       total: billingStatus ? filteredItems.length : total,
       page,
       limit,
-      totalPages: Math.ceil((billingStatus ? filteredItems.length : total) / limit),
+      totalPages: Math.ceil(
+        (billingStatus ? filteredItems.length : total) / limit
+      ),
     };
   }
 
@@ -133,20 +141,26 @@ export class ContractService {
     const contractAmount = parseFloat(contract.total_amount?.toString() || '0');
 
     // 计算已开票金额
-    const invoicedAmount = contract.invoices?.reduce((sum: number, invoice: any) => {
-      return sum + parseFloat(invoice.total_amount?.toString() || '0');
-    }, 0) || 0;
+    const invoicedAmount =
+      contract.invoices?.reduce((sum: number, invoice: any) => {
+        return sum + parseFloat(invoice.total_amount?.toString() || '0');
+      }, 0) || 0;
 
     // 计算未开票金额
     const uninvoicedAmount = Math.max(0, contractAmount - invoicedAmount);
 
     // 计算已收款金额（只计算已完成的支付）
-    const paidAmount = contract.invoices?.reduce((sum: number, invoice: any) => {
-      const invoicePayments = invoice.payments?.filter((p: any) => p.status === 'completed') || [];
-      return sum + invoicePayments.reduce((pSum: number, payment: any) => {
-        return pSum + parseFloat(payment.amount?.toString() || '0');
-      }, 0);
-    }, 0) || 0;
+    const paidAmount =
+      contract.invoices?.reduce((sum: number, invoice: any) => {
+        const invoicePayments =
+          invoice.payments?.filter((p: any) => p.status === 'completed') || [];
+        return (
+          sum +
+          invoicePayments.reduce((pSum: number, payment: any) => {
+            return pSum + parseFloat(payment.amount?.toString() || '0');
+          }, 0)
+        );
+      }, 0) || 0;
 
     // 计算未收款金额（基于已开票金额）
     const unpaidAmount = Math.max(0, invoicedAmount - paidAmount);
@@ -178,7 +192,6 @@ export class ContractService {
       billingStatusText,
     };
   }
-
 
   /**
    * 根据ID获取合同
@@ -267,8 +280,8 @@ export class ContractService {
   /**
    * 获取合同统计信息（优化版本）
    */
-  async getContractStats(): Promise<any> {
-    const result = await this.contractRepository
+  async getContractStats(year?: number): Promise<any> {
+    const queryBuilder = this.contractRepository
       .createQueryBuilder('contract')
       .select([
         'COUNT(*) as total',
@@ -276,8 +289,13 @@ export class ContractService {
         "SUM(CASE WHEN contract.status = 'completed' THEN 1 ELSE 0 END) as completed",
         "SUM(CASE WHEN contract.status = 'draft' THEN 1 ELSE 0 END) as draft",
         "SUM(CASE WHEN contract.status IN ('active', 'completed') THEN contract.total_amount ELSE 0 END) as totalAmount",
-      ])
-      .getRawOne();
+      ]);
+
+    if (year) {
+      queryBuilder.andWhere('YEAR(contract.start_date) = :year', { year });
+    }
+
+    const result = await queryBuilder.getRawOne();
 
     return {
       total: parseInt(result.total) || 0,

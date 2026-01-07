@@ -353,9 +353,9 @@ export class PaymentService {
   /**
    * 获取支付统计信息（优化版本）
    */
-  async getPaymentStats(): Promise<any> {
+  async getPaymentStats(year?: number): Promise<any> {
     // 基础统计信息
-    const basicStats = await this.paymentRepository
+    const basicStatsQueryBuilder = this.paymentRepository
       .createQueryBuilder('payment')
       .select([
         'COUNT(*) as total',
@@ -363,16 +363,31 @@ export class PaymentService {
         "SUM(CASE WHEN payment.status = 'pending' THEN 1 ELSE 0 END) as pending",
         "SUM(CASE WHEN payment.status = 'failed' THEN 1 ELSE 0 END) as failed",
         "SUM(CASE WHEN payment.status = 'completed' THEN payment.amount ELSE 0 END) as totalAmount",
-      ])
-      .getRawOne();
+      ]);
+
+    if (year) {
+      basicStatsQueryBuilder.andWhere('YEAR(payment.payment_date) = :year', {
+        year,
+      });
+    }
+
+    const basicStats = await basicStatsQueryBuilder.getRawOne();
 
     // 按支付方式统计
-    const paymentMethodStats = await this.paymentRepository
+    const paymentMethodQueryBuilder = this.paymentRepository
       .createQueryBuilder('payment')
       .select('payment.payment_method', 'method')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(payment.amount)', 'amount')
-      .where('payment.status = :status', { status: 'completed' })
+      .where('payment.status = :status', { status: 'completed' });
+
+    if (year) {
+      paymentMethodQueryBuilder.andWhere('YEAR(payment.payment_date) = :year', {
+        year,
+      });
+    }
+
+    const paymentMethodStats = await paymentMethodQueryBuilder
       .groupBy('payment.payment_method')
       .getRawMany();
 

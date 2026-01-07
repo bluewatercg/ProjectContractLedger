@@ -245,9 +245,9 @@ export class InvoiceService {
   /**
    * 获取发票统计信息（优化版本）
    */
-  async getInvoiceStats(): Promise<any> {
+  async getInvoiceStats(year?: number): Promise<any> {
     // 基础统计：发票状态分布和总额
-    const invoiceResult = await this.invoiceRepository
+    const invoiceQueryBuilder = this.invoiceRepository
       .createQueryBuilder('invoice')
       .select([
         'COUNT(*) as total',
@@ -256,16 +256,30 @@ export class InvoiceService {
         "SUM(CASE WHEN invoice.status = 'paid' THEN 1 ELSE 0 END) as paid",
         "SUM(CASE WHEN invoice.status = 'overdue' THEN 1 ELSE 0 END) as overdue",
         "SUM(CASE WHEN invoice.status <> 'cancelled' THEN invoice.total_amount ELSE 0 END) as totalAmount",
-      ])
-      .getRawOne();
+      ]);
+
+    if (year) {
+      invoiceQueryBuilder.andWhere('YEAR(invoice.issue_date) = :year', {
+        year,
+      });
+    }
+
+    const invoiceResult = await invoiceQueryBuilder.getRawOne();
 
     // 实际已收款：从支付表统计已完成的支付
-    const paymentsResult = await this.dataSource
+    const paymentsQueryBuilder = this.dataSource
       .getRepository(Payment)
       .createQueryBuilder('payment')
       .select('SUM(payment.amount)', 'total')
-      .where("payment.status = 'completed'")
-      .getRawOne();
+      .where("payment.status = 'completed'");
+
+    if (year) {
+      paymentsQueryBuilder.andWhere('YEAR(payment.payment_date) = :year', {
+        year,
+      });
+    }
+
+    const paymentsResult = await paymentsQueryBuilder.getRawOne();
 
     const totalAmount = parseFloat(invoiceResult.totalAmount) || 0;
     const paidAmount = parseFloat(paymentsResult.total) || 0;
