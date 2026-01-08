@@ -17,6 +17,9 @@ export class CustomerService {
   @Inject()
   statisticsService: any; // 延迟注入避免循环依赖
 
+  @Inject()
+  contractService: any; // 同样使用延迟注入或 dynamic injection 如果必要，但 Midway 默认支持循环依赖处理
+
   /**
    * 创建客户
    */
@@ -120,11 +123,26 @@ export class CustomerService {
   /**
    * 根据ID获取客户
    */
-  async getCustomerById(id: number): Promise<Customer | null> {
-    return await this.customerRepository.findOne({
+  async getCustomerById(id: number): Promise<any | null> {
+    const customer = await this.customerRepository.findOne({
       where: { id },
-      relations: ['contracts'],
+      relations: ['contracts', 'contracts.invoices', 'contracts.invoices.payments'],
     });
+
+    if (!customer) return null;
+
+    // 丰富合同的财务信息
+    if (customer.contracts && customer.contracts.length > 0) {
+      customer.contracts = customer.contracts.map(contract => {
+        const stats = this.contractService.calculateFinancialStats(contract);
+        return {
+          ...contract,
+          ...stats,
+        };
+      });
+    }
+
+    return customer;
   }
 
   /**

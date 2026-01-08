@@ -32,48 +32,75 @@
     <el-divider style="margin: 12px 0" />
 
     <div class="financial-overview">
-      <div class="financial-header">
-        <span class="financial-title">💰 合同金额</span>
-        <span class="financial-amount">¥{{ formatCurrency(contract.total_amount) }}</span>
-      </div>
-
-      <!-- 双色支付进度条 -->
-      <div class="payment-overview-bar">
-        <div class="payment-bar-wrapper">
+      <!-- 1. 开票进度 (对比合同总额) -->
+      <div class="progress-section">
+        <div class="progress-header">
+          <span class="progress-title">📝 开票进度 (余额 ¥{{ formatCurrency(contract.uninvoicedAmount) }})</span>
+          <span class="progress-value">¥{{ formatCurrency(contract.invoicedAmount) }} / ¥{{ formatCurrency(contract.total_amount) }}</span>
+        </div>
+        <div class="dual-progress-bar billing">
           <div
-            class="payment-bar-segment collected"
-            :style="{ width: `${getPaymentPercent(contract.paidAmount, contract.total_amount)}%` }"
+            class="bar-filled"
+            :style="{ width: `${getPercent(contract.invoicedAmount, contract.total_amount)}%` }"
           >
-            <span v-if="contract.paidAmount > 0" class="bar-label">
-              已收 {{ getPaymentPercent(contract.paidAmount, contract.total_amount) }}%
+            <span class="bar-text" v-if="getPercent(contract.invoicedAmount, contract.total_amount) === 100">
+              100%
+            </span>
+            <span class="bar-text" v-else-if="getPercent(contract.invoicedAmount, contract.total_amount) > 15">
+              已开 {{ getPercent(contract.invoicedAmount, contract.total_amount) }}%
             </span>
           </div>
-          <div
-            class="payment-bar-segment uncollected"
-            :style="{ width: `${100 - getPaymentPercent(contract.paidAmount, contract.total_amount)}%` }"
-          >
-            <span v-if="contract.unpaidAmount > 0" class="bar-label">
-              未收 {{ 100 - getPaymentPercent(contract.paidAmount, contract.total_amount) }}%
+          <div class="bar-unfilled" :style="{ width: `${100 - getPercent(contract.invoicedAmount, contract.total_amount)}%` }">
+            <span class="bar-text-light" v-if="100 - getPercent(contract.invoicedAmount, contract.total_amount) > 0">
+              余额 {{ 100 - getPercent(contract.invoicedAmount, contract.total_amount) }}%
             </span>
           </div>
         </div>
-        <div class="payment-amounts">
-          <span class="amount-collected">已收: ¥{{ formatCurrency(contract.paidAmount || 0) }}</span>
-          <span class="amount-uncollected">未收: ¥{{ formatCurrency(contract.unpaidAmount || 0) }}</span>
+      </div>
+
+      <!-- 2. 回款进度 (分张发票展示) -->
+      <div class="progress-section">
+        <div class="progress-header">
+          <span class="progress-title">💰 回款进度 (共 {{ contract.invoiceCount || 0 }} 张发票)</span>
+          <span class="progress-value">¥{{ formatCurrency(contract.paidAmount) }} / ¥{{ formatCurrency(contract.invoicedAmount) }}</span>
+        </div>
+        <div class="segmented-progress-bar collection" :class="{ 'disabled': !contract.invoicedAmount }">
+          <template v-if="contract.invoicedAmount > 0 && contract.invoiceStats && contract.invoiceStats.length > 0">
+            <el-tooltip
+              v-for="inv in contract.invoiceStats"
+              :key="inv.id"
+              effect="dark"
+              placement="top"
+            >
+              <template #content>
+                发票: {{ inv.invoice_number }}<br/>
+                面额: ¥{{ formatCurrency(inv.total_amount) }}<br/>
+                已收: ¥{{ formatCurrency(inv.paidAmount) }}<br/>
+                状态: {{ inv.paidAmount >= inv.total_amount ? '已清' : '挂账' }}
+              </template>
+              <div
+                class="invoice-segment"
+                :style="{ width: `${getPercent(inv.total_amount, contract.invoicedAmount)}%` }"
+              >
+                <div
+                  class="invoice-fill"
+                  :style="{ width: `${getPercent(inv.paidAmount, inv.total_amount)}%` }"
+                >
+                  <span class="segment-label" v-if="getPercent(inv.paidAmount, inv.total_amount) > 30">
+                    {{ getPercent(inv.paidAmount, inv.total_amount) }}%
+                  </span>
+                </div>
+                <span class="segment-label-empty" v-if="getPercent(inv.paidAmount, inv.total_amount) <= 30">
+                  {{ getPercent(inv.paidAmount, inv.total_amount) }}%
+                </span>
+              </div>
+            </el-tooltip>
+          </template>
+          <div v-else-if="contract.invoicedAmount > 0" class="bar-empty">加载中...</div>
+          <div v-else class="bar-empty">尚未开票，暂无收款进度</div>
         </div>
       </div>
 
-      <!-- 开票进度摘要 -->
-      <div class="invoice-summary">
-        <span class="invoice-label">
-          <el-icon><Document /></el-icon>
-          已开票:
-        </span>
-        <span class="invoice-value">
-          ¥{{ formatCurrency(contract.invoicedAmount || 0) }}
-          <span class="invoice-percent">({{ getInvoicePercent(contract.invoicedAmount, contract.total_amount) }}%)</span>
-        </span>
-      </div>
     </div>
 
     <div class="card-actions">
@@ -84,18 +111,20 @@
       <el-button
         size="small"
         type="warning"
+        plain
         @click.stop="handleInvoice"
       >
         <el-icon><Document /></el-icon>
-        开票
+        去开票
       </el-button>
       <el-button
         size="small"
         type="success"
+        plain
         @click.stop="handlePayment"
       >
         <el-icon><Money /></el-icon>
-        收款
+        去收款
       </el-button>
       <el-button size="small" type="danger" @click.stop="handleDelete">
         <el-icon><Delete /></el-icon>
@@ -124,14 +153,9 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("zh-CN").format(amount || 0);
 };
 
-const getInvoicePercent = (invoicedAmount: number, totalAmount: number) => {
-  if (!totalAmount || totalAmount === 0) return "0";
-  return (((invoicedAmount || 0) / totalAmount) * 100).toFixed(0);
-};
-
-const getPaymentPercent = (paidAmount: number, totalAmount: number) => {
-  if (!totalAmount || totalAmount === 0) return "0";
-  return (((paidAmount || 0) / totalAmount) * 100).toFixed(0);
+const getPercent = (value: number, total: number) => {
+  if (!total || total <= 0) return 0;
+  return Math.round(((value || 0) / total) * 100);
 };
 
 const getStatusType = (status: string) => {
@@ -296,144 +320,175 @@ const handleDelete = () => {
 
 .financial-overview {
   margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.financial-header {
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 12px;
-  padding: 8px 10px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 6px;
-  border-left: 3px solid #ffa940;
-}
-
-.financial-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #606266;
-}
-
-.financial-amount {
-  font-size: 18px;
-  font-weight: 700;
-  color: #303133;
-}
-
-.invoice-summary {
-  display: flex;
-  justify-content: flex-start;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #606266;
-  padding: 4px 8px;
+  font-size: 11px;
 }
 
-.invoice-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.progress-title {
+  color: #606266;
   font-weight: 500;
 }
 
-.invoice-value {
-  font-weight: 600;
+.progress-value {
   color: #303133;
+  font-weight: 600;
 }
 
-.invoice-percent {
-  font-size: 11px;
+.dual-progress-bar,
+.segmented-progress-bar {
+  display: flex;
+  height: 18px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #f0f2f5;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.segmented-progress-bar.collection {
+  gap: 4px; /* 增加间距使其更像独立的“段” */
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  height: 20px;
+}
+
+.invoice-segment {
+  height: 100%;
+  background: #f0f2f5;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px; /* 圆角块状感 */
+  border: 1px solid #dcdfe6;
+  display: flex;
+  align-items: center;
+}
+
+.invoice-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+  transition: width 0.6s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.segment-label {
+  font-size: 10px;
+  color: white;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.segment-label-empty {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
   color: #909399;
-  font-weight: 400;
-  margin-left: 2px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.dual-progress-bar.billing .bar-filled {
+  background: linear-gradient(90deg, #409eff 0%, #66b1ff 100%);
+}
+
+.dual-progress-bar.collection .bar-filled {
+  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+}
+
+.dual-progress-bar.disabled,
+.segmented-progress-bar.disabled {
+  opacity: 0.6;
+  background: #ebeef5;
+}
+
+.bar-filled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.6s ease;
+  height: 100%;
+}
+
+.bar-unfilled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.6s ease;
+  height: 100%;
+  background: transparent;
+}
+
+.bar-empty {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #909399;
+}
+
+.bar-text {
+  font-size: 10px;
+  color: white;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bar-text-light {
+  font-size: 10px;
+  color: #909399;
+  white-space: nowrap;
+}
+
+.stats-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px dashed #ebeef5;
+  margin-top: 4px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #606266;
+}
+
+.stat-item.highlight {
+  font-weight: 600;
+  color: #e6a23c;
 }
 
 .card-actions {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   padding-top: 12px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid #f0f2f5;
 }
 
 .card-actions :deep(.el-button) {
   flex: 1;
-  padding: 6px 4px;
+  padding: 8px 4px;
   font-size: 12px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
   margin-left: 0 !important;
-}
-
-.card-actions :deep(.el-button:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.card-actions :deep(.el-button .el-icon) {
-  margin-right: 2px;
-  font-size: 13px;
-}
-
-/* 双色支付进度条样式 */
-.payment-overview-bar {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  background: #f8fbff;
-  border-radius: 8px;
-  border: 1px solid #eef4ff;
-}
-
-.payment-bar-wrapper {
-  display: flex;
-  height: 24px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
-  background: #f0f2f5;
-}
-
-.payment-bar-segment {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1);
-  position: relative;
-}
-
-.payment-bar-segment.collected {
-  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2);
-}
-
-.payment-bar-segment.uncollected {
-  background: linear-gradient(90deg, #ff7875 0%, #ffa39e 100%);
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
-}
-
-.bar-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
-  padding: 0 4px;
-}
-
-.payment-amounts {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.amount-collected {
-  color: #52c41a;
-}
-
-.amount-uncollected {
-  color: #ff4d4f;
 }
 </style>

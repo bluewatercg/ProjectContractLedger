@@ -205,40 +205,58 @@ export class ContractService {
   /**
    * 计算合同的财务统计信息
    */
-  private calculateFinancialStats(contract: any): {
+  public calculateFinancialStats(contract: any): {
     invoicedAmount: number;
     uninvoicedAmount: number;
     paidAmount: number;
     unpaidAmount: number;
+    invoiceCount: number;
     billingStatus: string;
     billingStatusText: string;
+    invoices?: any[];
   } {
     const contractAmount = parseFloat(contract.total_amount?.toString() || '0');
 
-    // 计算已开票金额
-    const invoicedAmount =
-      contract.invoices?.reduce((sum: number, invoice: any) => {
-        return sum + parseFloat(invoice.total_amount?.toString() || '0');
-      }, 0) || 0;
+    // 计算已开票金额和数量
+    let invoicedAmount = 0;
+    let invoiceCount = 0;
+    const invoiceStats = [];
 
-    // 计算未开票金额
+    if (contract.invoices && Array.isArray(contract.invoices)) {
+      invoiceCount = contract.invoices.length;
+      contract.invoices.forEach((invoice: any) => {
+        const invAmount = parseFloat(invoice.total_amount?.toString() || '0');
+        invoicedAmount += invAmount;
+
+        // 计算该张发票的已收金额
+        const invPaidAmount =
+          invoice.payments
+            ?.filter((p: any) => p.status === 'completed')
+            .reduce((pSum: number, payment: any) => {
+              return pSum + parseFloat(payment.amount?.toString() || '0');
+            }, 0) || 0;
+
+        invoiceStats.push({
+          id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          total_amount: invAmount,
+          paidAmount: invPaidAmount,
+          status: invoice.status,
+        });
+      });
+    }
+
+    // 按创建日期或编号排序发票，确保进度条展示顺序一致
+    invoiceStats.sort((a, b) => a.id - b.id);
+
+    // 计算未开票金额 (合同总额 - 已开票金额)
     const uninvoicedAmount = Math.max(0, contractAmount - invoicedAmount);
 
-    // 计算已收款金额（只计算已完成的支付）
-    const paidAmount =
-      contract.invoices?.reduce((sum: number, invoice: any) => {
-        const invoicePayments =
-          invoice.payments?.filter((p: any) => p.status === 'completed') || [];
-        return (
-          sum +
-          invoicePayments.reduce((pSum: number, payment: any) => {
-            return pSum + parseFloat(payment.amount?.toString() || '0');
-          }, 0)
-        );
-      }, 0) || 0;
+    // 计算总已收款金额
+    const totalPaidAmount = invoiceStats.reduce((sum, inv) => sum + inv.paidAmount, 0);
 
-    // 计算未收款金额（基于已开票金额）
-    const unpaidAmount = Math.max(0, invoicedAmount - paidAmount);
+    // 计算总未收款金额（基于已开票金额：已开票额 - 已收额）
+    const unpaidAmount = Math.max(0, invoicedAmount - totalPaidAmount);
 
     // 判断财务状态
     let billingStatus: string;
@@ -247,10 +265,11 @@ export class ContractService {
     if (invoicedAmount === 0) {
       billingStatus = 'pending_invoice';
       billingStatusText = '待开票';
-    } else if (unpaidAmount > 0) {
+    } else if (unpaidAmount > 0.01) {
+      // 使用 0.01 避免浮点数精度带来的误判
       billingStatus = 'pending_payment';
       billingStatusText = '待收款';
-    } else if (uninvoicedAmount > 0) {
+    } else if (uninvoicedAmount > 1) {
       billingStatus = 'partial_invoice';
       billingStatusText = '部分开票';
     } else {
@@ -261,11 +280,13 @@ export class ContractService {
     return {
       invoicedAmount,
       uninvoicedAmount,
-      paidAmount,
+      paidAmount: totalPaidAmount,
       unpaidAmount,
+      invoiceCount,
       billingStatus,
       billingStatusText,
-    };
+      invoiceStats, // 返回分张发票的统计数据
+    } as any;
   }
 
   /**
