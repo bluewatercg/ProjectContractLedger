@@ -504,24 +504,21 @@ onMounted(() => {
   padding: 4px;
 }
 
-@media (min-width: 1920px) {
+/* Desktop: 4 columns */
+@media (min-width: 1200px) {
   .contracts-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
-@media (min-width: 1200px) and (max-width: 1919px) {
-  .contracts-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
+/* Tablet: 3 columns */
 @media (min-width: 768px) and (max-width: 1199px) {
   .contracts-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
+/* Mobile: 1 column */
 @media (max-width: 767px) {
   .contracts-grid {
     grid-template-columns: 1fr;

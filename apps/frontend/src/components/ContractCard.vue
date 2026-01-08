@@ -1,5 +1,5 @@
 <template>
-  <div class="contract-card" :class="`card-${contract.billingStatus}`">
+  <div class="contract-card" :class="`card-${contract.billingStatus}`" @click="handleView">
     <div class="card-header">
       <div class="header-left">
         <div class="contract-number">{{ contract.contract_number }}</div>
@@ -37,6 +37,32 @@
         <span class="financial-amount"
           >¥{{ formatCurrency(contract.total_amount) }}</span
         >
+      </div>
+
+      <!-- 双色支付进度条 -->
+      <div class="payment-overview-bar">
+        <div class="payment-bar-wrapper">
+          <div
+            class="payment-bar-segment collected"
+            :style="{ width: `${getPaymentPercent(contract.paidAmount, contract.total_amount)}%` }"
+          >
+            <span v-if="contract.paidAmount > 0" class="bar-label">
+              已收 {{ getPaymentPercent(contract.paidAmount, contract.total_amount) }}%
+            </span>
+          </div>
+          <div
+            class="payment-bar-segment uncollected"
+            :style="{ width: `${100 - getPaymentPercent(contract.paidAmount, contract.total_amount)}%` }"
+          >
+            <span v-if="contract.unpaidAmount > 0" class="bar-label">
+              未收 {{ 100 - getPaymentPercent(contract.paidAmount, contract.total_amount) }}%
+            </span>
+          </div>
+        </div>
+        <div class="payment-amounts">
+          <span class="amount-collected">已收: ¥{{ formatCurrency(contract.paidAmount || 0) }}</span>
+          <span class="amount-uncollected">未收: ¥{{ formatCurrency(contract.unpaidAmount || 0) }}</span>
+        </div>
       </div>
 
       <div class="financial-progress">
@@ -209,6 +235,7 @@ const handleDelete = () => {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .contract-card:hover {
@@ -429,5 +456,65 @@ const handleDelete = () => {
 .card-actions :deep(.el-button .el-icon) {
   margin-right: 2px;
   font-size: 14px;
+}
+
+/* 双色支付进度条样式 */
+.payment-overview-bar {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 6px;
+  border-left: 3px solid #52c41a;
+}
+
+.payment-bar-wrapper {
+  display: flex;
+  height: 32px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 8px;
+}
+
+.payment-bar-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  position: relative;
+}
+
+.payment-bar-segment.collected {
+  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.payment-bar-segment.uncollected {
+  background: linear-gradient(90deg, #ff7875 0%, #ffa39e 100%);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  padding: 0 8px;
+}
+
+.payment-amounts {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.amount-collected {
+  color: #52c41a;
+}
+
+.amount-uncollected {
+  color: #ff4d4f;
 }
 </style>

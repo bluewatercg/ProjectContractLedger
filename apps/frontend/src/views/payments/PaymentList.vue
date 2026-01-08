@@ -33,7 +33,21 @@
       >
         <el-table-column prop="id" label="支付ID" width="80" />
         <el-table-column prop="invoice.invoice_number" label="发票编号" width="150" />
-        <el-table-column prop="invoice.contract.customer.name" label="客户名称" />
+        <el-table-column label="合同编号" width="140">
+          <template #default="{ row }">
+            <el-link
+              v-if="row.invoice?.contract?.contract_number"
+              type="primary"
+              @click="viewContract(row.invoice.contract.id)"
+              :underline="false"
+            >
+              {{ row.invoice.contract.contract_number }}
+            </el-link>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="invoice.contract.title" label="合同标题" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="invoice.contract.customer.name" label="客户名称" width="150" />
         <el-table-column prop="amount" label="支付金额" width="120">
           <template #default="{ row }">
             ¥{{ formatCurrency(row.amount) }}
@@ -219,6 +233,11 @@ const deletePayment = async (id: number) => {
       console.error('Failed to delete payment:', error)
     }
   }
+}
+
+// 查看合同
+const viewContract = (id: number) => {
+  router.push(`/contracts/${id}`)
 }
 
 // 组件挂载时获取数据
