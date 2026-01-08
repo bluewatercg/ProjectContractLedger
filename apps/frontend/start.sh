@@ -70,12 +70,12 @@ if [ -f "$INDEX_FILE" ]; then
     if ! grep -q "config.js" "$INDEX_FILE"; then
         # 在head标签中注入配置脚本
         sed -i 's|</head>|  <script src="/config.js"></script>\n</head>|' "$INDEX_FILE"
-        echo "✅ Config script injected successfully"
+        echo "Config script injected successfully"
     else
-        echo "✅ Config script already exists"
+        echo "Config script already exists"
     fi
 else
-    echo "⚠️  index.html file not found, skipping script injection"
+    echo "index.html file not found, skipping script injection"
 fi
 
 # 替换nginx配置中的环境变量
