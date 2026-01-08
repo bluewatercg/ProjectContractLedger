@@ -500,8 +500,8 @@ onMounted(() => {
 /* 卡片网格布局 */
 .contracts-grid {
   display: grid;
-  gap: 12px;
-  padding: 4px;
+  gap: 16px;
+  padding: 12px 4px;
 }
 
 /* Desktop: 4 columns */
