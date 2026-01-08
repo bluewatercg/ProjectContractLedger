@@ -96,10 +96,15 @@ export class StatisticsService {
       payments: paymentStats,
       summary: {
         totalRevenue: contractStats.totalAmount,
+        invoicedAmount: invoiceStats.totalAmount,
         paidAmount: paymentStats.totalAmount,
         unpaidAmount: Math.max(
           0,
           invoiceStats.totalAmount - paymentStats.totalAmount
+        ),
+        uninvoicedAmount: Math.max(
+          0,
+          contractStats.totalAmount - invoiceStats.totalAmount
         ),
         activeCustomers: customerStats.active,
         activeContracts: contractStats.active,

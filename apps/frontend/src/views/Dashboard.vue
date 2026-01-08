@@ -26,58 +26,88 @@
       </div>
     </div>
 
-    <!-- 统计卡片 -->
-    <div class="card-grid" v-loading="loading">
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-card-title">总客户数</span>
-          <el-icon class="stat-card-icon"><User /></el-icon>
-        </div>
-        <div class="stat-card-value">{{ stats?.customers?.total || 0 }}</div>
-        <div class="stat-card-change">
-          活跃客户: {{ stats?.customers?.active || 0 }}
-        </div>
-        <div class="stat-card-year">{{ selectedYear }}年</div>
+    <!-- 财务概览瀑布流 -->
+    <div class="financial-section" v-loading="loading">
+      <div class="section-header">
+        <h3>财务状况总览 ({{ selectedYear }}年)</h3>
+        <el-tooltip content="展示从合同签订到开票、再到最终收款的完整价值流转" placement="top">
+          <el-icon class="info-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-card-title">总合同数</span>
-          <el-icon class="stat-card-icon"><Document /></el-icon>
+      <div class="financial-funnel">
+        <!-- 1. 合同总额 -->
+        <div class="funnel-item">
+          <div class="funnel-label">签署合同总额</div>
+          <div class="funnel-value">¥{{ formatCurrency(stats?.summary?.totalRevenue || 0) }}</div>
+          <div class="funnel-desc">共 {{ stats?.contracts?.total || 0 }} 份合同</div>
+          <div class="funnel-connector"></div>
         </div>
-        <div class="stat-card-value">{{ stats?.contracts?.total || 0 }}</div>
-        <div class="stat-card-change">
-          执行中: {{ stats?.contracts?.active || 0 }}
+
+        <!-- 2. 已开票 -->
+        <div class="funnel-itemHighlight">
+          <div class="funnel-label">已开发票金额</div>
+          <div class="funnel-value">¥{{ formatCurrency(stats?.summary?.invoicedAmount || 0) }}</div>
+          <div class="funnel-progress">
+            <el-progress
+              :percentage="getPercentage(stats?.summary?.invoicedAmount, stats?.summary?.totalRevenue)"
+              :format="() => `${getPercentage(stats?.summary?.invoicedAmount, stats?.summary?.totalRevenue)}% 开票率`"
+              stroke-width="12"
+            />
+          </div>
+          <div class="funnel-connector"></div>
         </div>
-        <div class="stat-card-year">{{ selectedYear }}年</div>
+
+        <!-- 3. 已回款 -->
+        <div class="funnel-itemSuccess">
+          <div class="funnel-label">已实际收款</div>
+          <div class="funnel-value">¥{{ formatCurrency(stats?.summary?.paidAmount || 0) }}</div>
+          <div class="funnel-progress">
+            <el-progress
+              :percentage="getPercentage(stats?.summary?.paidAmount, stats?.summary?.invoicedAmount)"
+              :format="() => `${getPercentage(stats?.summary?.paidAmount, stats?.summary?.invoicedAmount)}% 回款率`"
+              stroke-width="12"
+              status="success"
+            />
+          </div>
+        </div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-card-title">总收入</span>
-          <el-icon class="stat-card-icon"><Money /></el-icon>
+      <div class="financial-details-grid">
+        <div class="detail-card warning">
+          <div class="detail-info">
+            <span class="detail-label">待开票余额</span>
+            <span class="detail-value">¥{{ formatCurrency(stats?.summary?.uninvoicedAmount || 0) }}</span>
+          </div>
+          <el-icon class="detail-icon"><Document /></el-icon>
         </div>
-        <div class="stat-card-value">
-          ¥{{ formatCurrency(stats?.summary?.totalRevenue || 0) }}
-        </div>
-        <div class="stat-card-change">
-          已收: ¥{{ formatCurrency(stats?.summary?.paidAmount || 0) }}
-        </div>
-        <div class="stat-card-year">{{ selectedYear }}年</div>
-      </div>
 
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <span class="stat-card-title">待收款</span>
-          <el-icon class="stat-card-icon"><Tickets /></el-icon>
+        <div class="detail-card danger">
+          <div class="detail-info">
+            <span class="detail-label">待收款 (应收账款)</span>
+            <span class="detail-value">¥{{ formatCurrency(stats?.summary?.unpaidAmount || 0) }}</span>
+            <span class="detail-sub" v-if="stats?.invoices?.overdue > 0">
+              🔴 {{ stats?.invoices?.overdue }} 张发票已逾期
+            </span>
+          </div>
+          <el-icon class="detail-icon"><Money /></el-icon>
         </div>
-        <div class="stat-card-value">
-          ¥{{ formatCurrency(stats?.summary?.unpaidAmount || 0) }}
+
+        <div class="detail-card info">
+          <div class="detail-info">
+            <span class="detail-label">活跃客户数</span>
+            <span class="detail-value">{{ stats?.summary?.activeCustomers || 0 }}</span>
+          </div>
+          <el-icon class="detail-icon"><User /></el-icon>
         </div>
-        <div class="stat-card-change">
-          逾期: {{ stats?.invoices?.overdue || 0 }} 张
+
+        <div class="detail-card primary">
+          <div class="detail-info">
+            <span class="detail-label">执行中合同</span>
+            <span class="detail-value">{{ stats?.summary?.activeContracts || 0 }}</span>
+          </div>
+          <el-icon class="detail-icon"><Tickets /></el-icon>
         </div>
-        <div class="stat-card-year">{{ selectedYear }}年</div>
       </div>
     </div>
 
@@ -516,6 +546,12 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("zh-CN").format(amount);
 };
 
+// 计算百分比
+const getPercentage = (value: number | undefined, total: number | undefined) => {
+  if (!value || !total || total === 0) return 0;
+  return Math.round((value / total) * 100);
+};
+
 // 获取统计数据
 const fetchStats = async (useCache: boolean = true) => {
   try {
@@ -859,11 +895,155 @@ onUnmounted(() => {
 <style scoped>
 /* 使用全局页面样式，这里只定义Dashboard特有的样式 */
 
-.card-grid {
+.financial-section {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+}
+
+.financial-section .section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.financial-section h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.financial-funnel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.funnel-item, .funnel-itemHighlight, .funnel-itemSuccess {
+  flex: 1;
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.funnel-itemHighlight {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.funnel-itemSuccess {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.funnel-label {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.funnel-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.funnel-desc {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.funnel-progress {
+  margin-top: 12px;
+}
+
+.funnel-connector {
+  position: absolute;
+  right: -25px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 2;
+}
+
+.funnel-connector::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -4px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid #cbd5e1;
+}
+
+.financial-details-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.detail-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #f1f5f9;
+}
+
+.detail-card.primary { background-color: #f0f9ff; border-color: #e0f2fe; color: #0369a1; }
+.detail-card.success { background-color: #f0fdf4; border-color: #dcfce7; color: #15803d; }
+.detail-card.warning { background-color: #fffbeb; border-color: #fef3c7; color: #b45309; }
+.detail-card.danger { background-color: #fef2f2; border-color: #fee2e2; color: #b91c1c; }
+.detail-card.info { background-color: #f8fafc; border-color: #f1f5f9; color: #475569; }
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.detail-sub {
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: normal;
+  display: block;
+}
+
+.detail-icon {
+  font-size: 24px;
+  opacity: 0.4;
+}
+
+.info-icon {
+  color: #94a3b8;
+  cursor: help;
+  font-size: 16px;
 }
 
 .charts-row {
@@ -905,58 +1085,6 @@ onUnmounted(() => {
 .chart-box {
   height: 300px;
   width: 100%;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.stat-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.stat-card-title {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.stat-card-icon {
-  font-size: 24px;
-  color: #409eff;
-}
-
-.stat-card-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.stat-card-change {
-  font-size: 12px;
-  color: #999;
-}
-
-.stat-card-year {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #999;
-  font-weight: 500;
 }
 
 .quick-actions {
@@ -1292,13 +1420,29 @@ onUnmounted(() => {
   border-radius: 8px;
 }
 
+@media (max-width: 1200px) {
+  .financial-funnel {
+    flex-wrap: wrap;
+  }
+  .funnel-item, .funnel-itemHighlight, .funnel-itemSuccess {
+    flex: none;
+    width: calc(50% - 10px);
+    margin-bottom: 20px;
+  }
+  .funnel-connector { display: none; }
+  
+  .financial-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
-  .action-buttons {
-    flex-direction: column;
+  .funnel-item, .funnel-itemHighlight, .funnel-itemSuccess {
+    width: 100%;
   }
 
-  .card-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .action-buttons {
+    flex-direction: column;
   }
 
   .priority-summary {
@@ -1352,7 +1496,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .card-grid {
+  .financial-details-grid {
     grid-template-columns: 1fr;
   }
 }

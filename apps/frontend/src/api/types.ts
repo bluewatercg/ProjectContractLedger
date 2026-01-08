@@ -220,8 +220,10 @@ export interface DashboardStats {
   }
   summary: {
     totalRevenue: number
+    invoicedAmount: number
     paidAmount: number
     unpaidAmount: number
+    uninvoicedAmount: number
     activeCustomers: number
     activeContracts: number
   }
