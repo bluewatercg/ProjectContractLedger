@@ -15,3 +15,5 @@ C:\Users\miller\.gemini\
 /apps/backend/.env
 deployment/.env
 package-lock.json
+app/frontend/node_modules
+app/backend/node_modules
