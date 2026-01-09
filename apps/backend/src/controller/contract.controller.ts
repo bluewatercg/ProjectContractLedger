@@ -9,6 +9,7 @@ import {
   Query,
   Inject,
 } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { Validate } from '@midwayjs/validate';
 import { ContractService } from '../service/contract.service';
 import {
@@ -23,6 +24,9 @@ export class ContractController {
   @Inject()
   contractService: ContractService;
 
+  @Inject()
+  ctx: Context;
+
   /**
    * 创建合同
    */
@@ -32,8 +36,21 @@ export class ContractController {
     @Body() createContractDto: CreateContractDto
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
+      const userId = this.ctx.state?.user?.id;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const contract = await this.contractService.createContract(
-        createContractDto
+        createContractDto,
+        kitId,
+        userId
       );
       return {
         success: true,
@@ -57,7 +74,8 @@ export class ContractController {
     @Query() query: PaginationQuery & { customerId?: number; status?: string; search?: string }
   ): Promise<ApiResponse> {
     try {
-      const result = await this.contractService.getContracts(query);
+      const kitId = this.ctx.state?.kitId;
+      const result = await this.contractService.getContracts(query, kitId);
       return {
         success: true,
         data: result,
@@ -78,7 +96,8 @@ export class ContractController {
   @Get('/:id')
   async getContractById(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const contract = await this.contractService.getContractById(id);
+      const kitId = this.ctx.state?.kitId;
+      const contract = await this.contractService.getContractById(id, kitId);
       if (!contract) {
         return {
           success: false,
@@ -110,9 +129,11 @@ export class ContractController {
     @Body() updateContractDto: UpdateContractDto
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const contract = await this.contractService.updateContract(
         id,
-        updateContractDto
+        updateContractDto,
+        kitId
       );
       if (!contract) {
         return {
@@ -141,7 +162,8 @@ export class ContractController {
   @Del('/:id')
   async deleteContract(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const success = await this.contractService.deleteContract(id);
+      const kitId = this.ctx.state?.kitId;
+      const success = await this.contractService.deleteContract(id, kitId);
       if (!success) {
         return {
           success: false,
@@ -168,7 +190,8 @@ export class ContractController {
   @Get('/stats/overview')
   async getContractStats(): Promise<ApiResponse> {
     try {
-      const stats = await this.contractService.getContractStats();
+      const kitId = this.ctx.state?.kitId;
+      const stats = await this.contractService.getContractStats(undefined, kitId);
       return {
         success: true,
         data: stats,
@@ -183,3 +206,4 @@ export class ContractController {
     }
   }
 }
+

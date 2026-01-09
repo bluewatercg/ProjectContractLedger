@@ -28,13 +28,19 @@ export class ContractService {
   /**
    * 创建合同
    */
-  async createContract(createContractDto: CreateContractDto): Promise<any> {
+  async createContract(
+    createContractDto: CreateContractDto,
+    kitId: number,
+    createdBy: number
+  ): Promise<any> {
     // 生成合同编号
     const contractNumber = await this.generateContractNumber();
 
     const contract = this.contractRepository.create({
       ...createContractDto,
       contract_number: contractNumber,
+      kit_id: kitId,
+      created_by: createdBy,
       start_date: DateUtil.parseDate(createContractDto.start_date),
       end_date: DateUtil.parseDate(createContractDto.end_date),
     });
@@ -59,7 +65,8 @@ export class ContractService {
       status?: string;
       billingStatus?: string;
       search?: string;
-    }
+    },
+    kitId?: number
   ): Promise<PaginationResult<any>> {
     const {
       page = 1,
@@ -77,6 +84,11 @@ export class ContractService {
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('contract.invoices', 'invoice')
       .leftJoinAndSelect('invoice.payments', 'payment');
+
+    // 按kit_id过滤
+    if (kitId) {
+      queryBuilder.where('contract.kit_id = :kitId', { kitId });
+    }
 
     // 过滤条件
     if (customerId) {
@@ -292,9 +304,14 @@ export class ContractService {
   /**
    * 根据ID获取合同
    */
-  async getContractById(id: number): Promise<any | null> {
+  async getContractById(id: number, kitId?: number): Promise<any | null> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
     const contract = await this.contractRepository.findOne({
-      where: { id },
+      where: whereCondition,
       relations: ['customer', 'invoices', 'invoices.payments'],
     });
 
@@ -311,9 +328,15 @@ export class ContractService {
    */
   async updateContract(
     id: number,
-    updateContractDto: UpdateContractDto
+    updateContractDto: UpdateContractDto,
+    kitId?: number
   ): Promise<any | null> {
-    const contract = await this.contractRepository.findOne({ where: { id } });
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
+    const contract = await this.contractRepository.findOne({ where: whereCondition });
 
     if (!contract) {
       return null;
@@ -343,8 +366,13 @@ export class ContractService {
   /**
    * 删除合同
    */
-  async deleteContract(id: number): Promise<boolean> {
-    const result = await this.contractRepository.delete(id);
+  async deleteContract(id: number, kitId?: number): Promise<boolean> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
+    const result = await this.contractRepository.delete(whereCondition);
     return result.affected > 0;
   }
 
@@ -376,7 +404,7 @@ export class ContractService {
   /**
    * 获取合同统计信息（优化版本）
    */
-  async getContractStats(year?: number): Promise<any> {
+  async getContractStats(year?: number, kitId?: number): Promise<any> {
     const queryBuilder = this.contractRepository
       .createQueryBuilder('contract')
       .select([
@@ -386,6 +414,10 @@ export class ContractService {
         "SUM(CASE WHEN contract.status = 'draft' THEN 1 ELSE 0 END) as draft",
         "SUM(CASE WHEN contract.status IN ('active', 'completed') THEN contract.total_amount ELSE 0 END) as totalAmount",
       ]);
+
+    if (kitId) {
+      queryBuilder.where('contract.kit_id = :kitId', { kitId });
+    }
 
     if (year) {
       queryBuilder.andWhere('YEAR(contract.start_date) = :year', { year });

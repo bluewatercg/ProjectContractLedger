@@ -7,6 +7,24 @@
           <h1>客户合同管理系统</h1>
         </div>
         <div class="header-right">
+          <!-- 套装切换器 -->
+          <div class="kit-selector" v-if="kitStore.kits.length > 0">
+            <el-select
+              v-model="currentKitId"
+              placeholder="选择套装"
+              size="default"
+              style="width: 160px"
+              @change="handleKitChange"
+            >
+              <el-option
+                v-for="kit in kitStore.kits"
+                :key="kit.id"
+                :label="kit.name"
+                :value="kit.id"
+              />
+            </el-select>
+          </div>
+          
           <el-dropdown @command="handleCommand">
             <div class="user-info">
               <el-avatar :src="userAvatar" :size="32" />
@@ -58,6 +76,10 @@
             <el-icon><Avatar /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="/kits">
+            <el-icon><Files /></el-icon>
+            <span>套账管理</span>
+          </el-menu-item>
           <el-menu-item index="/settings">
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
@@ -74,18 +96,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { useKitStore } from '@/stores/kit'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const kitStore = useKitStore()
+
+// 当前选中的套装ID
+const currentKitId = ref(kitStore.currentKitId)
+
+// 监听 kitStore 变化同步到本地
+watch(() => kitStore.currentKitId, (newId) => {
+  currentKitId.value = newId
+})
 
 // 计算属性
 const activeMenu = computed(() => route.path)
 const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?seed=${authStore.user?.username}`)
+
+// 处理套装切换
+const handleKitChange = (kitId: number) => {
+  if (kitStore.switchKit(kitId)) {
+    ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`)
+    // 刷新当前页面数据
+    router.go(0)
+  }
+}
 
 // 处理用户菜单命令
 const handleCommand = async (command: string) => {
@@ -144,6 +185,15 @@ const handleCommand = async (command: string) => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.kit-selector {
+  margin-right: 8px;
+}
+
+.current-kit {
+  margin-right: 8px;
 }
 
 .user-info {
@@ -206,3 +256,4 @@ const handleCommand = async (command: string) => {
   }
 }
 </style>
+

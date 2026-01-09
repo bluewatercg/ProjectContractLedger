@@ -9,6 +9,7 @@ import {
   Query,
   Inject,
 } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { Validate } from '@midwayjs/validate';
 import { PaymentService } from '../service/payment.service';
 import {
@@ -23,6 +24,9 @@ export class PaymentController {
   @Inject()
   paymentService: PaymentService;
 
+  @Inject()
+  ctx: Context;
+
   /**
    * 创建支付记录
    */
@@ -32,7 +36,17 @@ export class PaymentController {
     @Body() createPaymentDto: CreatePaymentDto
   ): Promise<ApiResponse> {
     try {
-      const payment = await this.paymentService.createPayment(createPaymentDto);
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
+      const payment = await this.paymentService.createPayment(createPaymentDto, kitId);
       return {
         success: true,
         data: payment,
@@ -55,7 +69,8 @@ export class PaymentController {
     @Query() query: PaginationQuery & { invoiceId?: number; status?: string }
   ): Promise<ApiResponse> {
     try {
-      const result = await this.paymentService.getPayments(query);
+      const kitId = this.ctx.state?.kitId;
+      const result = await this.paymentService.getPayments(query, kitId);
       return {
         success: true,
         data: result,
@@ -76,7 +91,8 @@ export class PaymentController {
   @Get('/:id')
   async getPaymentById(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const payment = await this.paymentService.getPaymentById(id);
+      const kitId = this.ctx.state?.kitId;
+      const payment = await this.paymentService.getPaymentById(id, kitId);
       if (!payment) {
         return {
           success: false,
@@ -108,9 +124,11 @@ export class PaymentController {
     @Body() updatePaymentDto: UpdatePaymentDto
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const payment = await this.paymentService.updatePayment(
         id,
-        updatePaymentDto
+        updatePaymentDto,
+        kitId
       );
       if (!payment) {
         return {
@@ -139,7 +157,8 @@ export class PaymentController {
   @Del('/:id')
   async deletePayment(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const success = await this.paymentService.deletePayment(id);
+      const kitId = this.ctx.state?.kitId;
+      const success = await this.paymentService.deletePayment(id, kitId);
       if (!success) {
         return {
           success: false,
@@ -191,7 +210,8 @@ export class PaymentController {
   @Get('/stats/overview')
   async getPaymentStats(): Promise<ApiResponse> {
     try {
-      const stats = await this.paymentService.getPaymentStats();
+      const kitId = this.ctx.state?.kitId;
+      const stats = await this.paymentService.getPaymentStats(undefined, kitId);
       return {
         success: true,
         data: stats,

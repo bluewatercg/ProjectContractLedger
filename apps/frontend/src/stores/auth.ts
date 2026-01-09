@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api'
 import type { UserInfo, LoginDto, RegisterDto } from '@/api/types'
+import { useKitStore } from './kit'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
@@ -18,15 +19,21 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       isLoading.value = true
       const response = await authApi.login(loginData)
-      
+
       if (response.success && response.data) {
         token.value = response.data.token
         user.value = response.data.user
-        
+
         // 保存到本地存储
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
-        
+
+        // 初始化套装状态
+        const kitStore = useKitStore()
+        if (response.data.kits) {
+          kitStore.initializeKit(response.data.kits, response.data.defaultKit)
+        }
+
         return response.data
       } else {
         throw new Error(response.message || '登录失败')
@@ -44,7 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       isLoading.value = true
       const response = await authApi.register(registerData)
-      
+
       if (response.success && response.data) {
         return response.data
       } else {
@@ -62,27 +69,31 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = () => {
     token.value = ''
     user.value = null
-    
+
     // 清除本地存储
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+
+    // 清除套装状态
+    const kitStore = useKitStore()
+    kitStore.clearKits()
   }
 
   // 刷新Token
   const refreshToken = async () => {
     try {
       if (!token.value) return false
-      
+
       const response = await authApi.refreshToken(token.value)
-      
+
       if (response.success && response.data) {
         token.value = response.data.token
         user.value = response.data.user
-        
+
         // 更新本地存储
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
-        
+
         return true
       } else {
         logout()
@@ -96,11 +107,30 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 初始化用户信息
-  const initializeAuth = () => {
+  const initializeAuth = async () => {
     const savedUser = localStorage.getItem('user')
     if (savedUser && token.value) {
       try {
         user.value = JSON.parse(savedUser)
+
+        // 从服务器获取完整的套装列表
+        const kitStore = useKitStore()
+        try {
+          await kitStore.refreshKits(user.value!.id)
+        } catch (e) {
+          console.error('Failed to refresh kits during init:', e)
+          // 如果刷新失败，尝试从本地存储恢复当前套装
+          const savedKit = localStorage.getItem('currentKit')
+          if (savedKit) {
+            try {
+              const kit = JSON.parse(savedKit)
+              kitStore.setKits([kit])
+              kitStore.setCurrentKit(kit)
+            } catch (parseErr) {
+              console.error('Parse saved kit error:', parseErr)
+            }
+          }
+        }
       } catch (error) {
         console.error('Parse saved user error:', error)
         logout()
@@ -111,7 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
   // 检查Token有效性
   const checkTokenValidity = async () => {
     if (!token.value) return false
-    
+
     try {
       // 这里可以调用一个验证token的API
       // const response = await authApi.getCurrentUser()
@@ -128,11 +158,11 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isLoading,
-    
+
     // 计算属性
     isAuthenticated,
     isAdmin,
-    
+
     // 方法
     login,
     register,
@@ -142,3 +172,4 @@ export const useAuthStore = defineStore('auth', () => {
     checkTokenValidity
   }
 })
+

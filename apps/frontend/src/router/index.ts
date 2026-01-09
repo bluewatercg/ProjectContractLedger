@@ -155,6 +155,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '编辑用户' }
       },
       {
+        path: 'kits',
+        name: 'Kits',
+        component: () => import('@/views/kits/KitList.vue'),
+        meta: { requiresAuth: true, title: '套账管理' }
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/Settings.vue'),

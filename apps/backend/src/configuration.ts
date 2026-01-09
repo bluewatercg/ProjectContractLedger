@@ -11,6 +11,7 @@ import { NotFoundFilter } from './filter/notfound.filter';
 import { ReportMiddleware } from './middleware/report.middleware';
 import { CorsMiddleware } from './middleware/cors.middleware';
 import { AuthMiddleware } from './middleware/auth.middleware';
+import { KitMiddleware } from './middleware/kit.middleware';
 
 @Configuration({
   imports: [
@@ -31,10 +32,11 @@ export class MainConfiguration {
   app: koa.Application;
 
   async onReady() {
-    // add middleware (注意顺序很重要)
-    this.app.useMiddleware([CorsMiddleware, ReportMiddleware, AuthMiddleware]);
+    // add middleware (注意顺序很重要: CORS -> Report -> Auth -> Kit)
+    this.app.useMiddleware([CorsMiddleware, ReportMiddleware, AuthMiddleware, KitMiddleware]);
 
     // add filter
     this.app.useFilter([NotFoundFilter, DefaultErrorFilter]);
   }
 }
+

@@ -9,6 +9,7 @@ import {
   Query,
   Inject,
 } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { Validate } from '@midwayjs/validate';
 import { InvoiceService } from '../service/invoice.service';
 import {
@@ -23,6 +24,9 @@ export class InvoiceController {
   @Inject()
   invoiceService: InvoiceService;
 
+  @Inject()
+  ctx: Context;
+
   /**
    * 创建发票
    */
@@ -32,7 +36,17 @@ export class InvoiceController {
     @Body() createInvoiceDto: CreateInvoiceDto
   ): Promise<ApiResponse> {
     try {
-      const invoice = await this.invoiceService.createInvoice(createInvoiceDto);
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
+      const invoice = await this.invoiceService.createInvoice(createInvoiceDto, kitId);
       return {
         success: true,
         data: invoice,
@@ -55,7 +69,8 @@ export class InvoiceController {
     @Query() query: PaginationQuery & { contractId?: number; status?: string }
   ): Promise<ApiResponse> {
     try {
-      const result = await this.invoiceService.getInvoices(query);
+      const kitId = this.ctx.state?.kitId;
+      const result = await this.invoiceService.getInvoices(query, kitId);
       return {
         success: true,
         data: result,
@@ -76,7 +91,8 @@ export class InvoiceController {
   @Get('/:id')
   async getInvoiceById(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const invoice = await this.invoiceService.getInvoiceById(id);
+      const kitId = this.ctx.state?.kitId;
+      const invoice = await this.invoiceService.getInvoiceById(id, kitId);
       if (!invoice) {
         return {
           success: false,
@@ -108,9 +124,11 @@ export class InvoiceController {
     @Body() updateInvoiceDto: UpdateInvoiceDto
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const invoice = await this.invoiceService.updateInvoice(
         id,
-        updateInvoiceDto
+        updateInvoiceDto,
+        kitId
       );
       if (!invoice) {
         return {
@@ -139,7 +157,8 @@ export class InvoiceController {
   @Del('/:id')
   async deleteInvoice(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const success = await this.invoiceService.deleteInvoice(id);
+      const kitId = this.ctx.state?.kitId;
+      const success = await this.invoiceService.deleteInvoice(id, kitId);
       if (!success) {
         return {
           success: false,
@@ -166,7 +185,8 @@ export class InvoiceController {
   @Get('/stats/overview')
   async getInvoiceStats(): Promise<ApiResponse> {
     try {
-      const stats = await this.invoiceService.getInvoiceStats();
+      const kitId = this.ctx.state?.kitId;
+      const stats = await this.invoiceService.getInvoiceStats(undefined, kitId);
       return {
         success: true,
         data: stats,
@@ -187,7 +207,8 @@ export class InvoiceController {
   @Get('/overdue/list')
   async getOverdueInvoices(): Promise<ApiResponse> {
     try {
-      const invoices = await this.invoiceService.getOverdueInvoices();
+      const kitId = this.ctx.state?.kitId;
+      const invoices = await this.invoiceService.getOverdueInvoices(kitId);
       return {
         success: true,
         data: invoices,

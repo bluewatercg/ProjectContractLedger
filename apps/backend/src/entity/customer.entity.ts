@@ -5,13 +5,19 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Contract } from './contract.entity';
+import { Kit } from './kit.entity';
 
 @Entity('customers')
 export class Customer {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;
+
+  @Column()
+  kit_id: number;
 
   @Column({ length: 100 })
   name: string;
@@ -47,11 +53,18 @@ export class Customer {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column()
+  created_by: number;
+
   @CreateDateColumn()
   created_at: Date;
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @ManyToOne(() => Kit)
+  @JoinColumn({ name: 'kit_id' })
+  kit: Kit;
 
   @OneToMany(() => Contract, contract => contract.customer)
   contracts: Contract[];

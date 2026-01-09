@@ -1,20 +1,24 @@
-import { Provide } from '@midwayjs/core';
+import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { User } from '../entity/user.entity';
 import { LoginDto, RegisterDto, UserInfo } from '../interface';
+import { KitService } from './kit.service';
 
 @Provide()
 export class AuthService {
   @InjectEntityModel(User)
   userRepository: Repository<User>;
 
+  @Inject()
+  kitService: KitService;
+
   /**
    * 用户登录
    */
-  async login(loginDto: LoginDto): Promise<{ token: string; user: UserInfo }> {
+  async login(loginDto: LoginDto): Promise<{ token: string; user: UserInfo; kits: any[]; defaultKit: any | null }> {
     const { username, password } = loginDto;
 
     // 查找用户
@@ -62,7 +66,11 @@ export class AuthService {
       status: user.status,
     };
 
-    return { token, user: userInfo };
+    // 获取用户授权的套装列表
+    const kits = await this.kitService.getKitsByUserId(user.id);
+    const defaultKit = await this.kitService.getUserDefaultKit(user.id);
+
+    return { token, user: userInfo, kits, defaultKit };
   }
 
   /**

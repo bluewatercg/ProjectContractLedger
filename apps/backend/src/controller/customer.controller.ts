@@ -9,6 +9,7 @@ import {
   Query,
   Inject,
 } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { Validate } from '@midwayjs/validate';
 import {
   ApiTags,
@@ -34,6 +35,9 @@ import {
 export class CustomerController {
   @Inject()
   customerService: CustomerService;
+
+  @Inject()
+  ctx: Context;
 
   /**
    * 创建客户
@@ -74,8 +78,21 @@ export class CustomerController {
     @Body() createCustomerDto: CreateCustomerDto
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
+      const userId = this.ctx.state?.user?.id;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const customer = await this.customerService.createCustomer(
-        createCustomerDto
+        createCustomerDto,
+        kitId,
+        userId
       );
       return {
         success: true,
@@ -158,7 +175,8 @@ export class CustomerController {
     @Query() query: PaginationQuery & { search?: string }
   ): Promise<ApiResponse> {
     try {
-      const result = await this.customerService.getCustomers(query);
+      const kitId = this.ctx.state?.kitId;
+      const result = await this.customerService.getCustomers(query, kitId);
       return {
         success: true,
         data: result,
@@ -211,7 +229,8 @@ export class CustomerController {
   })
   async getCustomerById(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const customer = await this.customerService.getCustomerById(id);
+      const kitId = this.ctx.state?.kitId;
+      const customer = await this.customerService.getCustomerById(id, kitId);
       if (!customer) {
         return {
           success: false,
@@ -290,9 +309,11 @@ export class CustomerController {
     @Body() updateCustomerDto: UpdateCustomerDto
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const customer = await this.customerService.updateCustomer(
         id,
-        updateCustomerDto
+        updateCustomerDto,
+        kitId
       );
       if (!customer) {
         return {
@@ -363,7 +384,8 @@ export class CustomerController {
   })
   async deleteCustomer(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const success = await this.customerService.deleteCustomer(id);
+      const kitId = this.ctx.state?.kitId;
+      const success = await this.customerService.deleteCustomer(id, kitId);
       if (!success) {
         return {
           success: false,
@@ -413,7 +435,8 @@ export class CustomerController {
     @Param('status') status: string
   ): Promise<ApiResponse> {
     try {
-      const customers = await this.customerService.getCustomersByStatus(status);
+      const kitId = this.ctx.state?.kitId;
+      const customers = await this.customerService.getCustomersByStatus(status, kitId);
       return {
         success: true,
         data: customers,
@@ -428,3 +451,4 @@ export class CustomerController {
     }
   }
 }
+

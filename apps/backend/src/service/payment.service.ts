@@ -39,10 +39,14 @@ export class PaymentService {
   /**
    * 创建支付记录
    */
-  async createPayment(createPaymentDto: CreatePaymentDto): Promise<any> {
+  async createPayment(
+    createPaymentDto: CreatePaymentDto,
+    kitId: number
+  ): Promise<any> {
     return await this.dataSource.transaction(async manager => {
       const payment = this.paymentRepository.create({
         ...createPaymentDto,
+        kit_id: kitId,
         payment_date: DateUtil.parseDate(createPaymentDto.payment_date),
       });
       const savedPayment = await manager.save(payment);
@@ -73,7 +77,8 @@ export class PaymentService {
    * 获取支付记录列表（分页）
    */
   async getPayments(
-    query: PaginationQuery & { invoiceId?: number; status?: string }
+    query: PaginationQuery & { invoiceId?: number; status?: string },
+    kitId?: number
   ): Promise<PaginationResult<Payment>> {
     const {
       page = 1,
@@ -89,6 +94,11 @@ export class PaymentService {
       .leftJoinAndSelect('payment.invoice', 'invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer');
+
+    // 按kit_id过滤
+    if (kitId) {
+      queryBuilder.where('payment.kit_id = :kitId', { kitId });
+    }
 
     // 过滤条件
     if (invoiceId) {
@@ -120,9 +130,14 @@ export class PaymentService {
   /**
    * 根据ID获取支付记录
    */
-  async getPaymentById(id: number): Promise<Payment | null> {
+  async getPaymentById(id: number, kitId?: number): Promise<Payment | null> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
     return await this.paymentRepository.findOne({
-      where: { id },
+      where: whereCondition,
       relations: ['invoice', 'invoice.contract', 'invoice.contract.customer'],
     });
   }
@@ -132,10 +147,16 @@ export class PaymentService {
    */
   async updatePayment(
     id: number,
-    updatePaymentDto: UpdatePaymentDto
+    updatePaymentDto: UpdatePaymentDto,
+    kitId?: number
   ): Promise<Payment | null> {
     return await this.dataSource.transaction(async manager => {
-      const payment = await manager.findOne(Payment, { where: { id } });
+      const whereCondition: any = { id };
+      if (kitId) {
+        whereCondition.kit_id = kitId;
+      }
+
+      const payment = await manager.findOne(Payment, { where: whereCondition });
 
       if (!payment) {
         return null;
@@ -166,14 +187,19 @@ export class PaymentService {
   /**
    * 删除支付记录
    */
-  async deletePayment(id: number): Promise<boolean> {
+  async deletePayment(id: number, kitId?: number): Promise<boolean> {
     return await this.dataSource.transaction(async manager => {
-      const payment = await manager.findOne(Payment, { where: { id } });
+      const whereCondition: any = { id };
+      if (kitId) {
+        whereCondition.kit_id = kitId;
+      }
+
+      const payment = await manager.findOne(Payment, { where: whereCondition });
       if (!payment) {
         return false;
       }
 
-      const result = await manager.delete(Payment, id);
+      const result = await manager.delete(Payment, whereCondition);
 
       // 更新发票状态
       if (result.affected > 0) {
@@ -353,7 +379,7 @@ export class PaymentService {
   /**
    * 获取支付统计信息（优化版本）
    */
-  async getPaymentStats(year?: number): Promise<any> {
+  async getPaymentStats(year?: number, kitId?: number): Promise<any> {
     // 基础统计信息
     const basicStatsQueryBuilder = this.paymentRepository
       .createQueryBuilder('payment')
@@ -364,6 +390,10 @@ export class PaymentService {
         "SUM(CASE WHEN payment.status = 'failed' THEN 1 ELSE 0 END) as failed",
         "SUM(CASE WHEN payment.status = 'completed' THEN payment.amount ELSE 0 END) as totalAmount",
       ]);
+
+    if (kitId) {
+      basicStatsQueryBuilder.where('payment.kit_id = :kitId', { kitId });
+    }
 
     if (year) {
       basicStatsQueryBuilder.andWhere('YEAR(payment.payment_date) = :year', {

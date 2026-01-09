@@ -24,9 +24,15 @@ export class CustomerService {
    * 创建客户
    */
   async createCustomer(
-    createCustomerDto: CreateCustomerDto
+    createCustomerDto: CreateCustomerDto,
+    kitId: number,
+    createdBy: number
   ): Promise<Customer> {
-    const customer = this.customerRepository.create(createCustomerDto);
+    const customer = this.customerRepository.create({
+      ...createCustomerDto,
+      kit_id: kitId,
+      created_by: createdBy,
+    });
     const savedCustomer = await this.customerRepository.save(customer);
 
     // 清除相关缓存
@@ -45,7 +51,8 @@ export class CustomerService {
       search?: string;
       hasUnpaidInvoices?: boolean;
       hasActiveContracts?: boolean;
-    }
+    },
+    kitId?: number
   ): Promise<PaginationResult<Customer>> {
     const {
       page = 1,
@@ -59,6 +66,11 @@ export class CustomerService {
 
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
 
+    // 按kit_id过滤
+    if (kitId) {
+      queryBuilder.where('customer.kit_id = :kitId', { kitId });
+    }
+
     // 如果需要筛选有未完全收款发票的客户
     if (hasUnpaidInvoices) {
       queryBuilder
@@ -70,11 +82,11 @@ export class CustomerService {
           'payment.status = :paymentStatus',
           { paymentStatus: 'completed' }
         )
-        .where('invoice.status IN (:...invoiceStatuses)', {
+        .andWhere('invoice.status IN (:...invoiceStatuses)', {
           invoiceStatuses: ['draft', 'sent', 'overdue'],
         })
         .groupBy(
-          'customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
+          'customer.id, customer.kit_id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
         )
         .having('COALESCE(SUM(payment.amount), 0) < SUM(invoice.total_amount)');
     }
@@ -83,23 +95,19 @@ export class CustomerService {
     if (hasActiveContracts && !hasUnpaidInvoices) {
       queryBuilder
         .innerJoin('customer.contracts', 'contract')
-        .where('contract.status IN (:...contractStatuses)', {
+        .andWhere('contract.status IN (:...contractStatuses)', {
           contractStatuses: ['draft', 'active', 'signed'],
         })
         .groupBy(
-          'customer.id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
+          'customer.id, customer.kit_id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
         );
     }
 
     // 搜索条件
     if (search) {
       const searchCondition =
-        'customer.name LIKE :search OR customer.contact_person LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search';
-      if (hasUnpaidInvoices || hasActiveContracts) {
-        queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
-      } else {
-        queryBuilder.where(searchCondition, { search: `%${search}%` });
-      }
+        '(customer.name LIKE :search OR customer.contact_person LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search)';
+      queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
     }
 
     // 排序
@@ -123,9 +131,14 @@ export class CustomerService {
   /**
    * 根据ID获取客户
    */
-  async getCustomerById(id: number): Promise<any | null> {
+  async getCustomerById(id: number, kitId?: number): Promise<any | null> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
     const customer = await this.customerRepository.findOne({
-      where: { id },
+      where: whereCondition,
       relations: ['contracts', 'contracts.invoices', 'contracts.invoices.payments'],
     });
 
@@ -150,9 +163,15 @@ export class CustomerService {
    */
   async updateCustomer(
     id: number,
-    updateCustomerDto: UpdateCustomerDto
+    updateCustomerDto: UpdateCustomerDto,
+    kitId?: number
   ): Promise<Customer | null> {
-    const customer = await this.customerRepository.findOne({ where: { id } });
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
+    const customer = await this.customerRepository.findOne({ where: whereCondition });
 
     if (!customer) {
       return null;
@@ -172,26 +191,41 @@ export class CustomerService {
   /**
    * 删除客户
    */
-  async deleteCustomer(id: number): Promise<boolean> {
-    const result = await this.customerRepository.delete(id);
+  async deleteCustomer(id: number, kitId?: number): Promise<boolean> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
+    const result = await this.customerRepository.delete(whereCondition);
     return result.affected > 0;
   }
 
   /**
    * 获取活跃客户数量
    */
-  async getActiveCustomersCount(): Promise<number> {
+  async getActiveCustomersCount(kitId?: number): Promise<number> {
+    const whereCondition: any = { status: 'active' };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
     return await this.customerRepository.count({
-      where: { status: 'active' },
+      where: whereCondition,
     });
   }
 
   /**
    * 根据状态获取客户列表
    */
-  async getCustomersByStatus(status: string): Promise<Customer[]> {
+  async getCustomersByStatus(status: string, kitId?: number): Promise<Customer[]> {
+    const whereCondition: any = { status };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
     return await this.customerRepository.find({
-      where: { status },
+      where: whereCondition,
       order: { created_at: 'DESC' },
     });
   }
@@ -199,15 +233,20 @@ export class CustomerService {
   /**
    * 获取客户统计信息（优化版本）
    */
-  async getCustomerStats(): Promise<any> {
-    const result = await this.customerRepository
+  async getCustomerStats(kitId?: number): Promise<any> {
+    const queryBuilder = this.customerRepository
       .createQueryBuilder('customer')
       .select([
         'COUNT(*) as total',
         "SUM(CASE WHEN customer.status = 'active' THEN 1 ELSE 0 END) as active",
         "SUM(CASE WHEN customer.status = 'inactive' THEN 1 ELSE 0 END) as inactive",
-      ])
-      .getRawOne();
+      ]);
+
+    if (kitId) {
+      queryBuilder.where('customer.kit_id = :kitId', { kitId });
+    }
+
+    const result = await queryBuilder.getRawOne();
 
     return {
       total: parseInt(result.total) || 0,
@@ -216,3 +255,4 @@ export class CustomerService {
     };
   }
 }
+

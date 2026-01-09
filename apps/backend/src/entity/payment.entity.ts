@@ -8,11 +8,15 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Invoice } from './invoice.entity';
+import { Kit } from './kit.entity';
 
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  kit_id: number;
 
   @Column()
   invoice_id: number;
@@ -52,7 +56,12 @@ export class Payment {
   @UpdateDateColumn()
   updated_at: Date;
 
+  @ManyToOne(() => Kit)
+  @JoinColumn({ name: 'kit_id' })
+  kit: Kit;
+
   @ManyToOne(() => Invoice, invoice => invoice.payments)
   @JoinColumn({ name: 'invoice_id' })
   invoice: Invoice;
 }
+

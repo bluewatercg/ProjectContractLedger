@@ -11,7 +11,7 @@ export default {
         username: 'millerchen',
         password: 'c3TyBrus2OmLeeIu',
         database: 'procontractledger',
-        synchronize: true,
+        synchronize: false, // 暂时禁用，需要先运行迁移脚本
         logging: true,
         entities: ['**/entity/*.entity{.ts,.js}'],
         timezone: '+08:00',

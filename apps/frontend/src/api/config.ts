@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { useKitStore } from '@/stores/kit'
 import { buildApiBaseUrl, getVersionInfo } from './version'
 
 // 运行时配置接口
@@ -49,6 +50,13 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
 
+    // 添加当前套装ID
+    const kitStore = useKitStore()
+    if (kitStore.currentKitId) {
+      config.headers = config.headers || {}
+      config.headers['X-Kit-Id'] = String(kitStore.currentKitId)
+    }
+
     // 添加API版本信息到请求头
     const versionInfo = getVersionInfo()
     config.headers = config.headers || {}
@@ -56,7 +64,7 @@ apiClient.interceptors.request.use(
     config.headers['X-Client-Version'] = import.meta.env.VITE_APP_VERSION || '1.0.0'
 
     console.log('API Request:', config.method?.toUpperCase(), config.url, config.data)
-    console.log('API Version:', versionInfo.current, 'Base URL:', versionInfo.baseURL)
+    console.log('API Version:', versionInfo.current, 'Kit ID:', kitStore.currentKitId)
     return config
   },
   (error) => {
@@ -69,23 +77,23 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     console.log('API Response:', response.config.url, response.data)
-    
+
     // 统一处理响应格式
     const { data } = response
     if (data.success === false) {
       ElMessage.error(data.message || '请求失败')
       return Promise.reject(new Error(data.message || '请求失败'))
     }
-    
+
     return response
   },
   (error) => {
     console.error('Response Error:', error)
-    
+
     // 处理HTTP错误状态码
     if (error.response) {
       const { status, data } = error.response
-      
+
       switch (status) {
         case 401:
           ElMessage.error('登录已过期，请重新登录')
@@ -110,7 +118,7 @@ apiClient.interceptors.response.use(
     } else {
       ElMessage.error(error.message || '请求失败')
     }
-    
+
     return Promise.reject(error)
   }
 )

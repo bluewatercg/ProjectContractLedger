@@ -50,6 +50,8 @@ export interface UserInfo {
 export interface LoginResponse {
   token: string
   user: UserInfo
+  kits?: any[]
+  defaultKit?: any
 }
 
 // 客户相关类型

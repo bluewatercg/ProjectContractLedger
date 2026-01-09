@@ -11,11 +11,15 @@ import {
 import { Contract } from './contract.entity';
 import { Payment } from './payment.entity';
 import { InvoiceAttachment } from './invoice-attachment.entity';
+import { Kit } from './kit.entity';
 
 @Entity('invoices')
 export class Invoice {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  kit_id: number;
 
   @Column({ length: 50, unique: true })
   invoice_number: string;
@@ -60,6 +64,10 @@ export class Invoice {
   @UpdateDateColumn()
   updated_at: Date;
 
+  @ManyToOne(() => Kit)
+  @JoinColumn({ name: 'kit_id' })
+  kit: Kit;
+
   @ManyToOne(() => Contract, contract => contract.invoices)
   @JoinColumn({ name: 'contract_id' })
   contract: Contract;
@@ -70,3 +78,4 @@ export class Invoice {
   @OneToMany(() => InvoiceAttachment, attachment => attachment.invoice)
   attachments: InvoiceAttachment[];
 }
+

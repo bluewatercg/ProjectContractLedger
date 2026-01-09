@@ -36,7 +36,10 @@ export class InvoiceService {
   /**
    * 创建发票
    */
-  async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<any> {
+  async createInvoice(
+    createInvoiceDto: CreateInvoiceDto,
+    kitId: number
+  ): Promise<any> {
     return await this.dataSource.transaction(async manager => {
       // 检查并更新合同状态
       await this.checkAndUpdateContractStatusOnInvoiceCreate(
@@ -55,6 +58,7 @@ export class InvoiceService {
       const invoice = this.invoiceRepository.create({
         ...createInvoiceDto,
         invoice_number: invoiceNumber,
+        kit_id: kitId,
         tax_amount,
         total_amount,
         issue_date: DateUtil.parseDate(createInvoiceDto.issue_date),
@@ -83,7 +87,8 @@ export class InvoiceService {
       contractId?: number;
       customerId?: number;
       status?: string;
-    }
+    },
+    kitId?: number
   ): Promise<PaginationResult<any>> {
     const {
       page = 1,
@@ -100,6 +105,11 @@ export class InvoiceService {
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('invoice.payments', 'payments');
+
+    // 按kit_id过滤
+    if (kitId) {
+      queryBuilder.where('invoice.kit_id = :kitId', { kitId });
+    }
 
     // 过滤条件
     if (contractId) {
@@ -144,9 +154,14 @@ export class InvoiceService {
   /**
    * 根据ID获取发票
    */
-  async getInvoiceById(id: number): Promise<any | null> {
+  async getInvoiceById(id: number, kitId?: number): Promise<any | null> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
     const invoice = await this.invoiceRepository.findOne({
-      where: { id },
+      where: whereCondition,
       relations: ['contract', 'contract.customer', 'payments'],
     });
 
@@ -163,9 +178,15 @@ export class InvoiceService {
    */
   async updateInvoice(
     id: number,
-    updateInvoiceDto: UpdateInvoiceDto
+    updateInvoiceDto: UpdateInvoiceDto,
+    kitId?: number
   ): Promise<any | null> {
-    const invoice = await this.invoiceRepository.findOne({ where: { id } });
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
+    const invoice = await this.invoiceRepository.findOne({ where: whereCondition });
 
     if (!invoice) {
       return null;
@@ -206,8 +227,13 @@ export class InvoiceService {
   /**
    * 删除发票
    */
-  async deleteInvoice(id: number): Promise<boolean> {
-    const result = await this.invoiceRepository.delete(id);
+  async deleteInvoice(id: number, kitId?: number): Promise<boolean> {
+    const whereCondition: any = { id };
+    if (kitId) {
+      whereCondition.kit_id = kitId;
+    }
+
+    const result = await this.invoiceRepository.delete(whereCondition);
 
     // 清除相关缓存
     if (result.affected > 0 && this.statisticsService?.invalidateInvoiceCache) {
@@ -245,7 +271,7 @@ export class InvoiceService {
   /**
    * 获取发票统计信息（优化版本）
    */
-  async getInvoiceStats(year?: number): Promise<any> {
+  async getInvoiceStats(year?: number, kitId?: number): Promise<any> {
     // 基础统计：发票状态分布和总额
     const invoiceQueryBuilder = this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -257,6 +283,10 @@ export class InvoiceService {
         "SUM(CASE WHEN invoice.status = 'overdue' THEN 1 ELSE 0 END) as overdue",
         "SUM(CASE WHEN invoice.status <> 'cancelled' THEN invoice.total_amount ELSE 0 END) as totalAmount",
       ]);
+
+    if (kitId) {
+      invoiceQueryBuilder.where('invoice.kit_id = :kitId', { kitId });
+    }
 
     if (year) {
       invoiceQueryBuilder.andWhere('YEAR(invoice.issue_date) = :year', {
@@ -299,13 +329,19 @@ export class InvoiceService {
   /**
    * 获取逾期发票
    */
-  async getOverdueInvoices(): Promise<Invoice[]> {
+  async getOverdueInvoices(kitId?: number): Promise<Invoice[]> {
     const today = new Date();
-    return await this.invoiceRepository
+    const queryBuilder = this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
-      .leftJoinAndSelect('contract.customer', 'customer')
-      .where('invoice.due_date < :today', { today })
+      .leftJoinAndSelect('contract.customer', 'customer');
+
+    if (kitId) {
+      queryBuilder.where('invoice.kit_id = :kitId', { kitId });
+    }
+
+    return await queryBuilder
+      .andWhere('invoice.due_date < :today', { today })
       .andWhere('invoice.status IN (:...statuses)', {
         statuses: ['sent', 'overdue'],
       })

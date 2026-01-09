@@ -11,11 +11,15 @@ import {
 import { Customer } from './customer.entity';
 import { Invoice } from './invoice.entity';
 import { ContractAttachment } from './contract-attachment.entity';
+import { Kit } from './kit.entity';
 
 @Entity('contracts')
 export class Contract {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  kit_id: number;
 
   @Column({ length: 50, unique: true })
   contract_number: string;
@@ -67,11 +71,18 @@ export class Contract {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column()
+  created_by: number;
+
   @CreateDateColumn()
   created_at: Date;
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @ManyToOne(() => Kit)
+  @JoinColumn({ name: 'kit_id' })
+  kit: Kit;
 
   @ManyToOne(() => Customer, customer => customer.contracts)
   @JoinColumn({ name: 'customer_id' })
@@ -83,3 +94,4 @@ export class Contract {
   @OneToMany(() => ContractAttachment, attachment => attachment.contract)
   attachments: ContractAttachment[];
 }
+
