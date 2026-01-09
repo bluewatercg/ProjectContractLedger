@@ -179,11 +179,7 @@ const registerRules: FormRules = {
     { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
     { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
   ],
-  email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' },
-    { max: 100, message: '邮箱地址长度不能超过 100 个字符', trigger: 'blur' }
-  ],
+
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' },

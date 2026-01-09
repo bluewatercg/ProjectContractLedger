@@ -10,7 +10,7 @@
           <el-dropdown @command="handleCommand">
             <div class="user-info">
               <el-avatar :src="userAvatar" :size="32" />
-              <span class="username">{{ authStore.user?.username }}</span>
+              <span class="username">{{ authStore.user?.full_name }}</span>
               <el-icon><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
@@ -53,6 +53,10 @@
           <el-menu-item index="/payments">
             <el-icon><Money /></el-icon>
             <span>支付管理</span>
+          </el-menu-item>
+          <el-menu-item index="/user-list">
+            <el-icon><Avatar /></el-icon>
+            <span>用户管理</span>
           </el-menu-item>
           <el-menu-item index="/settings">
             <el-icon><Setting /></el-icon>

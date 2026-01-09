@@ -106,6 +106,107 @@ export interface UserInfo {
   status: string;
 }
 
+export class CreateUserDto {
+  @ApiProperty({
+    description: '用户名',
+    example: 'newuser',
+    maxLength: 50,
+  })
+  username: string;
+
+  @ApiProperty({
+    description: '邮箱地址',
+    example: 'user@example.com',
+    format: 'email',
+    maxLength: 100,
+  })
+  email: string;
+
+  @ApiProperty({
+    description: '密码',
+    example: 'password123',
+    format: 'password',
+    minLength: 6,
+    maxLength: 50,
+  })
+  password: string;
+
+  @ApiPropertyOptional({
+    description: '真实姓名',
+    example: '张三',
+    maxLength: 50,
+  })
+  full_name?: string;
+
+  @ApiPropertyOptional({
+    description: '手机号码',
+    example: '13812345678',
+    maxLength: 20,
+  })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: '角色',
+    example: 'user',
+    enum: ['admin', 'user'],
+  })
+  role?: string;
+
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'inactive'],
+  })
+  status?: string;
+}
+
+export class UpdateUserDto {
+  @ApiPropertyOptional({
+    description: '邮箱地址',
+    example: 'user@example.com',
+    format: 'email',
+    maxLength: 100,
+  })
+  email?: string;
+
+  @ApiPropertyOptional({
+    description: '密码',
+    example: 'newpassword123',
+    format: 'password',
+    minLength: 6,
+    maxLength: 50,
+  })
+  password?: string;
+
+  @ApiPropertyOptional({
+    description: '真实姓名',
+    example: '张三',
+    maxLength: 50,
+  })
+  full_name?: string;
+
+  @ApiPropertyOptional({
+    description: '手机号码',
+    example: '13812345678',
+    maxLength: 20,
+  })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: '角色',
+    example: 'user',
+    enum: ['admin', 'user'],
+  })
+  role?: string;
+
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'inactive'],
+  })
+  status?: string;
+}
+
 /**
  * 客户相关接口
  */

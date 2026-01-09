@@ -137,6 +137,24 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '编辑支付' }
       },
       {
+        path: 'user-list',
+        name: 'Users',
+        component: () => import('@/views/users/UserList.vue'),
+        meta: { requiresAuth: true, title: '用户管理' }
+      },
+      {
+        path: 'user-list/create',
+        name: 'UserCreate',
+        component: () => import('@/views/users/UserForm.vue'),
+        meta: { requiresAuth: true, title: '新建用户' }
+      },
+      {
+        path: 'user-list/:id/edit',
+        name: 'UserEdit',
+        component: () => import('@/views/users/UserForm.vue'),
+        meta: { requiresAuth: true, title: '编辑用户' }
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/Settings.vue'),
@@ -161,12 +179,12 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // 设置页面标题
   if (to.meta.title) {
     document.title = `${to.meta.title} - 客户合同管理系统`
   }
-  
+
   // 检查是否需要认证
   if (to.meta.requiresAuth) {
     if (!authStore.isAuthenticated) {
@@ -177,7 +195,7 @@ router.beforeEach(async (to, from, next) => {
       })
       return
     }
-    
+
     // 检查token有效性
     const isValid = await authStore.checkTokenValidity()
     if (!isValid) {
@@ -188,13 +206,13 @@ router.beforeEach(async (to, from, next) => {
       return
     }
   }
-  
+
   // 如果已登录用户访问登录页，重定向到仪表板
   if (to.name === 'Login' && authStore.isAuthenticated) {
     next({ name: 'Dashboard' })
     return
   }
-  
+
   next()
 })
 
