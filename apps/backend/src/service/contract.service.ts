@@ -433,4 +433,46 @@ export class ContractService {
       totalAmount: parseFloat(result.totalAmount) || 0,
     };
   }
+
+  /**
+   * 检查并自动完成符合条件的合同
+   * 条件：执行中 + 到期日期已过 + 金额已结清
+   */
+  async checkAndCompleteEligibleContracts(kitId?: number): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const queryBuilder = this.contractRepository
+      .createQueryBuilder('contract')
+      .leftJoinAndSelect('contract.invoices', 'invoice')
+      .leftJoinAndSelect('invoice.payments', 'payment')
+      .where('contract.status = :status', { status: 'active' })
+      .andWhere('contract.end_date <= :today', { today });
+
+    if (kitId) {
+      queryBuilder.andWhere('contract.kit_id = :kitId', { kitId });
+    }
+
+    const contracts = await queryBuilder.getMany();
+    let completedCount = 0;
+
+    for (const contract of contracts) {
+      const stats = this.calculateFinancialStats(contract);
+
+      // 如果财务状态也是已完成 (说明金额结清)
+      if (stats.billingStatus === 'completed') {
+        await this.contractRepository.update(contract.id, {
+          status: 'completed',
+          updated_at: new Date()
+        });
+        completedCount++;
+      }
+    }
+
+    if (completedCount > 0 && this.statisticsService?.invalidateContractCache) {
+      this.statisticsService.invalidateContractCache();
+    }
+
+    return completedCount;
+  }
 }

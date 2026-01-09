@@ -8,10 +8,10 @@ import { Payment } from '../entity/payment.entity';
 export interface ReminderItem {
   id: number;
   type:
-    | 'contract_renewal'
-    | 'contract_fulfillment'
-    | 'invoice_needed'
-    | 'payment_collection';
+  | 'contract_renewal'
+  | 'contract_fulfillment'
+  | 'invoice_needed'
+  | 'payment_collection';
   priority: 'high' | 'medium' | 'low';
   title: string;
   description: string;
@@ -49,17 +49,13 @@ export class ReminderService {
 
   /**
    * 获取所有提醒事项
-   * 按三个业务维度分类：
-   * 1. 履约类（合同生命周期）：续签提醒、履约完成提醒
-   * 2. 开票类（财务开票流程）：开票提醒
-   * 3. 收款类（财务收款流程）：收款提醒
    */
-  async getAllReminders(): Promise<ReminderSummary> {
+  async getAllReminders(kitId?: number): Promise<ReminderSummary> {
     const [fulfillmentReminders, invoiceReminders, paymentReminders] =
       await Promise.all([
-        this.getContractFulfillmentReminders(),
-        this.getInvoiceNeededReminders(),
-        this.getPaymentNeededReminders(),
+        this.getContractFulfillmentReminders(kitId),
+        this.getInvoiceNeededReminders(kitId),
+        this.getPaymentNeededReminders(kitId),
       ]);
 
     const allItems = [
@@ -98,28 +94,33 @@ export class ReminderService {
    * 包括：续签提醒、履约完成提醒
    * 续签合同：只有当剩余天数 <= 提醒天数时才产生提醒
    * 一次性合同：剩余天数 <= 15天时产生提醒
+   * 已到期合同：只要状态还是active就产生提醒（高优先级）
    */
-  async getContractFulfillmentReminders(): Promise<ReminderItem[]> {
+  async getContractFulfillmentReminders(kitId?: number): Promise<ReminderItem[]> {
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 90); // 提前90天检查（覆盖最大提醒天数60天）
+    futureDate.setDate(today.getDate() + 90); // 提前90天检查
 
-    // 获取即将到期的合同（无论是否续签）
-    const expiringContracts = await this.contractRepository
+    const queryBuilder = this.contractRepository
       .createQueryBuilder('contract')
       .leftJoinAndSelect('contract.customer', 'customer')
-      .where('contract.status = :status', { status: 'active' })
+      .where('contract.status = :status', { status: 'active' });
+
+    if (kitId) {
+      queryBuilder.andWhere('contract.kit_id = :kitId', { kitId });
+    }
+
+    // 获取即将到期或已到期但未关闭的合同
+    const expiringContracts = await queryBuilder
       .andWhere('contract.end_date <= :futureDate', { futureDate })
-      .andWhere('contract.end_date > :today', { today })
+      // 不再限制 end_date > today，以便包含已到期的合同
       .getMany();
 
     const reminders: ReminderItem[] = [];
 
     for (const contract of expiringContracts) {
-      const daysUntilDue = Math.ceil(
-        (new Date(contract.end_date).getTime() - today.getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
+      const diffTime = new Date(contract.end_date).getTime() - today.getTime();
+      const daysUntilDue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       let priority: 'high' | 'medium' | 'low' = 'low';
       let type: 'contract_renewal' | 'contract_fulfillment';
@@ -127,11 +128,17 @@ export class ReminderService {
       let description: string;
       let shouldRemind = false;
 
-      if (contract.is_renewable) {
-        // 续签合同的提醒：只有当剩余天数 <= 提醒天数时才产生提醒
+      // 1. 已到期合同（置顶提醒）
+      if (daysUntilDue <= 0) {
+        shouldRemind = true;
+        priority = 'high';
+        type = contract.is_renewable ? 'contract_renewal' : 'contract_fulfillment';
+        title = contract.is_renewable ? '合同已到期，请处理续签' : '合同已到期，请确认履约关闭';
+        description = `合同 ${contract.contract_number} 已于 ${Math.abs(daysUntilDue)} 天前到期，目前状态仍为执行中，请及时处理。`;
+      }
+      // 2. 将到期合（续签）
+      else if (contract.is_renewable) {
         const reminderDays = parseInt(contract.renewal_reminder_days || '30');
-        
-        // 只有剩余天数在提醒范围内才添加提醒
         if (daysUntilDue <= reminderDays) {
           shouldRemind = true;
           if (daysUntilDue <= 5) priority = 'high';
@@ -142,17 +149,16 @@ export class ReminderService {
           title = '合同即将到期，需要续签';
           description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请联系客户安排续签事宜`;
         }
-      } else {
-        // 一次性合同的履约完成提醒：剩余天数 <= 15天时产生提醒
-        if (daysUntilDue <= 15) {
-          shouldRemind = true;
-          if (daysUntilDue <= 7) priority = 'high';
-          else priority = 'medium';
+      }
+      // 3. 将到期（一次性）
+      else if (daysUntilDue <= 15) {
+        shouldRemind = true;
+        if (daysUntilDue <= 7) priority = 'high';
+        else priority = 'medium';
 
-          type = 'contract_fulfillment';
-          title = '合同即将到期，请确认履约完成';
-          description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请确认项目履约完成情况`;
-        }
+        type = 'contract_fulfillment';
+        title = '合同即将到期，请确认履约完成';
+        description = `合同 ${contract.contract_number} 将在 ${daysUntilDue} 天后到期，请确认项目履约完成情况`;
       }
 
       if (shouldRemind) {
@@ -180,38 +186,38 @@ export class ReminderService {
 
   /**
    * 获取需要开票提醒（开票类）
-   * 签订合同后就应该开始开票流程，与合同履约状态无关
-   * 排除已开票的金额，只提醒未开票的部分
    */
-  async getInvoiceNeededReminders(): Promise<ReminderItem[]> {
-    // 查找已签署的活跃合同
-    const activeContracts = await this.contractRepository
+  async getInvoiceNeededReminders(kitId?: number): Promise<ReminderItem[]> {
+    const queryBuilder = this.contractRepository
       .createQueryBuilder('contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('contract.invoices', 'invoice')
       .where('contract.status = :status', { status: 'active' })
-      .andWhere('contract.start_date <= :today', { today: new Date() })
-      .getMany();
+      .andWhere('contract.start_date <= :today', { today: new Date() });
+
+    if (kitId) {
+      queryBuilder.andWhere('contract.kit_id = :kitId', { kitId });
+    }
+
+    const activeContracts = await queryBuilder.getMany();
 
     const reminders: ReminderItem[] = [];
 
     for (const contract of activeContracts) {
-      // 计算已开票金额
       const invoicedAmount = contract.invoices
         ? contract.invoices.reduce(
-            (sum, invoice) => sum + Number(invoice.total_amount),
-            0
-          )
+          (sum, invoice) => sum + Number(invoice.total_amount),
+          0
+        )
         : 0;
 
       const contractAmount = Number(contract.total_amount);
-      const pendingAmount = contractAmount - invoicedAmount; // 待开票金额
+      const pendingAmount = contractAmount - invoicedAmount;
 
-      // 只有待开票金额大于0的才需要提醒
       if (pendingAmount > 0) {
         const daysSinceStart = Math.ceil(
           (Date.now() - new Date(contract.start_date).getTime()) /
-            (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24)
         );
 
         let priority: 'high' | 'medium' | 'low' = 'medium';
@@ -224,11 +230,10 @@ export class ReminderService {
           type: 'invoice_needed',
           priority: priority,
           title: '需要开具发票',
-          description: `合同 ${
-            contract.contract_number
-          } 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(
-            2
-          )}（已开票 ¥${invoicedAmount.toFixed(2)}）`,
+          description: `合同 ${contract.contract_number
+            } 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(
+              2
+            )}`,
           targetId: contract.id,
           targetType: 'contract' as const,
           daysUntilDue: daysSinceStart,
@@ -246,12 +251,9 @@ export class ReminderService {
 
   /**
    * 获取需要收款提醒（收款类）
-   * 已开票但未完全收款的发票需要跟进催收
-   * 排除已收款的费用，只提醒未收款的部分
    */
-  async getPaymentNeededReminders(): Promise<ReminderItem[]> {
-    // 查找已开票但可能未完全收款的发票
-    const invoices = await this.invoiceRepository
+  async getPaymentNeededReminders(kitId?: number): Promise<ReminderItem[]> {
+    const queryBuilder = this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
@@ -262,29 +264,34 @@ export class ReminderService {
         { paymentStatus: 'completed' }
       )
       .where('invoice.status IN (:...statuses)', {
-        statuses: ['sent', 'overdue'],
-      })
-      .getMany();
+        statuses: ['draft', 'sent', 'paid', 'overdue'],
+      });
+
+    if (kitId) {
+      queryBuilder.andWhere('invoice.kit_id = :kitId', { kitId });
+    }
+
+    const invoices = await queryBuilder.getMany();
 
     const reminders: ReminderItem[] = [];
 
     for (const invoice of invoices) {
-      // 计算已收款金额（只计算已完成的收款）
       const paidAmount = invoice.payments
         ? invoice.payments.reduce(
-            (sum, payment) => sum + Number(payment.amount),
-            0
-          )
+          (sum, payment) => sum + Number(payment.amount),
+          0
+        )
         : 0;
 
       const invoiceAmount = Number(invoice.total_amount);
-      const pendingAmount = invoiceAmount - paidAmount; // 待收款金额
+      const pendingAmount = invoiceAmount - paidAmount;
 
-      // 只有待收款金额大于0的才需要提醒
-      if (pendingAmount > 0) {
+      // 只有待收款金额大于0.01才需要提醒（考虑浮点数精度）
+      if (pendingAmount > 0.01) {
+        const referenceDate = invoice.issue_date || invoice.created_at || new Date();
         const daysSinceIssue = Math.ceil(
-          (Date.now() - new Date(invoice.issue_date).getTime()) /
-            (1000 * 60 * 60 * 24)
+          (Date.now() - new Date(referenceDate).getTime()) /
+          (1000 * 60 * 60 * 24)
         );
 
         let priority: 'high' | 'medium' | 'low' = 'medium';
@@ -297,11 +304,10 @@ export class ReminderService {
           type: 'payment_collection',
           priority: priority,
           title: '需要跟进收款',
-          description: `发票 ${
-            invoice.invoice_number
-          } 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(
-            2
-          )}（已收款 ¥${paidAmount.toFixed(2)}）`,
+          description: `发票 ${invoice.invoice_number
+            } 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(
+              2
+            )}`,
           targetId: invoice.id,
           targetType: 'invoice' as const,
           daysUntilDue: daysSinceIssue,
@@ -321,28 +327,28 @@ export class ReminderService {
   /**
    * 获取特定类型的提醒数量
    */
-  async getReminderCount(type?: string): Promise<number> {
+  async getReminderCount(type?: string, kitId?: number): Promise<number> {
     if (!type) {
-      const summary = await this.getAllReminders();
+      const summary = await this.getAllReminders(kitId);
       return summary.total;
     }
 
     switch (type) {
       case 'fulfillment':
-        return (await this.getContractFulfillmentReminders()).length;
+        return (await this.getContractFulfillmentReminders(kitId)).length;
       case 'invoice':
-        return (await this.getInvoiceNeededReminders()).length;
+        return (await this.getInvoiceNeededReminders(kitId)).length;
       case 'payment':
-        return (await this.getPaymentNeededReminders()).length;
+        return (await this.getPaymentNeededReminders(kitId)).length;
       case 'contract_renewal':
       case 'contract_fulfillment':
-        return (await this.getContractFulfillmentReminders()).filter(
+        return (await this.getContractFulfillmentReminders(kitId)).filter(
           item => item.type === type
         ).length;
       case 'invoice_needed':
-        return (await this.getInvoiceNeededReminders()).length;
+        return (await this.getInvoiceNeededReminders(kitId)).length;
       case 'payment_collection':
-        return (await this.getPaymentNeededReminders()).length;
+        return (await this.getPaymentNeededReminders(kitId)).length;
       default:
         return 0;
     }

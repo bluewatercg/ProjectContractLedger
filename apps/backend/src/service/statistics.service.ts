@@ -64,29 +64,38 @@ export class StatisticsService {
   /**
    * 获取仪表板统计数据（带缓存优化）
    */
-  async getDashboardStats(year?: number): Promise<any> {
-    const cacheKey = year ? `dashboard_stats_${year}` : 'dashboard_stats';
+  async getDashboardStats(year?: number, kitId?: number): Promise<any> {
+    const cacheKey = kitId
+      ? (year ? `dashboard_stats_${kitId}_${year}` : `dashboard_stats_${kitId}`)
+      : (year ? `dashboard_stats_${year}` : 'dashboard_stats');
+
+    // 在获取统计数据前，触发合同状态检查（自动完成已到期且结清的合同）
+    try {
+      await this.contractService.checkAndCompleteEligibleContracts(kitId);
+    } catch (e) {
+      console.error('Failed to auto-complete contracts:', e);
+    }
 
     // 尝试从缓存获取数据
     const cachedData = this.cache.get(cacheKey);
     if (cachedData) {
       console.log(
-        `Dashboard stats served from cache${year ? ` (${year})` : ''}`
+        `Dashboard stats served from cache${year ? ` (${year})` : ''} for kit ${kitId}`
       );
       return cachedData;
     }
 
     console.log(
-      `Fetching fresh dashboard stats from database${year ? ` for year ${year}` : ''}`
+      `Fetching fresh dashboard stats from database${year ? ` for year ${year}` : ''} for kit ${kitId}`
     );
     const startTime = Date.now();
 
     const [customerStats, contractStats, invoiceStats, paymentStats] =
       await Promise.all([
-        this.customerService.getCustomerStats(),
-        this.contractService.getContractStats(year),
-        this.invoiceService.getInvoiceStats(year),
-        this.paymentService.getPaymentStats(year),
+        this.customerService.getCustomerStats(kitId),
+        this.contractService.getContractStats(year, kitId),
+        this.invoiceService.getInvoiceStats(year, kitId),
+        this.paymentService.getPaymentStats(year, kitId),
       ]);
 
     const result = {
@@ -140,7 +149,7 @@ export class StatisticsService {
    * 清除仪表板相关缓存（当数据变更时调用）
    */
   invalidateDashboardCache(): void {
-    this.cache.delete('dashboard_stats');
+    this.cache.clear(); // 简单起见，清除所有统计缓存
     console.log('Dashboard cache invalidated due to data changes');
   }
 
@@ -179,26 +188,38 @@ export class StatisticsService {
   /**
    * 获取月度收入趋势（固定12个月）
    */
-  async getMonthlyRevenueTrend(year: number): Promise<any[]> {
+  async getMonthlyRevenueTrend(year: number, kitId?: number): Promise<any[]> {
     const result = [];
 
     // 统计发票面额总计（应收）
-    const invoiceTrend = await this.invoiceService.invoiceRepository
+    const invoiceQuery = this.invoiceService.invoiceRepository
       .createQueryBuilder('invoice')
       .select("DATE_FORMAT(invoice.issue_date, '%Y-%m')", 'month')
       .addSelect('SUM(invoice.total_amount)', 'total')
-      .where('YEAR(invoice.issue_date) = :year', { year })
+      .where('YEAR(invoice.issue_date) = :year', { year });
+
+    if (kitId) {
+      invoiceQuery.andWhere('invoice.kit_id = :kitId', { kitId });
+    }
+
+    const invoiceTrend = await invoiceQuery
       .groupBy('month')
       .orderBy('month', 'ASC')
       .getRawMany();
 
     // 统计支付总计（实收）
-    const paymentTrend = await this.paymentService.paymentRepository
+    const paymentQuery = this.paymentService.paymentRepository
       .createQueryBuilder('payment')
       .select("DATE_FORMAT(payment.payment_date, '%Y-%m')", 'month')
       .addSelect('SUM(payment.amount)', 'total')
       .where('YEAR(payment.payment_date) = :year', { year })
-      .andWhere("payment.status = 'completed'")
+      .andWhere("payment.status = 'completed'");
+
+    if (kitId) {
+      paymentQuery.andWhere('payment.kit_id = :kitId', { kitId });
+    }
+
+    const paymentTrend = await paymentQuery
       .groupBy('month')
       .orderBy('month', 'ASC')
       .getRawMany();
@@ -224,14 +245,20 @@ export class StatisticsService {
   /**
    * 获取客户分布统计
    */
-  async getCustomerContribution(year: number, limit = 5): Promise<any[]> {
-    const result = await this.invoiceService.invoiceRepository
+  async getCustomerContribution(year: number, kitId?: number, limit = 5): Promise<any[]> {
+    const query = this.invoiceService.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoin('invoice.contract', 'contract')
       .leftJoin('contract.customer', 'customer')
       .select('customer.name', 'name')
       .addSelect('SUM(invoice.total_amount)', 'total')
-      .where('YEAR(invoice.issue_date) = :year', { year })
+      .where('YEAR(invoice.issue_date) = :year', { year });
+
+    if (kitId) {
+      query.andWhere('invoice.kit_id = :kitId', { kitId });
+    }
+
+    const result = await query
       .groupBy('customer.id')
       .orderBy('total', 'DESC')
       .limit(limit)
@@ -246,24 +273,24 @@ export class StatisticsService {
   /**
    * 获取合同状态分布
    */
-  async getContractStatusDistribution(year: number): Promise<any> {
-    const stats = await this.contractService.getContractStats(year);
+  async getContractStatusDistribution(year: number, kitId?: number): Promise<any> {
+    const stats = await this.contractService.getContractStats(year, kitId);
 
     return [
       {
         status: '草稿',
         count: stats.draft,
-        percentage: ((stats.draft / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(1) : '0.0',
       },
       {
         status: '执行中',
         count: stats.active,
-        percentage: ((stats.active / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : '0.0',
       },
       {
         status: '已完成',
         count: stats.completed,
-        percentage: ((stats.completed / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : '0.0',
       },
     ];
   }
@@ -271,29 +298,29 @@ export class StatisticsService {
   /**
    * 获取发票状态分布
    */
-  async getInvoiceStatusDistribution(year: number): Promise<any> {
-    const stats = await this.invoiceService.getInvoiceStats(year);
+  async getInvoiceStatusDistribution(year: number, kitId?: number): Promise<any> {
+    const stats = await this.invoiceService.getInvoiceStats(year, kitId);
 
     return [
       {
         status: '草稿',
         count: stats.draft,
-        percentage: ((stats.draft / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(1) : '0.0',
       },
       {
         status: '已发送',
         count: stats.sent,
-        percentage: ((stats.sent / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(1) : '0.0',
       },
       {
         status: '已支付',
         count: stats.paid,
-        percentage: ((stats.paid / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.paid / stats.total) * 100).toFixed(1) : '0.0',
       },
       {
         status: '逾期',
         count: stats.overdue,
-        percentage: ((stats.overdue / stats.total) * 100).toFixed(1),
+        percentage: stats.total > 0 ? ((stats.overdue / stats.total) * 100).toFixed(1) : '0.0',
       },
     ];
   }
@@ -301,40 +328,47 @@ export class StatisticsService {
   /**
    * 获取支付方式统计
    */
-  async getPaymentMethodStats(): Promise<any> {
-    const stats = await this.paymentService.getPaymentStats();
+  async getPaymentMethodStats(kitId?: number): Promise<any> {
+    const stats = await this.paymentService.getPaymentStats(undefined, kitId);
     return stats.paymentMethodStats;
   }
 
   /**
    * 获取逾期发票提醒
    */
-  async getOverdueInvoicesAlert(): Promise<any> {
-    const overdueInvoices = await this.invoiceService.getOverdueInvoices();
+  async getOverdueInvoicesAlert(kitId?: number): Promise<any> {
+    const overdueInvoices = await this.invoiceService.getOverdueInvoices(kitId);
 
     return {
       count: overdueInvoices.length,
       totalAmount: overdueInvoices.reduce(
-        (sum, invoice) => sum + invoice.total_amount,
+        (sum, invoice) => sum + Number(invoice.total_amount),
         0
       ),
-      invoices: overdueInvoices.slice(0, 5), // 只返回前5个最紧急的
+      invoices: overdueInvoices.slice(0, 5),
     };
   }
 
   /**
    * 获取可用年份列表
    */
-  async getAvailableYears(): Promise<number[]> {
+  async getAvailableYears(kitId?: number): Promise<number[]> {
+    const contractQuery = this.contractService.contractRepository
+      .createQueryBuilder('contract')
+      .select('MIN(YEAR(contract.start_date))', 'minYear');
+
+    const invoiceQuery = this.invoiceService.invoiceRepository
+      .createQueryBuilder('invoice')
+      .select('MIN(YEAR(invoice.issue_date))', 'minYear');
+
+    if (kitId) {
+      contractQuery.andWhere('contract.kit_id = :kitId', { kitId });
+      invoiceQuery.andWhere('invoice.kit_id = :kitId', { kitId });
+    }
+
     const [minContractYear, minInvoiceYear] = await Promise.all([
-      this.contractService.contractRepository
-        .createQueryBuilder('contract')
-        .select('MIN(YEAR(contract.start_date))', 'minYear')
-        .getRawOne(),
-      this.invoiceService.invoiceRepository
-        .createQueryBuilder('invoice')
-        .select('MIN(YEAR(invoice.issue_date))', 'minYear')
-        .getRawOne(),
+      contractQuery.getRawOne(),
+      invoiceQuery.getRawOne(),
     ]);
 
     const minYear = Math.min(
@@ -348,6 +382,6 @@ export class StatisticsService {
       years.push(y);
     }
 
-    return years.reverse(); // 降序排列，当前年最前
+    return years.reverse();
   }
 }

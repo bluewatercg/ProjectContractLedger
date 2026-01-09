@@ -1,9 +1,13 @@
 import { Controller, Get, Post, Query, Inject } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { StatisticsService } from '../service/statistics.service';
 import { ApiResponse } from '../interface';
 
 @Controller('/api/v1/statistics')
 export class StatisticsController {
+  @Inject()
+  ctx: Context;
+
   @Inject()
   statisticsService: StatisticsService;
 
@@ -13,7 +17,8 @@ export class StatisticsController {
   @Get('/dashboard')
   async getDashboardStats(@Query('year') year?: number): Promise<ApiResponse> {
     try {
-      const stats = await this.statisticsService.getDashboardStats(year);
+      const kitId = this.ctx.state?.kitId;
+      const stats = await this.statisticsService.getDashboardStats(year, kitId);
       return {
         success: true,
         data: stats,
@@ -37,8 +42,9 @@ export class StatisticsController {
   ): Promise<ApiResponse> {
     try {
       const targetYear = year || new Date().getFullYear();
+      const kitId = this.ctx.state?.kitId;
       const trend =
-        await this.statisticsService.getMonthlyRevenueTrend(targetYear);
+        await this.statisticsService.getMonthlyRevenueTrend(targetYear, kitId);
       return {
         success: true,
         data: trend,
@@ -63,8 +69,10 @@ export class StatisticsController {
   ): Promise<ApiResponse> {
     try {
       const targetYear = year || new Date().getFullYear();
+      const kitId = this.ctx.state?.kitId;
       const contribution = await this.statisticsService.getCustomerContribution(
         targetYear,
+        kitId,
         limit || 5
       );
       return {
@@ -90,8 +98,9 @@ export class StatisticsController {
   ): Promise<ApiResponse> {
     try {
       const targetYear = year || new Date().getFullYear();
+      const kitId = this.ctx.state?.kitId;
       const distribution =
-        await this.statisticsService.getContractStatusDistribution(targetYear);
+        await this.statisticsService.getContractStatusDistribution(targetYear, kitId);
       return {
         success: true,
         data: distribution,
@@ -115,8 +124,9 @@ export class StatisticsController {
   ): Promise<ApiResponse> {
     try {
       const targetYear = year || new Date().getFullYear();
+      const kitId = this.ctx.state?.kitId;
       const distribution =
-        await this.statisticsService.getInvoiceStatusDistribution(targetYear);
+        await this.statisticsService.getInvoiceStatusDistribution(targetYear, kitId);
       return {
         success: true,
         data: distribution,
@@ -137,7 +147,8 @@ export class StatisticsController {
   @Get('/payments/methods')
   async getPaymentMethodStats(): Promise<ApiResponse> {
     try {
-      const stats = await this.statisticsService.getPaymentMethodStats();
+      const kitId = this.ctx.state?.kitId;
+      const stats = await this.statisticsService.getPaymentMethodStats(kitId);
       return {
         success: true,
         data: stats,
@@ -158,7 +169,8 @@ export class StatisticsController {
   @Get('/alerts/overdue')
   async getOverdueInvoicesAlert(): Promise<ApiResponse> {
     try {
-      const alert = await this.statisticsService.getOverdueInvoicesAlert();
+      const kitId = this.ctx.state?.kitId;
+      const alert = await this.statisticsService.getOverdueInvoicesAlert(kitId);
       return {
         success: true,
         data: alert,
@@ -199,7 +211,8 @@ export class StatisticsController {
   @Get('/available-years')
   async getAvailableYears(): Promise<ApiResponse> {
     try {
-      const years = await this.statisticsService.getAvailableYears();
+      const kitId = this.ctx.state?.kitId;
+      const years = await this.statisticsService.getAvailableYears(kitId);
       return {
         success: true,
         data: years,

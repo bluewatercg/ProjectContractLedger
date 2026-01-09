@@ -6,11 +6,15 @@ import {
   Query,
   Inject,
 } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { ApiResponse } from '../interface';
 import { ReminderService } from '../service/reminder.service';
 
 @Controller('/api/v1/reminders')
 export class ReminderController {
+  @Inject()
+  ctx: Context;
+
   @Inject()
   reminderService: ReminderService;
 
@@ -20,7 +24,8 @@ export class ReminderController {
   @Get('/')
   async getAllReminders(): Promise<ApiResponse> {
     try {
-      const reminders = await this.reminderService.getAllReminders();
+      const kitId = this.ctx.state?.kitId;
+      const reminders = await this.reminderService.getAllReminders(kitId);
 
       return {
         success: true,
@@ -42,7 +47,8 @@ export class ReminderController {
   @Get('/count')
   async getReminderCount(@Query('type') type?: string): Promise<ApiResponse> {
     try {
-      const count = await this.reminderService.getReminderCount(type);
+      const kitId = this.ctx.state?.kitId;
+      const count = await this.reminderService.getReminderCount(type, kitId);
 
       return {
         success: true,
@@ -92,8 +98,9 @@ export class ReminderController {
   @Get('/contract-fulfillment')
   async getContractFulfillment(): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const fulfillmentItems =
-        await this.reminderService.getContractFulfillmentReminders();
+        await this.reminderService.getContractFulfillmentReminders(kitId);
 
       return {
         success: true,
@@ -118,8 +125,9 @@ export class ReminderController {
   @Get('/invoice-needed')
   async getInvoiceNeeded(): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const invoiceItems =
-        await this.reminderService.getInvoiceNeededReminders();
+        await this.reminderService.getInvoiceNeededReminders(kitId);
 
       return {
         success: true,
@@ -144,8 +152,9 @@ export class ReminderController {
   @Get('/payment-needed')
   async getPaymentNeeded(): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
       const paymentItems =
-        await this.reminderService.getPaymentNeededReminders();
+        await this.reminderService.getPaymentNeededReminders(kitId);
 
       return {
         success: true,
@@ -170,7 +179,8 @@ export class ReminderController {
   @Get('/contract-renewals')
   async getContractRenewals(): Promise<ApiResponse> {
     try {
-      const summary = await this.reminderService.getAllReminders();
+      const kitId = this.ctx.state?.kitId;
+      const summary = await this.reminderService.getAllReminders(kitId);
       const renewalItems = summary.items.filter(
         item => item.type === 'contract_renewal'
       );
@@ -198,7 +208,8 @@ export class ReminderController {
   @Get('/payment-collection')
   async getPaymentCollection(): Promise<ApiResponse> {
     try {
-      const summary = await this.reminderService.getAllReminders();
+      const kitId = this.ctx.state?.kitId;
+      const summary = await this.reminderService.getAllReminders(kitId);
       const paymentItems = summary.items.filter(
         item => item.type === 'payment_collection'
       );
