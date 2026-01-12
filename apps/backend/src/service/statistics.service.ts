@@ -384,4 +384,135 @@ export class StatisticsService {
 
     return years.reverse();
   }
+
+  /**
+   * 获取账龄分析汇总
+   */
+  async getAgingAnalysis(year?: number, kitId?: number): Promise<any> {
+    // 查询所有未完全付清的发票
+    const queryBuilder = this.invoiceService.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoinAndSelect('invoice.payments', 'payment')
+      .leftJoinAndSelect('invoice.contract', 'contract')
+      .leftJoinAndSelect('contract.customer', 'customer')
+      .where('invoice.status != :cancelled', { cancelled: 'cancelled' });
+
+    if (kitId) {
+      queryBuilder.andWhere('invoice.kit_id = :kitId', { kitId });
+    }
+
+    if (year) {
+      queryBuilder.andWhere('YEAR(invoice.issue_date) = :year', { year });
+    }
+
+    const invoices = await queryBuilder.getMany();
+
+    // 计算每张发票的未付金额和逾期天数
+    const today = new Date();
+    const agingData = invoices
+      .map(invoice => {
+        // 计算已支付金额
+        const paidAmount = (invoice.payments || [])
+          .filter(p => p.status === 'completed')
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+
+        const unpaidAmount = Number(invoice.total_amount) - paidAmount;
+
+        // 只统计未付清的发票
+        if (unpaidAmount <= 0) return null;
+
+        const overdueDays = this.calculateOverdueDays(today, invoice.due_date);
+        const bucket = this.getAgingBucket(overdueDays);
+
+        return {
+          invoice,
+          unpaidAmount,
+          overdueDays,
+          bucket,
+        };
+      })
+      .filter(item => item !== null);
+
+    // 按账龄区间汇总
+    const summary = this.aggregateByBucket(agingData);
+
+    // 计算总计
+    const totalUnpaid = agingData.reduce(
+      (sum, item) => sum + item.unpaidAmount,
+      0
+    );
+
+    // 统计涉及的客户数
+    const uniqueCustomers = new Set(
+      agingData.map(d => d.invoice.contract.customer.id)
+    );
+
+    return {
+      totalUnpaid,
+      totalInvoices: agingData.length,
+      totalCustomers: uniqueCustomers.size,
+      summary,
+    };
+  }
+
+  /**
+   * 计算逾期天数
+   */
+  private calculateOverdueDays(today: Date, dueDate: Date): number {
+    if (!dueDate) return 0;
+    const diffTime = today.getTime() - new Date(dueDate).getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  /**
+   * 获取账龄区间
+   */
+  private getAgingBucket(overdueDays: number): string {
+    if (overdueDays <= 0) return 'not_due';
+    if (overdueDays <= 30) return '0-30';
+    if (overdueDays <= 60) return '31-60';
+    if (overdueDays <= 90) return '61-90';
+    return '90+';
+  }
+
+  /**
+   * 按区间汇总
+   */
+  private aggregateByBucket(agingData: any[]): any[] {
+    const buckets = ['not_due', '0-30', '31-60', '61-90', '90+'];
+    const bucketLabels = {
+      not_due: '未到期',
+      '0-30': '0-30天',
+      '31-60': '31-60天',
+      '61-90': '61-90天',
+      '90+': '90天以上',
+    };
+    const riskLevels = {
+      not_due: 'low',
+      '0-30': 'low',
+      '31-60': 'medium',
+      '61-90': 'medium',
+      '90+': 'high',
+    };
+
+    const totalAmount = agingData.reduce(
+      (sum, item) => sum + item.unpaidAmount,
+      0
+    );
+
+    return buckets.map(bucket => {
+      const items = agingData.filter(item => item.bucket === bucket);
+      const amount = items.reduce((sum, item) => sum + item.unpaidAmount, 0);
+
+      return {
+        bucket,
+        bucketLabel: bucketLabels[bucket],
+        amount,
+        invoiceCount: items.length,
+        percentage: totalAmount > 0 ? (amount / totalAmount) * 100 : 0,
+        riskLevel: riskLevels[bucket],
+      };
+    });
+  }
 }

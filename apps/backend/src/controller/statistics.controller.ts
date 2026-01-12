@@ -226,4 +226,26 @@ export class StatisticsController {
       };
     }
   }
+
+  /**
+   * 获取账龄分析
+   */
+  @Get('/aging-analysis')
+  async getAgingAnalysis(@Query('year') year?: number): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      const result = await this.statisticsService.getAgingAnalysis(year, kitId);
+      return {
+        success: true,
+        data: result,
+        message: '获取账龄分析成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '获取账龄分析失败',
+        code: 500,
+      };
+    }
+  }
 }

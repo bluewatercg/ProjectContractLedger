@@ -144,7 +144,65 @@
       </div>
     </div>
 
+    <!-- 账龄分析区域 -->
+    <div class="aging-section" v-loading="loading">
+      <div class="section-header">
+        <h3>📊 应收账款账龄分析</h3>
+        <el-tooltip content="按逾期时间分析未收回的款项，帮助识别风险" placement="top">
+          <el-icon class="info-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+      </div>
+
+      <div v-if="agingData" class="aging-content">
+        <!-- 汇总统计 -->
+        <div class="aging-summary">
+          <div class="summary-item">
+            <span class="label">总应收账款</span>
+            <span class="value primary">¥{{ formatCurrency(agingData.totalUnpaid || 0) }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">未付发票数</span>
+            <span class="value">{{ agingData.totalInvoices || 0 }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">涉及客户</span>
+            <span class="value">{{ agingData.totalCustomers || 0 }}</span>
+          </div>
+        </div>
+
+        <!-- 账龄分布列表 -->
+        <div class="bucket-list">
+          <div
+            v-for="bucket in agingData.summary"
+            :key="bucket.bucket"
+            class="bucket-item"
+            :class="'risk-' + bucket.riskLevel"
+          >
+            <div class="bucket-header">
+              <span class="bucket-label">{{ bucket.bucketLabel }}</span>
+              <span class="bucket-count">{{ bucket.invoiceCount }}张</span>
+            </div>
+            <div class="bucket-bar">
+              <div
+                class="bar-fill"
+                :style="{ width: bucket.percentage + '%' }"
+              ></div>
+            </div>
+            <div class="bucket-info">
+              <span class="amount">¥{{ formatCurrency(bucket.amount) }}</span>
+              <span class="percentage">{{ bucket.percentage.toFixed(1) }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="no-aging-data">
+        <el-empty description="暂无应收账款数据" :image-size="100" />
+      </div>
+    </div>
+
     <!-- 快速操作 -->
+
     <div class="quick-actions">
       <h3>快速操作</h3>
       <div class="action-buttons">
@@ -518,6 +576,8 @@ const reminders = ref<ReminderSummary>();
 const loadTime = ref<number>();
 const selectedYear = ref<number>(new Date().getFullYear());
 const availableYears = ref<number[]>([new Date().getFullYear()]);
+const agingData = ref<any>();
+
 
 // 图表相关状态
 const revenueTrendChart = ref<HTMLElement>();
@@ -611,6 +671,21 @@ const fetchAvailableYears = async () => {
     console.error("Failed to fetch available years:", error);
   }
 };
+
+// 获取账龄分析
+const fetchAgingAnalysis = async () => {
+  try {
+    const response = await statisticsApi.getAgingAnalysis(selectedYear.value);
+    if (response.success) {
+      agingData.value = response.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch aging analysis:", error);
+    // 失败时不显示错误，只是不显示该模块
+    agingData.value = null;
+  }
+};
+
 
 // 初始化所有图表
 const initAllCharts = async () => {
@@ -884,6 +959,7 @@ onMounted(() => {
   fetchAvailableYears();
   fetchStats();
   fetchReminders();
+  fetchAgingAnalysis();
   initAllCharts();
   window.addEventListener("resize", handleResize);
 });
@@ -904,6 +980,7 @@ watch(
         await Promise.all([
           fetchStats(false),
           fetchReminders(),
+          fetchAgingAnalysis(),
           initAllCharts()
         ]);
         
@@ -1527,8 +1604,163 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 480px) {
-  .financial-details-grid {
+/* 账龄分析区域 */
+.aging-section {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+}
+
+.aging-section .section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.aging-section h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.aging-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.aging-summary .summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aging-summary .label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.aging-summary .value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.aging-summary .value.primary {
+  color: #3b82f6;
+}
+
+.bucket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bucket-item {
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  background: #f8fafc;
+  transition: all 0.3s ease;
+}
+
+.bucket-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bucket-item.risk-low {
+  border-left-color: #10b981;
+  background: linear-gradient(90deg, #f0fdf4 0%, #f8fafc 100%);
+}
+
+.bucket-item.risk-medium {
+  border-left-color: #f59e0b;
+  background: linear-gradient(90deg, #fffbeb 0%, #f8fafc 100%);
+}
+
+.bucket-item.risk-high {
+  border-left-color: #ef4444;
+  background: linear-gradient(90deg, #fef2f2 0%, #f8fafc 100%);
+}
+
+.bucket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bucket-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.bucket-count {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.bucket-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.risk-low .bar-fill {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.risk-medium .bar-fill {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.risk-high .bar-fill {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.bucket-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bucket-info .amount {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.bucket-info .percentage {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.no-aging-data {
+  padding: 40px 20px;
+}
+
+@media (max-width: 768px) {
+  .aging-summary {
     grid-template-columns: 1fr;
   }
 }

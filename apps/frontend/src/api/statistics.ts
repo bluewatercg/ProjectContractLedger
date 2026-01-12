@@ -162,4 +162,16 @@ export const statisticsApi = {
     this.clearCache(year);
     return this.getDashboardStats(year, false);
   },
+
+  /**
+   * 获取账龄分析
+   */
+  getAgingAnalysis(year?: number): Promise<ApiResponse<any>> {
+    return apiClient
+      .get("/statistics/aging-analysis", {
+        params: { year },
+      })
+      .then((res) => res.data);
+  },
 };
+
