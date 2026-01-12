@@ -123,8 +123,8 @@ const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?se
 const handleKitChange = (kitId: number) => {
   if (kitStore.switchKit(kitId)) {
     ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`)
-    // 刷新当前页面数据
-    router.go(0)
+    // 不再使用 router.go(0) 强制刷新整个页面
+    // 各页面通过 watch 监听 kitStore.currentKitId 变化来自动刷新数据
   }
 }
 

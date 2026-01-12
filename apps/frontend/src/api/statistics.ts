@@ -1,6 +1,7 @@
 import apiClient from "./config";
 import type { ApiResponse, DashboardStats } from "./types";
 import { cache } from "@/utils/cache";
+import { useKitStore } from "@/stores/kit";
 
 export const statisticsApi = {
   /**
@@ -10,21 +11,28 @@ export const statisticsApi = {
     year?: number,
     useCache: boolean = true,
   ): Promise<ApiResponse<DashboardStats>> {
-    const cacheKey = year ? `dashboard_stats_${year}` : "dashboard_stats";
+    // 获取当前套账ID，确保缓存按套账隔离
+    const kitStore = useKitStore();
+    const kitId = kitStore.currentKitId;
+
+    // 缓存key包含kitId，避免不同套账数据混淆
+    const cacheKey = kitId
+      ? (year ? `dashboard_stats_${kitId}_${year}` : `dashboard_stats_${kitId}`)
+      : (year ? `dashboard_stats_${year}` : "dashboard_stats");
 
     // 尝试从缓存获取
     if (useCache) {
       const cachedData = cache.get(cacheKey, true);
       if (cachedData) {
         console.log(
-          `Dashboard stats loaded from cache${year ? ` (${year})` : ""}`,
+          `Dashboard stats loaded from cache for kit ${kitId}${year ? ` (${year})` : ""}`,
         );
         return cachedData;
       }
     }
 
     console.log(
-      `Fetching fresh dashboard stats from API${year ? ` for year ${year}` : ""}`,
+      `Fetching fresh dashboard stats from API for kit ${kitId}${year ? ` for year ${year}` : ""}`,
     );
     const startTime = Date.now();
 
@@ -123,12 +131,26 @@ export const statisticsApi = {
    * 清除统计数据缓存
    */
   clearCache(year?: number): void {
-    if (year) {
-      cache.delete(`dashboard_stats_${year}`);
+    const kitStore = useKitStore();
+    const kitId = kitStore.currentKitId;
+
+    // 清除当前套账的缓存
+    if (kitId) {
+      if (year) {
+        cache.delete(`dashboard_stats_${kitId}_${year}`);
+      } else {
+        cache.delete(`dashboard_stats_${kitId}`);
+      }
+      console.log(`Statistics cache cleared for kit ${kitId}`);
     } else {
-      cache.delete("dashboard_stats");
+      // 兜底：清除不带kitId的缓存
+      if (year) {
+        cache.delete(`dashboard_stats_${year}`);
+      } else {
+        cache.delete("dashboard_stats");
+      }
+      console.log("Statistics cache cleared");
     }
-    console.log("Statistics cache cleared");
   },
 
   /**

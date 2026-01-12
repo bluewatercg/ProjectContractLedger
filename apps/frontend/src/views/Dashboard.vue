@@ -481,7 +481,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import * as echarts from "echarts";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -505,8 +505,10 @@ import {
   type ReminderSummary,
 } from "@/api/reminder";
 import type { DashboardStats } from "@/api/types";
+import { useKitStore } from "@/stores/kit";
 
 const router = useRouter();
+const kitStore = useKitStore();
 
 // 状态
 const loading = ref(false);
@@ -885,6 +887,36 @@ onMounted(() => {
   initAllCharts();
   window.addEventListener("resize", handleResize);
 });
+
+// 监听套账变化，自动刷新数据
+watch(
+  () => kitStore.currentKitId,
+  async (newKitId, oldKitId) => {
+    // 只在套账真正变化时刷新（避免初始化时触发）
+    if (newKitId !== oldKitId && oldKitId !== null && newKitId !== null) {
+      console.log(`Kit changed from ${oldKitId} to ${newKitId}, refreshing dashboard data...`);
+      
+      try {
+        // 清除缓存
+        statisticsApi.clearCache(selectedYear.value);
+        
+        // 重新加载所有数据
+        await Promise.all([
+          fetchStats(false),
+          fetchReminders(),
+          initAllCharts()
+        ]);
+        
+        ElMessage.success('数据已刷新');
+      } catch (error) {
+        console.error('Failed to refresh data after kit change:', error);
+        ElMessage.error('数据刷新失败，请手动刷新');
+      }
+    }
+  },
+  { immediate: false }
+);
+
 
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);
