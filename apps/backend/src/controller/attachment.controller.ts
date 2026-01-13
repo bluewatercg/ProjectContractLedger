@@ -12,6 +12,8 @@ import { Context } from '@midwayjs/koa';
 import { UploadFileInfo } from '@midwayjs/upload';
 import { ContractAttachmentService } from '../service/contract-attachment.service';
 import { InvoiceAttachmentService } from '../service/invoice-attachment.service';
+import { InvoiceService } from '../service/invoice.service';
+import { ContractService } from '../service/contract.service';
 import { ApiResponse } from '../interface';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -26,6 +28,12 @@ export class AttachmentController {
 
   @Inject()
   invoiceAttachmentService: InvoiceAttachmentService;
+
+  @Inject()
+  invoiceService: InvoiceService;
+
+  @Inject()
+  contractService: ContractService;
 
   @Inject()
   ctx: Context;
@@ -138,6 +146,16 @@ export class AttachmentController {
         console.warn('临时文件清理失败:', cleanupError.message);
       }
 
+      // 自动更新合同状态：有附件或发票 -> active（执行中）
+      try {
+        await this.contractService.updateContractStatusByAttachmentsOrInvoices(
+          contractId
+        );
+      } catch (statusError) {
+        console.error('更新合同状态失败:', statusError.message);
+        // 不影响附件上传的成功，只记录错误
+      }
+
       return {
         success: true,
         data: attachment,
@@ -183,6 +201,7 @@ export class AttachmentController {
    */
   @Del('/contracts/:contractId/attachments/:attachmentId')
   async deleteContractAttachment(
+    @Param('contractId') contractId: number,
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
@@ -196,6 +215,16 @@ export class AttachmentController {
           message: '附件不存在',
           code: 404,
         };
+      }
+
+      // 自动更新合同状态：无附件且无发票 -> draft（草稿）
+      try {
+        await this.contractService.updateContractStatusByAttachmentsOrInvoices(
+          contractId
+        );
+      } catch (statusError) {
+        console.error('更新合同状态失败:', statusError.message);
+        // 不影响附件删除的成功，只记录错误
       }
 
       return {
@@ -313,6 +342,14 @@ export class AttachmentController {
         console.warn('发票临时文件清理失败:', cleanupError.message);
       }
 
+      // 自动更新发票状态：有附件 -> sent（已开票）
+      try {
+        await this.invoiceService.updateInvoiceStatusByAttachments(invoiceId);
+      } catch (statusError) {
+        console.error('更新发票状态失败:', statusError.message);
+        // 不影响附件上传的成功，只记录错误
+      }
+
       return {
         success: true,
         data: attachment,
@@ -358,6 +395,7 @@ export class AttachmentController {
    */
   @Del('/invoices/:invoiceId/attachments/:attachmentId')
   async deleteInvoiceAttachment(
+    @Param('invoiceId') invoiceId: number,
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
@@ -371,6 +409,14 @@ export class AttachmentController {
           message: '附件不存在',
           code: 404,
         };
+      }
+
+      // 自动更新发票状态：无附件 -> draft（草稿）
+      try {
+        await this.invoiceService.updateInvoiceStatusByAttachments(invoiceId);
+      } catch (statusError) {
+        console.error('更新发票状态失败:', statusError.message);
+        // 不影响附件删除的成功，只记录错误
       }
 
       return {

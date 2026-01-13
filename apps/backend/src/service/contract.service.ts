@@ -475,4 +475,48 @@ export class ContractService {
 
     return completedCount;
   }
+
+  /**
+   * 根据附件或发票自动更新合同状态
+   * @param contractId 合同ID
+   */
+  async updateContractStatusByAttachmentsOrInvoices(
+    contractId: number
+  ): Promise<void> {
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId },
+      relations: ['attachments', 'invoices'],
+    });
+
+    if (!contract) {
+      throw new Error('Contract not found');
+    }
+
+    // 只有当前状态是 draft 或 active 时才自动更新
+    if (contract.status !== 'draft' && contract.status !== 'active') {
+      return; // 如果已经是 completed 或 cancelled，不自动改变状态
+    }
+
+    // 判断是否有附件或发票
+    const hasAttachments =
+      contract.attachments && contract.attachments.length > 0;
+    const hasInvoices = contract.invoices && contract.invoices.length > 0;
+    const shouldBeActive = hasAttachments || hasInvoices;
+
+    const newStatus = shouldBeActive ? 'active' : 'draft';
+
+    if (contract.status !== newStatus) {
+      contract.status = newStatus;
+      await this.contractRepository.save(contract);
+
+      // 清除相关缓存
+      if (this.statisticsService?.invalidateContractCache) {
+        this.statisticsService.invalidateContractCache();
+      }
+
+      console.log(
+        `Contract #${contractId} status updated: ${contract.status} -> ${newStatus} (attachments: ${contract.attachments?.length || 0}, invoices: ${contract.invoices?.length || 0})`
+      );
+    }
+  }
 }

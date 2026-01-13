@@ -26,6 +26,9 @@ export class InvoiceService {
   @Inject()
   statisticsService: any; // 延迟注入避免循环依赖
 
+  @Inject()
+  contractService: any; // 延迟注入避免循环依赖
+
   /**
    * 格式化发票数据，处理日期字段
    */
@@ -63,8 +66,8 @@ export class InvoiceService {
         total_amount,
         issue_date: DateUtil.parseDate(createInvoiceDto.issue_date),
         due_date: DateUtil.parseDate(createInvoiceDto.due_date),
-        // 创建发票时自动设置为已发送状态，表示已开发票
-        status: 'sent',
+        // 默认为草稿状态，上传附件后自动变为已开票
+        status: 'draft',
       });
 
       const savedInvoice = await manager.save(invoice);
@@ -72,6 +75,18 @@ export class InvoiceService {
       // 清除相关缓存
       if (this.statisticsService?.invalidateInvoiceCache) {
         this.statisticsService.invalidateInvoiceCache();
+      }
+
+      // 自动更新合同状态：有发票 -> active（执行中）
+      if (this.contractService?.updateContractStatusByAttachmentsOrInvoices) {
+        try {
+          await this.contractService.updateContractStatusByAttachmentsOrInvoices(
+            createInvoiceDto.contract_id
+          );
+        } catch (statusError) {
+          console.error('更新合同状态失败:', statusError.message);
+          // 不影响发票创建的成功，只记录错误
+        }
       }
 
       // 格式化返回数据，处理日期字段
@@ -233,11 +248,32 @@ export class InvoiceService {
       whereCondition.kit_id = kitId;
     }
 
+    // 先获取发票以获得 contract_id
+    const invoice = await this.invoiceRepository.findOne({
+      where: whereCondition,
+    });
+
     const result = await this.invoiceRepository.delete(whereCondition);
 
     // 清除相关缓存
     if (result.affected > 0 && this.statisticsService?.invalidateInvoiceCache) {
       this.statisticsService.invalidateInvoiceCache();
+    }
+
+    // 自动更新合同状态：无发票且无附件 -> draft（草稿）
+    if (
+      invoice &&
+      result.affected > 0 &&
+      this.contractService?.updateContractStatusByAttachmentsOrInvoices
+    ) {
+      try {
+        await this.contractService.updateContractStatusByAttachmentsOrInvoices(
+          invoice.contract_id
+        );
+      } catch (statusError) {
+        console.error('更新合同状态失败:', statusError.message);
+        // 不影响发票删除的成功，只记录错误
+      }
     }
 
     return result.affected > 0;
@@ -375,6 +411,44 @@ export class InvoiceService {
     // 如果合同状态为草稿，创建发票时自动将其更新为执行中
     if (contract.status === 'draft') {
       await manager.update(Contract, contractId, { status: 'active' });
+    }
+  }
+
+  /**
+   * 根据附件数量自动更新发票状态
+   * @param invoiceId 发票ID
+   */
+  async updateInvoiceStatusByAttachments(invoiceId: number): Promise<void> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId },
+      relations: ['attachments'],
+    });
+
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    // 只有当前状态是 draft 或 sent 时才自动更新
+    if (invoice.status !== 'draft' && invoice.status !== 'sent') {
+      return; // 如果已经是 paid 或 overdue，不自动改变状态
+    }
+
+    const hasAttachments =
+      invoice.attachments && invoice.attachments.length > 0;
+    const newStatus = hasAttachments ? 'sent' : 'draft';
+
+    if (invoice.status !== newStatus) {
+      invoice.status = newStatus;
+      await this.invoiceRepository.save(invoice);
+
+      // 清除相关缓存
+      if (this.statisticsService?.invalidateInvoiceCache) {
+        this.statisticsService.invalidateInvoiceCache();
+      }
+
+      console.log(
+        `Invoice #${invoiceId} status updated: ${invoice.status} -> ${newStatus} (attachments: ${invoice.attachments.length})`
+      );
     }
   }
 }

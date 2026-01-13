@@ -79,7 +79,7 @@ export class CustomerController {
   ): Promise<ApiResponse> {
     try {
       const kitId = this.ctx.state?.kitId;
-      const userId = this.ctx.state?.user?.id;
+      const userId = this.ctx.state?.user?.id || 1; // 默认使用1作为系统用户ID
 
       if (!kitId) {
         return {
