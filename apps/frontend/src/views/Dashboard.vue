@@ -144,7 +144,7 @@
       </div>
     </div>
 
-    <!-- 账龄分析区域 - 重新设计 -->
+    <!-- 账龄分析区域 - 轻量现代化 -->
     <div class="aging-section" v-loading="loading">
       <div class="section-header">
         <div class="header-left">
@@ -157,71 +157,59 @@
       </div>
 
       <div v-if="agingData" class="aging-content">
-        <!-- 汇总统计卡片 -->
-        <div class="aging-summary-cards">
+        <!-- 汇总统计卡片 - 简化版 -->
+        <div class="aging-summary-row">
           <div class="summary-card primary">
-            <div class="card-icon">
-              <el-icon><Money /></el-icon>
+            <div class="summary-header">
+              <el-icon class="summary-icon"><Money /></el-icon>
+              <span class="summary-label">总应收账款</span>
             </div>
-            <div class="card-content">
-              <div class="card-label">总应收账款</div>
-              <div class="card-value">¥{{ formatCurrency(agingData.totalUnpaid || 0) }}</div>
-            </div>
+            <div class="summary-value">¥{{ formatCurrency(agingData.totalUnpaid || 0) }}</div>
           </div>
+          
           <div class="summary-card">
-            <div class="card-icon secondary">
-              <el-icon><Document /></el-icon>
+            <div class="summary-header">
+              <el-icon class="summary-icon"><Document /></el-icon>
+              <span class="summary-label">未付发票数</span>
             </div>
-            <div class="card-content">
-              <div class="card-label">未付发票数</div>
-              <div class="card-value">{{ agingData.totalInvoices || 0 }} 张</div>
-            </div>
+            <div class="summary-value">{{ agingData.totalInvoices || 0 }} <span class="unit">张</span></div>
           </div>
+          
           <div class="summary-card">
-            <div class="card-icon tertiary">
-              <el-icon><User /></el-icon>
+            <div class="summary-header">
+              <el-icon class="summary-icon"><User /></el-icon>
+              <span class="summary-label">涉及客户</span>
             </div>
-            <div class="card-content">
-              <div class="card-label">涉及客户</div>
-              <div class="card-value">{{ agingData.totalCustomers || 0 }} 个</div>
-            </div>
+            <div class="summary-value">{{ agingData.totalCustomers || 0 }} <span class="unit">个</span></div>
           </div>
         </div>
 
-        <!-- 账龄分布卡片 -->
-        <div class="bucket-cards">
+        <!-- 账龄分布列表 - 简化版 -->
+        <div class="aging-buckets">
           <div
             v-for="bucket in agingData.summary"
             :key="bucket.bucket"
-            class="bucket-card"
+            class="bucket-row"
             :class="'risk-' + bucket.riskLevel"
           >
-            <div class="bucket-card-header">
-              <div class="bucket-title">
-                <span class="risk-badge" :class="'risk-' + bucket.riskLevel">
-                  <el-icon v-if="bucket.riskLevel === 'low'"><SuccessFilled /></el-icon>
-                  <el-icon v-else-if="bucket.riskLevel === 'medium'"><WarningFilled /></el-icon>
-                  <el-icon v-else><CircleCloseFilled /></el-icon>
-                </span>
-                <span class="bucket-label">{{ bucket.bucketLabel }}</span>
+            <div class="bucket-header">
+              <div class="bucket-info">
+                <span class="risk-indicator" :class="'risk-' + bucket.riskLevel"></span>
+                <span class="bucket-name">{{ bucket.bucketLabel }}</span>
+                <span class="bucket-count">{{ bucket.invoiceCount }} 张</span>
               </div>
-              <span class="bucket-count">{{ bucket.invoiceCount }} 张</span>
+              <div class="bucket-amount">
+                <span class="amount">¥{{ formatCurrency(bucket.amount) }}</span>
+                <span class="percentage">{{ bucket.percentage.toFixed(1) }}%</span>
+              </div>
             </div>
             
-            <div class="bucket-card-body">
-              <div class="amount-section">
-                <div class="amount-value">¥{{ formatCurrency(bucket.amount) }}</div>
-                <div class="amount-percentage">{{ bucket.percentage.toFixed(1) }}%</div>
-              </div>
-              
-              <div class="progress-bar">
-                <div
-                  class="progress-fill"
-                  :style="{ width: bucket.percentage + '%' }"
-                >
-                  <span class="progress-shine"></span>
-                </div>
-              </div>
+            <div class="bucket-progress">
+              <div
+                class="progress-bar"
+                :class="'risk-' + bucket.riskLevel"
+                :style="{ width: bucket.percentage + '%' }"
+              ></div>
             </div>
           </div>
         </div>
@@ -1639,361 +1627,288 @@ onUnmounted(() => {
   }
 }
 
-/* 账龄分析区域 - 现代化重新设计 */
+/* 账龄分析区域 - 轻量现代化企业风格 */
 .aging-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-  margin-bottom: 32px;
-  position: relative;
-  overflow: hidden;
-}
-
-.aging-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.05)" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,197.3C1248,203,1344,149,1392,122.7L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
-  background-size: cover;
-  pointer-events: none;
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
 }
 
 .aging-section .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
 }
 
 .aging-section .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .aging-section .section-icon {
-  font-size: 28px;
-  color: white;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.8; }
+  font-size: 20px;
+  color: #3b82f6;
 }
 
 .aging-section h3 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
 }
 
 .aging-section .info-icon {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 18px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: help;
+  transition: color 0.2s;
 }
 
 .aging-section .info-icon:hover {
-  color: white;
-  transform: scale(1.1);
+  color: #6b7280;
 }
 
-/* 汇总统计卡片 */
-.aging-summary-cards {
+/* 汇总统计卡片行 */
+.aging-summary-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
-  position: relative;
-  z-index: 1;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .summary-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 24px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 16px;
+  transition: all 0.2s ease;
 }
 
 .summary-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .summary-card.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
-.summary-card.primary .card-label,
-.summary-card.primary .card-value {
-  color: white;
-}
-
-.card-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+.summary-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.card-icon.secondary {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+.summary-icon {
+  font-size: 18px;
+  color: #6b7280;
 }
 
-.card-icon.tertiary {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+.summary-card.primary .summary-icon {
+  color: #3b82f6;
 }
 
-.card-content {
-  flex: 1;
-}
-
-.card-label {
+.summary-label {
   font-size: 13px;
-  color: #64748b;
-  margin-bottom: 6px;
+  color: #6b7280;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.card-value {
-  font-size: 26px;
+.summary-value {
+  font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: #111827;
   line-height: 1.2;
 }
 
-/* 账龄分布卡片 */
-.bucket-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 16px;
-  position: relative;
-  z-index: 1;
+.summary-card.primary .summary-value {
+  color: #1e40af;
 }
 
-.bucket-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+.summary-value .unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  margin-left: 4px;
 }
 
-.bucket-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-.bucket-card.risk-low::before {
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-}
-
-.bucket-card.risk-medium::before {
-  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-}
-
-.bucket-card.risk-high::before {
-  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-}
-
-.bucket-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.bucket-card:hover::before {
-  width: 8px;
-}
-
-.bucket-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.bucket-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.risk-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-.risk-badge.risk-low {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #059669;
-}
-
-.risk-badge.risk-medium {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #d97706;
-}
-
-.risk-badge.risk-high {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #dc2626;
-}
-
-.bucket-label {
-  font-weight: 600;
-  font-size: 16px;
-  color: #1e293b;
-}
-
-.bucket-count {
-  font-size: 13px;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.bucket-card-body {
+/* 账龄分布列表 */
+.aging-buckets {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.amount-section {
+.bucket-row {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.bucket-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  transition: width 0.2s ease;
+}
+
+.bucket-row.risk-low::before {
+  background: #10b981;
+}
+
+.bucket-row.risk-medium::before {
+  background: #f59e0b;
+}
+
+.bucket-row.risk-high::before {
+  background: #ef4444;
+}
+
+.bucket-row:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.bucket-row:hover::before {
+  width: 4px;
+}
+
+.bucket-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bucket-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.risk-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.risk-indicator.risk-low {
+  background: #10b981;
+}
+
+.risk-indicator.risk-medium {
+  background: #f59e0b;
+}
+
+.risk-indicator.risk-high {
+  background: #ef4444;
+}
+
+.bucket-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.bucket-count {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.bucket-amount {
+  display: flex;
   align-items: baseline;
+  gap: 12px;
 }
 
-.amount-value {
-  font-size: 28px;
+.bucket-amount .amount {
+  font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: #111827;
 }
 
-.amount-percentage {
-  font-size: 16px;
-  color: #64748b;
+.bucket-amount .percentage {
+  font-size: 13px;
+  color: #6b7280;
   font-weight: 600;
 }
 
-.progress-bar {
-  height: 10px;
-  background: #e2e8f0;
-  border-radius: 5px;
-  overflow: hidden;
-  position: relative;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+.bucket-progress {
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 3px;
   overflow: hidden;
 }
 
-.risk-low .progress-fill {
-  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-}
-
-.risk-medium .progress-fill {
-  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
-}
-
-.risk-high .progress-fill {
-  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
-}
-
-.progress-shine {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
+.bucket-progress .progress-bar {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
-  animation: shine 2s infinite;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes shine {
-  0% { left: -100%; }
-  100% { left: 100%; }
+.bucket-progress .progress-bar.risk-low {
+  background: #10b981;
+}
+
+.bucket-progress .progress-bar.risk-medium {
+  background: #f59e0b;
+}
+
+.bucket-progress .progress-bar.risk-high {
+  background: #ef4444;
 }
 
 .no-aging-data {
-  padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  position: relative;
-  z-index: 1;
+  padding: 40px 20px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
   .aging-section {
-    padding: 20px;
+    padding: 16px;
   }
 
-  .aging-summary-cards,
-  .bucket-cards {
+  .aging-summary-row {
     grid-template-columns: 1fr;
   }
 
-  .aging-section h3 {
-    font-size: 18px;
+  .summary-value {
+    font-size: 20px;
   }
 
-  .card-value {
-    font-size: 22px;
+  .bucket-amount .amount {
+    font-size: 16px;
   }
 
-  .amount-value {
-    font-size: 24px;
+  .bucket-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bucket-amount {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

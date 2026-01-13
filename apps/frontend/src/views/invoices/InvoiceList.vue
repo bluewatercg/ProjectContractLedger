@@ -28,10 +28,11 @@
         </div>
       </div>
       
-      <el-table
-        v-loading="loading"
-        :data="invoices"
-        style="width: 100%"
+      <div class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
+        <el-table
+          v-loading="loading && currentPage === 1"
+          :data="invoices"
+          style="width: 100%"
       >
         <el-table-column prop="invoice_number" label="发票编号" width="150" />
         <el-table-column prop="contract.title" label="合同标题" />
@@ -58,24 +59,18 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
       
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+      <div class="load-more-status" v-if="invoices.length > 0">
+        <p v-if="loading">加载中...</p>
+        <p v-if="noMore">没有更多数据了</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { invoiceApi } from '@/api'
@@ -90,8 +85,11 @@ const invoices = ref<Invoice[]>([])
 const contractFilter = ref<number | null>(null)
 const statusFilter = ref('')
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(20)
 const total = ref(0)
+const noMore = ref(false)
+
+const disabled = computed(() => loading.value || noMore.value)
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
@@ -123,8 +121,14 @@ const getStatusText = (status: string) => {
 }
 
 // 获取发票列表
-const fetchInvoices = async () => {
+const fetchInvoices = async (append = false) => {
   try {
+    if (!append) {
+      currentPage.value = 1
+      invoices.value = []
+      noMore.value = false
+    }
+    
     loading.value = true
     const response = await invoiceApi.getInvoices({
       page: currentPage.value,
@@ -134,8 +138,19 @@ const fetchInvoices = async () => {
     })
 
     if (response.success && response.data) {
-      invoices.value = response.data.items
-      total.value = response.data.total
+      const newItems = response.data.items || []
+      const totalCount = response.data.total
+      
+      if (append) {
+        invoices.value = [...invoices.value, ...newItems]
+      } else {
+        invoices.value = newItems
+      }
+      
+      total.value = totalCount
+      if (invoices.value.length >= totalCount || newItems.length < pageSize.value) {
+        noMore.value = true
+      }
     }
   } catch (error) {
     console.error('Failed to fetch invoices:', error)
@@ -147,24 +162,19 @@ const fetchInvoices = async () => {
 // 合同筛选处理
 const handleContractFilter = (contractId: number | null, contract: any) => {
   contractFilter.value = contractId
-  currentPage.value = 1
-  fetchInvoices()
+  fetchInvoices(false)
 }
 
 // 筛选处理
 const handleFilter = () => {
-  currentPage.value = 1
-  fetchInvoices()
+  fetchInvoices(false)
 }
 
-// 分页处理
-const handleSizeChange = () => {
-  currentPage.value = 1
-  fetchInvoices()
-}
-
-const handleCurrentChange = () => {
-  fetchInvoices()
+// 无限滚动加载更多
+const loadMore = () => {
+  if (disabled.value) return
+  currentPage.value++
+  fetchInvoices(true)
 }
 
 // 查看发票
@@ -205,9 +215,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
+.table-infinite-container {
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+}
+
+.load-more-status {
+  text-align: center;
+  padding: 20px 0;
+  color: #909399;
+  font-size: 14px;
 }
 </style>

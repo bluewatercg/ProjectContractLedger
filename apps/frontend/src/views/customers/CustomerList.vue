@@ -29,10 +29,11 @@
         </div>
       </div>
       
-      <el-table
-        v-loading="loading"
-        :data="customers"
-        style="width: 100%"
+      <div class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
+        <el-table
+          v-loading="loading && currentPage === 1"
+          :data="customers"
+          style="width: 100%"
       >
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="客户名称" />
@@ -59,24 +60,18 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
       
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+      <div class="load-more-status" v-if="customers.length > 0">
+        <p v-if="loading">加载中...</p>
+        <p v-if="noMore">没有更多数据了</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { customerApi } from '@/api'
@@ -90,8 +85,11 @@ const customers = ref<Customer[]>([])
 const searchQuery = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(20)
 const total = ref(0)
+const noMore = ref(false)
+
+const disabled = computed(() => loading.value || noMore.value)
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -99,8 +97,14 @@ const formatDate = (dateString: string) => {
 }
 
 // 获取客户列表
-const fetchCustomers = async () => {
+const fetchCustomers = async (append = false) => {
   try {
+    if (!append) {
+      currentPage.value = 1
+      customers.value = []
+      noMore.value = false
+    }
+    
     loading.value = true
     const response = await customerApi.getCustomers({
       page: currentPage.value,
@@ -110,8 +114,19 @@ const fetchCustomers = async () => {
     })
     
     if (response.success && response.data) {
-      customers.value = response.data.items
-      total.value = response.data.total
+      const newItems = response.data.items || []
+      const totalCount = response.data.total
+      
+      if (append) {
+        customers.value = [...customers.value, ...newItems]
+      } else {
+        customers.value = newItems
+      }
+      
+      total.value = totalCount
+      if (customers.value.length >= totalCount || newItems.length < pageSize.value) {
+        noMore.value = true
+      }
     }
   } catch (error) {
     console.error('Failed to fetch customers:', error)
@@ -122,24 +137,19 @@ const fetchCustomers = async () => {
 
 // 搜索处理
 const handleSearch = () => {
-  currentPage.value = 1
-  fetchCustomers()
+  fetchCustomers(false)
 }
 
 // 筛选处理
 const handleFilter = () => {
-  currentPage.value = 1
-  fetchCustomers()
+  fetchCustomers(false)
 }
 
-// 分页处理
-const handleSizeChange = () => {
-  currentPage.value = 1
-  fetchCustomers()
-}
-
-const handleCurrentChange = () => {
-  fetchCustomers()
+// 无限滚动加载更多
+const loadMore = () => {
+  if (disabled.value) return
+  currentPage.value++
+  fetchCustomers(true)
 }
 
 // 查看客户
@@ -180,9 +190,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
+.table-infinite-container {
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+}
+
+.load-more-status {
+  text-align: center;
+  padding: 20px 0;
+  color: #909399;
+  font-size: 14px;
 }
 </style>
