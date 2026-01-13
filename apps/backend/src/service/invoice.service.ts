@@ -297,14 +297,22 @@ export class InvoiceService {
     const invoiceResult = await invoiceQueryBuilder.getRawOne();
 
     // 实际已收款：从支付表统计已完成的支付
+    // 关键修复：按发票年份过滤，而不是支付日期年份
     const paymentsQueryBuilder = this.dataSource
       .getRepository(Payment)
       .createQueryBuilder('payment')
+      .leftJoin('payment.invoice', 'invoice')
       .select('SUM(payment.amount)', 'total')
       .where("payment.status = 'completed'");
 
+    if (kitId) {
+      paymentsQueryBuilder.andWhere('payment.kit_id = :kitId', { kitId });
+    }
+
     if (year) {
-      paymentsQueryBuilder.andWhere('YEAR(payment.payment_date) = :year', {
+      // 关键：基于发票开票年份过滤，而不是支付日期年份
+      // 这样可以正确统计指定年份发票的已付金额
+      paymentsQueryBuilder.andWhere('YEAR(invoice.issue_date) = :year', {
         year,
       });
     }
