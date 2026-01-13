@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-01-13
+
+### 👤 用户管理模块 (User Management)
+
+#### Added
+- 完整的用户 CRUD 功能（创建、查询、更新、删除）。
+- 集成前后端权限逻辑，支持角色访问控制。
+- 增加用户管理页面 (`UserList.vue`, `UserForm.vue`) 及侧边栏菜单。
+
+### 📊 账龄分析与可视化 (Aging Analysis & Visualization)
+
+#### Added
+- 实现应收账款账龄分析业务逻辑。
+- 仪表盘集成 ECharts，可视化展示收入趋势、发票状态分布及顶级客户贡献。
+- 统计服务 (`StatisticsService`) 从模拟数据切换为实时数据库查询。
+
+### ⚡ 性能与体验优化 (Performance & UX)
+
+#### Added
+- 核心列表页（合同、客户、发票、支付）支持 **无限滚动加载**，大幅提升海量数据下的页面响应速度。
+- 智能提醒系统重构：跳转逻辑优化，支持直接定位到相关合同或发票详情。
+- 账期 (due_date) 字段在全流程中的同步与管理。
+
+### 🔧 技术底座增强 (Infrastructure)
+
+#### Added
+- 全面支持 OpenAPI 3.0 规范。
+- 优化 Docker 部署脚本，解决 Windows 环境下的换行符兼容性问题。
+- 后端服务稳定性增强，修复发票选择等业务流程中的数据一致性 Bug。
+
 ## [2.2.0] - 2025-08-26
 
 ### 🔧 构建系统优化 (Build System Optimization)
