@@ -92,13 +92,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { paymentApi } from '@/api'
 import type { Payment, Invoice } from '@/api/types'
 import InvoiceSelect from '@/components/InvoiceSelect.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
@@ -250,8 +251,27 @@ const viewContract = (id: number) => {
   router.push(`/contracts/${id}`)
 }
 
+// 初始化URL参数
+const initFromUrlParams = () => {
+  // 从URL查询参数初始化筛选条件（用于从Dashboard跳转）
+  const { status, invoiceId } = route.query
+  
+  if (status && typeof status === 'string') {
+    statusFilter.value = status
+  }
+  
+  if (invoiceId) {
+    const id = parseInt(invoiceId as string, 10)
+    if (!isNaN(id)) {
+      invoiceFilter.value = id
+    }
+  }
+}
+
 // 组件挂载时获取数据
 onMounted(() => {
+  // 先初始化URL参数，再获取数据
+  initFromUrlParams()
   fetchPayments()
 })
 </script>

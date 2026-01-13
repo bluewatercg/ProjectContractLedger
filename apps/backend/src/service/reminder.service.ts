@@ -240,7 +240,7 @@ export class ReminderService {
           amount: pendingAmount,
           customerName: contract.customer?.name,
           contractNumber: contract.contract_number,
-          actionUrl: `/invoices/create?contractId=${contract.id}`,
+          actionUrl: `/contracts/${contract.id}`,
           category: 'invoice' as const,
         });
       }
@@ -315,7 +315,7 @@ export class ReminderService {
           customerName: invoice.contract?.customer?.name,
           contractNumber: invoice.contract?.contract_number,
           invoiceNumber: invoice.invoice_number,
-          actionUrl: `/payments/create?invoiceId=${invoice.id}`,
+          actionUrl: `/invoices/${invoice.id}`,
           category: 'payment' as const,
         });
       }

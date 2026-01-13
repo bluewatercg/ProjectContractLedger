@@ -71,13 +71,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { invoiceApi } from '@/api'
 import type { Invoice, Contract } from '@/api/types'
 import ContractSelect from '@/components/ContractSelect.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
@@ -208,8 +209,27 @@ const deleteInvoice = async (id: number) => {
   }
 }
 
+// 初始化URL参数
+const initFromUrlParams = () => {
+  // 从URL查询参数初始化筛选条件（用于从Dashboard跳转）
+  const { status, contractId } = route.query
+  
+  if (status && typeof status === 'string') {
+    statusFilter.value = status
+  }
+  
+  if (contractId) {
+    const id = parseInt(contractId as string, 10)
+    if (!isNaN(id)) {
+      contractFilter.value = id
+    }
+  }
+}
+
 // 组件挂载时获取数据
 onMounted(() => {
+  // 先初始化URL参数，再获取数据
+  initFromUrlParams()
   fetchInvoices()
 })
 </script>
