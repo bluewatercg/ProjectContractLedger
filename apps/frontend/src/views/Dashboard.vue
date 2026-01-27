@@ -30,7 +30,10 @@
     <div class="financial-section" v-loading="loading">
       <div class="section-header">
         <h3>财务状况总览 ({{ selectedYear }}年)</h3>
-        <el-tooltip content="展示从合同签订到开票、再到最终收款的完整价值流转" placement="top">
+        <el-tooltip
+          content="展示从合同签订到开票、再到最终收款的完整价值流转"
+          placement="top"
+        >
           <el-icon class="info-icon"><InfoFilled /></el-icon>
         </el-tooltip>
       </div>
@@ -39,19 +42,33 @@
         <!-- 1. 合同总额 -->
         <div class="funnel-item">
           <div class="funnel-label">签署合同总额</div>
-          <div class="funnel-value">¥{{ formatCurrency(stats?.summary?.totalRevenue || 0) }}</div>
-          <div class="funnel-desc">共 {{ stats?.contracts?.total || 0 }} 份合同</div>
+          <div class="funnel-value">
+            ¥{{ formatCurrency(stats?.summary?.totalRevenue || 0) }}
+          </div>
+          <div class="funnel-desc">
+            共 {{ stats?.contracts?.total || 0 }} 份合同
+          </div>
           <div class="funnel-connector"></div>
         </div>
 
         <!-- 2. 已开票 -->
         <div class="funnel-itemHighlight">
           <div class="funnel-label">已开发票金额</div>
-          <div class="funnel-value">¥{{ formatCurrency(stats?.summary?.invoicedAmount || 0) }}</div>
+          <div class="funnel-value">
+            ¥{{ formatCurrency(stats?.summary?.invoicedAmount || 0) }}
+          </div>
           <div class="funnel-progress">
             <el-progress
-              :percentage="getPercentage(stats?.summary?.invoicedAmount, stats?.summary?.totalRevenue)"
-              :format="() => `${getPercentage(stats?.summary?.invoicedAmount, stats?.summary?.totalRevenue)}% 开票率`"
+              :percentage="
+                getPercentage(
+                  stats?.summary?.invoicedAmount,
+                  stats?.summary?.totalRevenue,
+                )
+              "
+              :format="
+                () =>
+                  `${getPercentage(stats?.summary?.invoicedAmount, stats?.summary?.totalRevenue)}% 开票率`
+              "
               stroke-width="12"
             />
           </div>
@@ -61,11 +78,21 @@
         <!-- 3. 已回款 -->
         <div class="funnel-itemSuccess">
           <div class="funnel-label">已实际收款</div>
-          <div class="funnel-value">¥{{ formatCurrency(stats?.summary?.paidAmount || 0) }}</div>
+          <div class="funnel-value">
+            ¥{{ formatCurrency(stats?.summary?.paidAmount || 0) }}
+          </div>
           <div class="funnel-progress">
             <el-progress
-              :percentage="getPercentage(stats?.summary?.paidAmount, stats?.summary?.invoicedAmount)"
-              :format="() => `${getPercentage(stats?.summary?.paidAmount, stats?.summary?.invoicedAmount)}% 回款率`"
+              :percentage="
+                getPercentage(
+                  stats?.summary?.paidAmount,
+                  stats?.summary?.invoicedAmount,
+                )
+              "
+              :format="
+                () =>
+                  `${getPercentage(stats?.summary?.paidAmount, stats?.summary?.invoicedAmount)}% 回款率`
+              "
               stroke-width="12"
               status="success"
             />
@@ -77,7 +104,11 @@
         <div class="detail-card warning">
           <div class="detail-info">
             <span class="detail-label">待开票余额</span>
-            <span class="detail-value">¥{{ formatCurrency(stats?.summary?.uninvoicedAmount || 0) }}</span>
+            <span class="detail-value"
+              >¥{{
+                formatCurrency(stats?.summary?.uninvoicedAmount || 0)
+              }}</span
+            >
           </div>
           <el-icon class="detail-icon"><Document /></el-icon>
         </div>
@@ -85,7 +116,9 @@
         <div class="detail-card danger">
           <div class="detail-info">
             <span class="detail-label">待收款 (应收账款)</span>
-            <span class="detail-value">¥{{ formatCurrency(stats?.summary?.unpaidAmount || 0) }}</span>
+            <span class="detail-value"
+              >¥{{ formatCurrency(stats?.summary?.unpaidAmount || 0) }}</span
+            >
             <span class="detail-sub" v-if="stats?.invoices?.overdue > 0">
               🔴 {{ stats?.invoices?.overdue }} 张发票已逾期
             </span>
@@ -96,7 +129,9 @@
         <div class="detail-card info">
           <div class="detail-info">
             <span class="detail-label">活跃客户数</span>
-            <span class="detail-value">{{ stats?.summary?.activeCustomers || 0 }}</span>
+            <span class="detail-value">{{
+              stats?.summary?.activeCustomers || 0
+            }}</span>
           </div>
           <el-icon class="detail-icon"><User /></el-icon>
         </div>
@@ -104,7 +139,9 @@
         <div class="detail-card primary">
           <div class="detail-info">
             <span class="detail-label">执行中合同</span>
-            <span class="detail-value">{{ stats?.summary?.activeContracts || 0 }}</span>
+            <span class="detail-value">{{
+              stats?.summary?.activeContracts || 0
+            }}</span>
           </div>
           <el-icon class="detail-icon"><Tickets /></el-icon>
         </div>
@@ -151,7 +188,10 @@
           <el-icon class="section-icon"><TrendCharts /></el-icon>
           <h3>应收账款账龄分析</h3>
         </div>
-        <el-tooltip content="按逾期时间分析未收回的款项，帮助识别风险" placement="top">
+        <el-tooltip
+          content="按逾期时间分析未收回的款项，帮助识别风险"
+          placement="top"
+        >
           <el-icon class="info-icon"><InfoFilled /></el-icon>
         </el-tooltip>
       </div>
@@ -164,23 +204,29 @@
               <el-icon class="summary-icon"><Money /></el-icon>
               <span class="summary-label">总应收账款</span>
             </div>
-            <div class="summary-value">¥{{ formatCurrency(agingData.totalUnpaid || 0) }}</div>
+            <div class="summary-value">
+              ¥{{ formatCurrency(agingData.totalUnpaid || 0) }}
+            </div>
           </div>
-          
+
           <div class="summary-card">
             <div class="summary-header">
               <el-icon class="summary-icon"><Document /></el-icon>
               <span class="summary-label">未付发票数</span>
             </div>
-            <div class="summary-value">{{ agingData.totalInvoices || 0 }} <span class="unit">张</span></div>
+            <div class="summary-value">
+              {{ agingData.totalInvoices || 0 }} <span class="unit">张</span>
+            </div>
           </div>
-          
+
           <div class="summary-card">
             <div class="summary-header">
               <el-icon class="summary-icon"><User /></el-icon>
               <span class="summary-label">涉及客户</span>
             </div>
-            <div class="summary-value">{{ agingData.totalCustomers || 0 }} <span class="unit">个</span></div>
+            <div class="summary-value">
+              {{ agingData.totalCustomers || 0 }} <span class="unit">个</span>
+            </div>
           </div>
         </div>
 
@@ -194,16 +240,21 @@
           >
             <div class="bucket-header">
               <div class="bucket-info">
-                <span class="risk-indicator" :class="'risk-' + bucket.riskLevel"></span>
+                <span
+                  class="risk-indicator"
+                  :class="'risk-' + bucket.riskLevel"
+                ></span>
                 <span class="bucket-name">{{ bucket.bucketLabel }}</span>
                 <span class="bucket-count">{{ bucket.invoiceCount }} 张</span>
               </div>
               <div class="bucket-amount">
                 <span class="amount">¥{{ formatCurrency(bucket.amount) }}</span>
-                <span class="percentage">{{ bucket.percentage.toFixed(1) }}%</span>
+                <span class="percentage"
+                  >{{ bucket.percentage.toFixed(1) }}%</span
+                >
               </div>
             </div>
-            
+
             <div class="bucket-progress">
               <div
                 class="progress-bar"
@@ -577,7 +628,7 @@ import {
   TrendCharts,
   SuccessFilled,
   WarningFilled,
-  CircleCloseFilled
+  CircleCloseFilled,
 } from "@element-plus/icons-vue";
 import { statisticsApi } from "@/api";
 import {
@@ -600,7 +651,6 @@ const loadTime = ref<number>();
 const selectedYear = ref<number>(new Date().getFullYear());
 const availableYears = ref<number[]>([new Date().getFullYear()]);
 const agingData = ref<any>();
-
 
 // 图表相关状态
 const revenueTrendChart = ref<HTMLElement>();
@@ -632,7 +682,10 @@ const formatCurrency = (amount: number) => {
 };
 
 // 计算百分比
-const getPercentage = (value: number | undefined, total: number | undefined) => {
+const getPercentage = (
+  value: number | undefined,
+  total: number | undefined,
+) => {
   if (!value || !total || total === 0) return 0;
   return Math.round((value / total) * 100);
 };
@@ -643,10 +696,16 @@ const fetchStats = async (useCache: boolean = true) => {
     loading.value = true;
     const startTime = Date.now();
 
-    const response = await statisticsApi.getDashboardStats(
-      selectedYear.value,
-      useCache,
-    );
+    // 添加10秒超时，确保移动端不会一直loading
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("请求超时")), 10000);
+    });
+
+    const response = await Promise.race([
+      statisticsApi.getDashboardStats(selectedYear.value, useCache),
+      timeoutPromise,
+    ]);
+
     if (response.success) {
       stats.value = response.data;
 
@@ -663,7 +722,11 @@ const fetchStats = async (useCache: boolean = true) => {
     }
   } catch (error) {
     console.error("Failed to fetch stats:", error);
-    ElMessage.error("获取统计数据失败，请稍后重试");
+    if (error.message === "请求超时") {
+      ElMessage.error("请求超时，请检查网络连接后重试");
+    } else {
+      ElMessage.error("获取统计数据失败，请稍后重试");
+    }
   } finally {
     loading.value = false;
   }
@@ -708,7 +771,6 @@ const fetchAgingAnalysis = async () => {
     agingData.value = null;
   }
 };
-
 
 // 初始化所有图表
 const initAllCharts = async () => {
@@ -993,30 +1055,31 @@ watch(
   async (newKitId, oldKitId) => {
     // 只在套账真正变化时刷新（避免初始化时触发）
     if (newKitId !== oldKitId && oldKitId !== null && newKitId !== null) {
-      console.log(`Kit changed from ${oldKitId} to ${newKitId}, refreshing dashboard data...`);
-      
+      console.log(
+        `Kit changed from ${oldKitId} to ${newKitId}, refreshing dashboard data...`,
+      );
+
       try {
         // 清除缓存
         statisticsApi.clearCache(selectedYear.value);
-        
+
         // 重新加载所有数据
         await Promise.all([
           fetchStats(false),
           fetchReminders(),
           fetchAgingAnalysis(),
-          initAllCharts()
+          initAllCharts(),
         ]);
-        
-        ElMessage.success('数据已刷新');
+
+        ElMessage.success("数据已刷新");
       } catch (error) {
-        console.error('Failed to refresh data after kit change:', error);
-        ElMessage.error('数据刷新失败，请手动刷新');
+        console.error("Failed to refresh data after kit change:", error);
+        ElMessage.error("数据刷新失败，请手动刷新");
       }
     }
   },
-  { immediate: false }
+  { immediate: false },
 );
-
 
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);
@@ -1057,7 +1120,9 @@ onUnmounted(() => {
   position: relative;
 }
 
-.funnel-item, .funnel-itemHighlight, .funnel-itemSuccess {
+.funnel-item,
+.funnel-itemHighlight,
+.funnel-itemSuccess {
   flex: 1;
   background: #f8fafc;
   padding: 24px;
@@ -1111,7 +1176,7 @@ onUnmounted(() => {
 }
 
 .funnel-connector::after {
-  content: '';
+  content: "";
   position: absolute;
   right: 0;
   top: -4px;
@@ -1138,11 +1203,31 @@ onUnmounted(() => {
   border: 1px solid #f1f5f9;
 }
 
-.detail-card.primary { background-color: #f0f9ff; border-color: #e0f2fe; color: #0369a1; }
-.detail-card.success { background-color: #f0fdf4; border-color: #dcfce7; color: #15803d; }
-.detail-card.warning { background-color: #fffbeb; border-color: #fef3c7; color: #b45309; }
-.detail-card.danger { background-color: #fef2f2; border-color: #fee2e2; color: #b91c1c; }
-.detail-card.info { background-color: #f8fafc; border-color: #f1f5f9; color: #475569; }
+.detail-card.primary {
+  background-color: #f0f9ff;
+  border-color: #e0f2fe;
+  color: #0369a1;
+}
+.detail-card.success {
+  background-color: #f0fdf4;
+  border-color: #dcfce7;
+  color: #15803d;
+}
+.detail-card.warning {
+  background-color: #fffbeb;
+  border-color: #fef3c7;
+  color: #b45309;
+}
+.detail-card.danger {
+  background-color: #fef2f2;
+  border-color: #fee2e2;
+  color: #b91c1c;
+}
+.detail-card.info {
+  background-color: #f8fafc;
+  border-color: #f1f5f9;
+  color: #475569;
+}
 
 .detail-info {
   display: flex;
@@ -1556,20 +1641,26 @@ onUnmounted(() => {
   .financial-funnel {
     flex-wrap: wrap;
   }
-  .funnel-item, .funnel-itemHighlight, .funnel-itemSuccess {
+  .funnel-item,
+  .funnel-itemHighlight,
+  .funnel-itemSuccess {
     flex: none;
     width: calc(50% - 10px);
     margin-bottom: 20px;
   }
-  .funnel-connector { display: none; }
-  
+  .funnel-connector {
+    display: none;
+  }
+
   .financial-details-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .funnel-item, .funnel-itemHighlight, .funnel-itemSuccess {
+  .funnel-item,
+  .funnel-itemHighlight,
+  .funnel-itemSuccess {
     width: 100%;
   }
 
@@ -1759,7 +1850,7 @@ onUnmounted(() => {
 }
 
 .bucket-row::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -1911,5 +2002,4 @@ onUnmounted(() => {
     justify-content: space-between;
   }
 }
-
 </style>
