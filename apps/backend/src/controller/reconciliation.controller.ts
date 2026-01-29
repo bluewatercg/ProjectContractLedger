@@ -80,6 +80,10 @@ export class ReconciliationController {
     @Body() body: { invoiceIds: number[] }
   ): Promise<ApiResponse> {
     try {
+      console.log('[ReconciliationController] batch-auto called');
+      console.log('[ReconciliationController] ctx.state:', this.ctx.state);
+      console.log('[ReconciliationController] ctx.state.user:', this.ctx.state?.user);
+
       const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
@@ -91,6 +95,7 @@ export class ReconciliationController {
       }
 
       const userId = this.ctx.state?.user?.id || this.ctx.state?.user?.userId;
+      console.log('[ReconciliationController] userId:', userId);
 
       if (!userId) {
         return {
