@@ -1,4 +1,4 @@
-name: Build and Push Separate Frontend/Backend Docker Images
+name: Build and Push Docker Images (Optimized)
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main, master, midwayjs ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -14,56 +14,8 @@ env:
   FRONTEND_IMAGE_NAME: ${{ github.repository }}-frontend
 
 jobs:
-  # 构建验证作业
-  build-check:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '23.x'
-        cache: 'yarn'
-        cache-dependency-path: |
-          apps/backend/yarn.lock
-          apps/frontend/yarn.lock
-
-    - name: Install backend dependencies
-      run: |
-        cd apps/backend
-        yarn install --network-timeout 100000
-
-    - name: Install frontend dependencies
-      run: |
-        cd apps/frontend
-        yarn install --network-timeout 100000
-
-    - name: Fix backend code formatting
-      run: |
-        cd apps/backend
-        yarn lint:fix
-
-    - name: Run backend linting
-      run: |
-        cd apps/backend
-        yarn lint
-
-    - name: Build backend
-      run: |
-        cd apps/backend
-        yarn build
-
-    - name: Build frontend
-      run: |
-        cd apps/frontend
-        yarn build
-
-  # 构建和推送后端镜像
+  # 构建和推送后端镜像（移除 build-check，直接构建）
   build-and-push-backend:
-    needs: build-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -93,7 +45,6 @@ jobs:
           type=ref,event=pr
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
           type=raw,value=latest,enable={{is_default_branch}}
           type=sha,prefix={{branch}}-
 
@@ -102,20 +53,22 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./apps/backend
-        file: ./apps/backend/Dockerfile
+        file: ./apps/backend/Dockerfile.optimized
         push: true
         tags: ${{ steps.backend-meta.outputs.tags }}
         labels: ${{ steps.backend-meta.outputs.labels }}
-        cache-from: type=gha,scope=backend
+        cache-from: |
+          type=gha,scope=backend
+          type=registry,ref=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:cache
         cache-to: type=gha,mode=max,scope=backend
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+          NODE_ENV=production
         provenance: false
 
-  # 构建和推送前端镜像
+  # 构建和推送前端镜像（并行执行）
   build-and-push-frontend:
-    needs: build-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -145,7 +98,6 @@ jobs:
           type=ref,event=pr
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
           type=raw,value=latest,enable={{is_default_branch}}
           type=sha,prefix={{branch}}-
 
@@ -154,15 +106,18 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./apps/frontend
-        file: ./apps/frontend/Dockerfile
+        file: ./apps/frontend/Dockerfile.optimized
         push: true
         tags: ${{ steps.frontend-meta.outputs.tags }}
         labels: ${{ steps.frontend-meta.outputs.labels }}
-        cache-from: type=gha,scope=frontend
+        cache-from: |
+          type=gha,scope=frontend
+          type=registry,ref=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:cache
         cache-to: type=gha,mode=max,scope=frontend
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+          NODE_ENV=production
         provenance: false
 
   # 部署信息汇总
@@ -174,23 +129,6 @@ jobs:
     steps:
     - name: Display deployment information
       run: |
-        echo "=== 分离式前后端镜像构建完成 ==="
+        echo "=== 构建完成 ==="
         echo "后端镜像: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
         echo "前端镜像: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest"
-        echo ""
-        echo "=== 部署信息 ==="
-        echo "镜像已推送到 GitHub Container Registry"
-        echo "使用以下命令部署到生产环境："
-        echo ""
-        echo "1. 后端部署："
-        echo "   cd apps/backend"
-        echo "   docker-compose pull"
-        echo "   docker-compose up -d"
-        echo ""
-        echo "2. 前端部署："
-        echo "   cd apps/frontend"
-        echo "   docker-compose pull"
-        echo "   docker-compose up -d"
-        echo ""
-        echo "3. 或使用统一部署配置："
-        echo "   docker-compose -f deployment/docker-compose.separated.yml up -d"

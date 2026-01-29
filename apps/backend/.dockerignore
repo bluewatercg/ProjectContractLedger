@@ -86,3 +86,11 @@ jest.config.js
 *.zip
 *.tar.gz
 *.rar
+# AI开发工具目录
+.auto-claude
+.agent
+.agents
+.claude
+.codex
+.opencode
+.github/skills
