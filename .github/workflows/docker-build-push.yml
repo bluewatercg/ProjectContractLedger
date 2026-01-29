@@ -53,7 +53,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./apps/backend
-        file: ./apps/backend/Dockerfile.optimized
+        file: ./apps/backend/Dockerfile
         push: true
         tags: ${{ steps.backend-meta.outputs.tags }}
         labels: ${{ steps.backend-meta.outputs.labels }}
@@ -106,7 +106,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./apps/frontend
-        file: ./apps/frontend/Dockerfile.optimized
+        file: ./apps/frontend/Dockerfile
         push: true
         tags: ${{ steps.frontend-meta.outputs.tags }}
         labels: ${{ steps.frontend-meta.outputs.labels }}
