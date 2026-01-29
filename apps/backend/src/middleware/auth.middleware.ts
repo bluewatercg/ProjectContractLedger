@@ -15,7 +15,6 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         '/api/v1/auth/refresh',
         '/api-docs',
         '/swagger-ui/',
-        '/',
         '/favicon.ico',
         '/health',
         '/health/simple',
@@ -27,6 +26,13 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
       const matchedSkipPath = skipPaths.find(skipPath => path.startsWith(skipPath));
       if (matchedSkipPath) {
         console.log('[AuthMiddleware] SKIP - Path in skipPaths, matched:', matchedSkipPath);
+        await next();
+        return;
+      }
+
+      // 特殊处理：精确匹配根路径
+      if (path === '/') {
+        console.log('[AuthMiddleware] SKIP - Root path');
         await next();
         return;
       }
