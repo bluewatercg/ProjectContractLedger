@@ -137,6 +137,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '编辑支付' }
       },
       {
+        path: 'reconciliations',
+        name: 'Reconciliations',
+        component: () => import('@/views/reconciliations/ReconciliationList.vue'),
+        meta: { requiresAuth: true, title: '发票对账' }
+      },
+      {
+        path: 'reconciliations/:id',
+        name: 'ReconciliationDetail',
+        component: () => import('@/views/reconciliations/ReconciliationDetail.vue'),
+        meta: { requiresAuth: true, title: '对账详情' }
+      },
+      {
         path: 'user-list',
         name: 'Users',
         component: () => import('@/views/users/UserList.vue'),

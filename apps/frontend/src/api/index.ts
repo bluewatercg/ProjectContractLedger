@@ -6,6 +6,7 @@ export { invoiceApi } from './invoice'
 export { paymentApi } from './payment'
 export { statisticsApi } from './statistics'
 export { reminderApi } from './reminder'
+export { reconciliationApi } from './reconciliation'
 
 // 导出类型
 export * from './types'

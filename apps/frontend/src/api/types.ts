@@ -230,3 +230,79 @@ export interface DashboardStats {
     activeContracts: number
   }
 }
+
+// 对账相关类型
+export interface ReconciliationDetail {
+  id: number
+  payment_id: number
+  payment_amount: number
+  payment_date: string
+  payment_method: string
+  reference_number?: string
+  is_matched: boolean
+  notes?: string
+  payment?: Payment
+}
+
+export interface Reconciliation {
+  id: number
+  reconciliation_number: string
+  invoice_id: number
+  invoice_amount: number
+  paid_amount: number
+  difference_amount: number
+  status: 'matched' | 'unmatched' | 'underpaid' | 'overpaid' | 'partial'
+  approval_status: 'pending' | 'approved' | 'rejected'
+  difference_reason?: string
+  notes?: string
+  reconciled_by: number
+  reconciled_at: string
+  approved_by?: number
+  approved_at?: string
+  created_at: string
+  updated_at: string
+  invoice?: Invoice
+  details?: ReconciliationDetail[]
+  reconciledByUser?: UserInfo
+  approvedByUser?: UserInfo
+}
+
+export interface PendingInvoice {
+  id: number
+  invoiceNumber: string
+  customerName: string
+  contractNumber: string
+  totalAmount: number
+  paidAmount: number
+  remainingAmount: number
+  status: string
+  issueDate: string
+  dueDate: string
+  paymentCount: number
+}
+
+export interface ReconciliationStats {
+  total: number
+  byStatus: Array<{
+    status: string
+    count: number
+    totalDifference: number
+  }>
+}
+
+export interface ManualReconcileDto {
+  invoiceId: number
+  paymentIds: number[]
+  differenceReason?: string
+  notes?: string
+}
+
+export interface HandleDifferenceDto {
+  action: 'adjust_invoice' | 'refund' | 'write_off' | 'wait_payment'
+  reason: string
+}
+
+export interface ApproveReconciliationDto {
+  approved: boolean
+  notes?: string
+}
