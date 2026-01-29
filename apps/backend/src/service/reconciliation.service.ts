@@ -41,9 +41,7 @@ export class ReconciliationService {
   /**
    * 自动对账 - 单张发票
    */
-  async autoReconcile(invoiceId: number, userId: number): Promise<Reconciliation> {
-    const kitId = this.ctx.state.user.currentKitId;
-
+  async autoReconcile(invoiceId: number, userId: number, kitId: number): Promise<Reconciliation> {
     // 1. 获取发票信息及其支付记录
     const invoice = await this.invoiceRepository.findOne({
       where: { id: invoiceId, kit_id: kitId },
@@ -147,7 +145,8 @@ export class ReconciliationService {
    */
   async batchAutoReconcile(
     invoiceIds: number[],
-    userId: number
+    userId: number,
+    kitId: number
   ): Promise<{ success: number; failed: number; results: any[] }> {
     const results = [];
     let success = 0;
@@ -155,7 +154,7 @@ export class ReconciliationService {
 
     for (const invoiceId of invoiceIds) {
       try {
-        const reconciliation = await this.autoReconcile(invoiceId, userId);
+        const reconciliation = await this.autoReconcile(invoiceId, userId, kitId);
         results.push({
           invoiceId,
           success: true,
@@ -184,12 +183,11 @@ export class ReconciliationService {
     differenceReason?: string;
     notes?: string;
     userId: number;
+    kitId: number;
   }): Promise<Reconciliation> {
-    const kitId = this.ctx.state.user.currentKitId;
-
     // 1. 获取发票信息
     const invoice = await this.invoiceRepository.findOne({
-      where: { id: data.invoiceId, kit_id: kitId },
+      where: { id: data.invoiceId, kit_id: data.kitId },
     });
 
     if (!invoice) {
@@ -227,7 +225,7 @@ export class ReconciliationService {
 
     // 6. 创建对账记录
     const reconciliation = new Reconciliation();
-    reconciliation.kit_id = kitId;
+    reconciliation.kit_id = data.kitId;
     reconciliation.reconciliation_number = this.generateReconciliationNumber();
     reconciliation.invoice_id = data.invoiceId;
     reconciliation.invoice_amount = invoiceAmount;
@@ -270,8 +268,8 @@ export class ReconciliationService {
     approvalStatus?: string;
     startDate?: string;
     endDate?: string;
+    kitId: number;
   }): Promise<{ data: Reconciliation[]; total: number }> {
-    const kitId = this.ctx.state.user.currentKitId;
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
 
@@ -282,7 +280,7 @@ export class ReconciliationService {
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('reconciliation.reconciledByUser', 'reconciledByUser')
       .leftJoinAndSelect('reconciliation.details', 'details')
-      .where('reconciliation.kit_id = :kitId', { kitId });
+      .where('reconciliation.kit_id = :kitId', { kitId: params.kitId });
 
     // 状态筛选
     if (params.status) {
@@ -327,9 +325,7 @@ export class ReconciliationService {
   /**
    * 获取对账详情
    */
-  async getReconciliationById(id: number): Promise<Reconciliation> {
-    const kitId = this.ctx.state.user.currentKitId;
-
+  async getReconciliationById(id: number, kitId: number): Promise<Reconciliation> {
     const reconciliation = await this.reconciliationRepository.findOne({
       where: { id, kit_id: kitId },
       relations: [
@@ -357,10 +353,9 @@ export class ReconciliationService {
     id: number,
     action: 'adjust_invoice' | 'refund' | 'write_off' | 'wait_payment',
     reason: string,
-    userId: number
+    userId: number,
+    kitId: number
   ): Promise<Reconciliation> {
-    const kitId = this.ctx.state.user.currentKitId;
-
     const reconciliation = await this.reconciliationRepository.findOne({
       where: { id, kit_id: kitId },
       relations: ['invoice'],
@@ -408,10 +403,9 @@ export class ReconciliationService {
     id: number,
     approved: boolean,
     userId: number,
+    kitId: number,
     notes?: string
   ): Promise<Reconciliation> {
-    const kitId = this.ctx.state.user.currentKitId;
-
     const reconciliation = await this.reconciliationRepository.findOne({
       where: { id, kit_id: kitId },
     });
@@ -434,9 +428,7 @@ export class ReconciliationService {
   /**
    * 获取对账统计数据
    */
-  async getReconciliationStats(): Promise<any> {
-    const kitId = this.ctx.state.user.currentKitId;
-
+  async getReconciliationStats(kitId: number): Promise<any> {
     const stats = await this.reconciliationRepository
       .createQueryBuilder('reconciliation')
       .select('reconciliation.status', 'status')
@@ -459,9 +451,7 @@ export class ReconciliationService {
   /**
    * 获取待对账发票列表
    */
-  async getPendingInvoices(): Promise<any[]> {
-    const kitId = this.ctx.state.user.currentKitId;
-
+  async getPendingInvoices(kitId: number): Promise<any[]> {
     // 获取所有已发送但未完全支付的发票
     const invoices = await this.invoiceRepository
       .createQueryBuilder('invoice')

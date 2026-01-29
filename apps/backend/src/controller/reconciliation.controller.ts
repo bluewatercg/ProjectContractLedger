@@ -31,9 +31,20 @@ export class ReconciliationController {
   ): Promise<ApiResponse> {
     try {
       const userId = this.ctx.state.user.userId;
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const reconciliation = await this.reconciliationService.autoReconcile(
         invoiceId,
-        userId
+        userId,
+        kitId
       );
 
       return {
@@ -61,9 +72,20 @@ export class ReconciliationController {
   ): Promise<ApiResponse> {
     try {
       const userId = this.ctx.state.user.userId;
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const result = await this.reconciliationService.batchAutoReconcile(
         body.invoiceIds,
-        userId
+        userId,
+        kitId
       );
 
       return {
@@ -97,9 +119,20 @@ export class ReconciliationController {
   ): Promise<ApiResponse> {
     try {
       const userId = this.ctx.state.user.userId;
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const reconciliation = await this.reconciliationService.manualReconcile({
         ...body,
         userId,
+        kitId,
       });
 
       return {
@@ -130,6 +163,16 @@ export class ReconciliationController {
     @Query('endDate') endDate?: string
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const result = await this.reconciliationService.getReconciliations({
         page,
         pageSize,
@@ -137,6 +180,7 @@ export class ReconciliationController {
         approvalStatus,
         startDate,
         endDate,
+        kitId,
       });
 
       return {
@@ -162,8 +206,18 @@ export class ReconciliationController {
     @Param('id') id: number
   ): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const reconciliation =
-        await this.reconciliationService.getReconciliationById(id);
+        await this.reconciliationService.getReconciliationById(id, kitId);
 
       if (!reconciliation) {
         return {
@@ -202,12 +256,23 @@ export class ReconciliationController {
   ): Promise<ApiResponse> {
     try {
       const userId = this.ctx.state.user.userId;
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const reconciliation =
         await this.reconciliationService.handleDifference(
           id,
           body.action,
           body.reason,
-          userId
+          userId,
+          kitId
         );
 
       return {
@@ -236,11 +301,22 @@ export class ReconciliationController {
   ): Promise<ApiResponse> {
     try {
       const userId = this.ctx.state.user.userId;
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const reconciliation =
         await this.reconciliationService.approveReconciliation(
           id,
           body.approved,
           userId,
+          kitId,
           body.notes
         );
 
@@ -265,7 +341,17 @@ export class ReconciliationController {
   @Get('/stats/summary')
   async getReconciliationStats(): Promise<ApiResponse> {
     try {
-      const stats = await this.reconciliationService.getReconciliationStats();
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
+      const stats = await this.reconciliationService.getReconciliationStats(kitId);
 
       return {
         success: true,
@@ -287,8 +373,18 @@ export class ReconciliationController {
   @Get('/pending-invoices')
   async getPendingInvoices(): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const invoices =
-        await this.reconciliationService.getPendingInvoices();
+        await this.reconciliationService.getPendingInvoices(kitId);
 
       return {
         success: true,
