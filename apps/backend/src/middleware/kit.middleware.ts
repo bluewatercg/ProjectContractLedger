@@ -9,6 +9,10 @@ import { KitService } from '../service/kit.service';
 export class KitMiddleware implements IMiddleware<Context, NextFunction> {
     resolve() {
         return async (ctx: Context, next: NextFunction) => {
+            console.log('[KitMiddleware] START');
+            console.log('[KitMiddleware] Authorization header:', ctx.headers.authorization ? 'present' : 'missing');
+            console.log('[KitMiddleware] ctx.state.user BEFORE:', ctx.state?.user);
+
             // 跳过不需要kit验证的路由
             const skipPaths = ['/api/v1/auth', '/api/v1/kits', '/health', '/swagger'];
             const shouldSkip = skipPaths.some(path => ctx.path.startsWith(path));
