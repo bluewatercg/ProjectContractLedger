@@ -29,6 +29,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
 
       // 获取token
       const authorization = ctx.headers.authorization;
+      console.log('[AuthMiddleware] Path:', path, 'Authorization:', authorization ? 'present' : 'missing');
       if (!authorization) {
         ctx.status = 401;
         ctx.body = {
@@ -56,9 +57,11 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
           token,
           process.env.JWT_SECRET || 'your-secret-key'
         );
+        console.log('[AuthMiddleware] Token verified, user:', decoded);
         ctx.state.user = decoded;
         await next();
       } catch (error) {
+        console.error('[AuthMiddleware] Token verification failed:', error.message);
         ctx.status = 401;
         ctx.body = {
           success: false,
