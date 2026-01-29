@@ -6,6 +6,8 @@ import * as jwt from 'jsonwebtoken';
 export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
   resolve() {
     return async (ctx: Context, next: NextFunction) => {
+      console.log('[AuthMiddleware] START - Path:', ctx.path);
+
       // 跳过不需要认证的路由
       const skipPaths = [
         '/api/v1/auth/login',
@@ -23,9 +25,12 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
 
       const path = ctx.path;
       if (skipPaths.some(skipPath => path.startsWith(skipPath))) {
+        console.log('[AuthMiddleware] SKIP - Path in skipPaths');
         await next();
         return;
       }
+
+      console.log('[AuthMiddleware] CHECKING - Path requires auth');
 
       // 获取token
       const authorization = ctx.headers.authorization;
