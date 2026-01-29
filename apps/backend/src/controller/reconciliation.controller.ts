@@ -141,10 +141,8 @@ export class ReconciliationController {
 
       return {
         success: true,
-        data: result.data,
-        total: result.total,
-        page: page || 1,
-        pageSize: pageSize || 20,
+        data: result,
+        message: '获取对账列表成功',
       };
     } catch (error) {
       return {
