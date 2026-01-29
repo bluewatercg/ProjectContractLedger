@@ -1,230 +1,321 @@
-/* 页面通用样式 */
+/* 页面特定样式 - Page Specific Styles */
+/* 此文件包含页面级别的特殊样式，基础样式已在 index.css 中定义 */
 
-.page-container {
-  /* MainLayout 已经提供了 padding 和 background，这里不需要重复设置 */
+/* ==================== 页面头部增强 Page Header Enhancements ==================== */
+.page-header {
+  /* 基础样式继承自 index.css，这里只添加特殊样式 */
+  background: var(--color-bg-container);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-base);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
 }
 
-.page-header {
+/* ==================== 视图切换器 View Switcher ==================== */
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* ==================== 卡片网格布局 Card Grid Layout ==================== */
+.contracts-grid,
+.invoices-grid,
+.payments-grid,
+.customers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-5);
+  padding: var(--spacing-5);
+}
+
+.card-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-16) var(--spacing-5);
+}
+
+.empty-icon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-4);
+}
+
+.empty-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+/* ==================== 财务概览样式 Financial Overview ==================== */
+.financial-section {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-base);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-base);
+  margin-bottom: var(--spacing-6);
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: var(--spacing-6);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 2px solid var(--color-border-lighter);
 }
 
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
+.section-header h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
-.header-actions {
+.info-icon {
+  color: var(--color-info);
+  cursor: help;
+  transition: var(--transition-colors);
+}
+
+.info-icon:hover {
+  color: var(--color-primary);
+}
+
+/* ==================== 漏斗图样式 Funnel Chart ==================== */
+.financial-funnel {
   display: flex;
+  justify-content: space-around;
   align-items: center;
-  gap: 12px;
-}
-
-/* 表格容器样式 */
-.table-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.table-toolbar {
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
-  background: #fafafa;
-}
-
-.table-search {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.pagination-container {
-  padding: 16px 20px;
-  display: flex;
-  justify-content: center;
-  border-top: 1px solid #ebeef5;
-  background: #fafafa;
-}
-
-/* 表单容器样式 */
-.form-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-}
-
-.form-section {
-  margin-bottom: 24px;
-}
-
-.form-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 24px;
-  border-top: 1px solid #ebeef5;
-}
-
-/* 详情页面样式 */
-.detail-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-}
-
-.detail-section {
-  margin-bottom: 32px;
-}
-
-.detail-section:last-child {
-  margin-bottom: 0;
-}
-
-.detail-section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #409eff;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detail-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.detail-value {
-  font-size: 16px;
-  color: #333;
-  font-weight: 400;
-}
-
-/* 状态标签样式 */
-.status-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* 操作按钮组 */
-.action-buttons {
-  display: flex;
-  gap: 8px;
+  gap: var(--spacing-6);
   flex-wrap: wrap;
 }
 
-/* 空状态样式 */
-.empty-state {
+.funnel-item,
+.funnel-itemHighlight,
+.funnel-itemSuccess {
+  flex: 1;
+  min-width: 250px;
+  padding: var(--spacing-6);
+  border-radius: var(--radius-base);
   text-align: center;
-  padding: 60px 20px;
-  color: #999;
+  position: relative;
+  transition: var(--transition-all);
 }
 
-.empty-state-icon {
-  font-size: 64px;
-  color: #ddd;
-  margin-bottom: 16px;
+.funnel-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
-.empty-state-text {
-  font-size: 16px;
-  margin-bottom: 16px;
+.funnel-itemHighlight {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
 }
 
-/* 加载状态样式 */
-.loading-container {
+.funnel-itemSuccess {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.funnel-item:hover,
+.funnel-itemHighlight:hover,
+.funnel-itemSuccess:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.funnel-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  opacity: 0.9;
+  margin-bottom: var(--spacing-2);
+}
+
+.funnel-value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
+}
+
+.funnel-desc {
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+  margin-bottom: var(--spacing-3);
+}
+
+.funnel-progress {
+  margin-top: var(--spacing-3);
+}
+
+.funnel-connector {
+  position: absolute;
+  right: calc(-1 * var(--spacing-6) / 2);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--spacing-6);
+  height: 2px;
+  background: var(--color-border-base);
+}
+
+.funnel-connector::after {
+  content: '→';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-border-base);
+  font-size: var(--font-size-lg);
+}
+
+/* ==================== 统计卡片增强 Stats Card Enhancement ==================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
+}
+
+.stat-card-trend {
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 60px 20px;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-2);
 }
 
-/* 响应式设计 */
+.trend-up {
+  color: var(--color-success);
+}
+
+.trend-down {
+  color: var(--color-danger);
+}
+
+/* ==================== 图表容器 Chart Container ==================== */
+.chart-container {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-base);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-base);
+  margin-bottom: var(--spacing-6);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-5);
+}
+
+.chart-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 400px;
+}
+
+/* ==================== 时间线样式 Timeline ==================== */
+.timeline-container {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-base);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-base);
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: var(--spacing-8);
+  padding-bottom: var(--spacing-6);
+  border-left: 2px solid var(--color-border-lighter);
+}
+
+.timeline-item:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -6px;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  border: 2px solid var(--color-bg-container);
+}
+
+.timeline-content {
+  background: var(--color-bg-hover);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-base);
+}
+
+.timeline-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.timeline-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.timeline-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ==================== 响应式调整 Responsive Adjustments ==================== */
 @media (max-width: 768px) {
-  .page-header {
+  .financial-funnel {
     flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
   }
-  
-  .header-actions {
-    justify-content: center;
+
+  .funnel-connector {
+    display: none;
   }
-  
-  .table-toolbar {
-    padding: 12px 16px;
+
+  .contracts-grid,
+  .invoices-grid,
+  .payments-grid,
+  .customers-grid {
+    grid-template-columns: 1fr;
+    padding: var(--spacing-4);
   }
-  
-  .table-search {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .detail-grid {
+
+  .stats-grid {
     grid-template-columns: 1fr;
   }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
+
+  .chart-wrapper {
+    height: 300px;
   }
 }
 
 @media (max-width: 480px) {
   .page-header {
-    padding: 16px;
+    padding: var(--spacing-4);
   }
-  
-  .page-title {
-    font-size: 20px;
+
+  .financial-section {
+    padding: var(--spacing-4);
   }
-  
-  .table-container {
-    margin: 0 -8px;
-    border-radius: 0;
+
+  .funnel-item,
+  .funnel-itemHighlight,
+  .funnel-itemSuccess {
+    min-width: 100%;
   }
-  
-  .form-container,
-  .detail-container {
-    margin: 0 -8px;
-    border-radius: 0;
+
+  .funnel-value {
+    font-size: var(--font-size-2xl);
   }
 }
