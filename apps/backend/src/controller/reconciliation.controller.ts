@@ -30,7 +30,6 @@ export class ReconciliationController {
     @Param('invoiceId') invoiceId: number
   ): Promise<ApiResponse> {
     try {
-      const userId = this.ctx.state.user.userId;
       const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
@@ -38,6 +37,16 @@ export class ReconciliationController {
           success: false,
           message: '请选择套装',
           code: 400,
+        };
+      }
+
+      const userId = this.ctx.state?.user?.userId;
+
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未认证',
+          code: 401,
         };
       }
 
@@ -71,7 +80,6 @@ export class ReconciliationController {
     @Body() body: { invoiceIds: number[] }
   ): Promise<ApiResponse> {
     try {
-      const userId = this.ctx.state.user.userId;
       const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
@@ -79,6 +87,16 @@ export class ReconciliationController {
           success: false,
           message: '请选择套装',
           code: 400,
+        };
+      }
+
+      const userId = this.ctx.state?.user?.userId;
+
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未认证',
+          code: 401,
         };
       }
 
@@ -118,7 +136,6 @@ export class ReconciliationController {
     }
   ): Promise<ApiResponse> {
     try {
-      const userId = this.ctx.state.user.userId;
       const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
@@ -126,6 +143,16 @@ export class ReconciliationController {
           success: false,
           message: '请选择套装',
           code: 400,
+        };
+      }
+
+      const userId = this.ctx.state?.user?.userId;
+
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未认证',
+          code: 401,
         };
       }
 
@@ -255,7 +282,6 @@ export class ReconciliationController {
     }
   ): Promise<ApiResponse> {
     try {
-      const userId = this.ctx.state.user.userId;
       const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
@@ -263,6 +289,16 @@ export class ReconciliationController {
           success: false,
           message: '请选择套装',
           code: 400,
+        };
+      }
+
+      const userId = this.ctx.state?.user?.userId;
+
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未认证',
+          code: 401,
         };
       }
 
@@ -300,7 +336,6 @@ export class ReconciliationController {
     @Body() body: { approved: boolean; notes?: string }
   ): Promise<ApiResponse> {
     try {
-      const userId = this.ctx.state.user.userId;
       const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
@@ -308,6 +343,16 @@ export class ReconciliationController {
           success: false,
           message: '请选择套装',
           code: 400,
+        };
+      }
+
+      const userId = this.ctx.state?.user?.userId;
+
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未认证',
+          code: 401,
         };
       }
 
