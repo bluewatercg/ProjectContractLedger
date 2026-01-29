@@ -19,9 +19,10 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 COPY package.json yarn.lock* ./
 
 # 第二层：安装依赖（简化策略，移除 verbose）
+# 注意：需要安装 devDependencies 因为 vite 等构建工具在其中
 RUN yarn config set network-timeout 300000 && \
     yarn config set registry https://registry.npmjs.org/ && \
-    yarn install --frozen-lockfile --network-timeout 300000 --ignore-optional && \
+    yarn install --frozen-lockfile --production=false --network-timeout 300000 --ignore-optional && \
     yarn cache clean
 
 # 第三层：复制源代码（代码改动不会重新安装依赖）
