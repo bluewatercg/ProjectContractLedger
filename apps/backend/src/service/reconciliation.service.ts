@@ -273,13 +273,13 @@ export class ReconciliationService {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
 
+    // 构建基础查询（不包含 details，避免一对多导致计数错误）
     const queryBuilder = this.reconciliationRepository
       .createQueryBuilder('reconciliation')
       .leftJoinAndSelect('reconciliation.invoice', 'invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
       .leftJoinAndSelect('contract.customer', 'customer')
       .leftJoinAndSelect('reconciliation.reconciledByUser', 'reconciledByUser')
-      .leftJoinAndSelect('reconciliation.details', 'details')
       .where('reconciliation.kit_id = :kitId', { kitId: params.kitId });
 
     // 状态筛选
@@ -313,7 +313,7 @@ export class ReconciliationService {
     // 排序
     queryBuilder.orderBy('reconciliation.created_at', 'DESC');
 
-    // 分页
+    // 分页查询（移除 details 关联，避免一对多导致计数错误）
     const [data, total] = await queryBuilder
       .skip((page - 1) * pageSize)
       .take(pageSize)

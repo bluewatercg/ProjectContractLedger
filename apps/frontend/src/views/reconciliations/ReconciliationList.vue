@@ -376,6 +376,7 @@ const statusFilter = ref('')
 const approvalFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
+const total = ref(0)
 const noMore = ref(false)
 
 // 待对账发票
@@ -493,7 +494,8 @@ const fetchReconciliations = async (append = false) => {
       }
 
       total.value = totalCount
-      noMore.value = reconciliations.value.length >= totalCount
+      // 修复无限滚动：当已加载数量达到总数，或当前页返回空数据时停止
+      noMore.value = reconciliations.value.length >= totalCount || newItems.length < pageSize.value
     }
   } catch (error: any) {
     ElMessage.error(error.message || '获取对账列表失败')
