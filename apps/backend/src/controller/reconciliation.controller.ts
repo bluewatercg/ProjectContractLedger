@@ -40,7 +40,7 @@ export class ReconciliationController {
         };
       }
 
-      const userId = this.ctx.state?.user?.userId;
+      const userId = this.ctx.state?.user?.id || this.ctx.state?.user?.userId;
 
       if (!userId) {
         return {
@@ -90,7 +90,7 @@ export class ReconciliationController {
         };
       }
 
-      const userId = this.ctx.state?.user?.userId;
+      const userId = this.ctx.state?.user?.id || this.ctx.state?.user?.userId;
 
       if (!userId) {
         return {
@@ -146,7 +146,7 @@ export class ReconciliationController {
         };
       }
 
-      const userId = this.ctx.state?.user?.userId;
+      const userId = this.ctx.state?.user?.id || this.ctx.state?.user?.userId;
 
       if (!userId) {
         return {
@@ -292,7 +292,7 @@ export class ReconciliationController {
         };
       }
 
-      const userId = this.ctx.state?.user?.userId;
+      const userId = this.ctx.state?.user?.id || this.ctx.state?.user?.userId;
 
       if (!userId) {
         return {
@@ -346,7 +346,7 @@ export class ReconciliationController {
         };
       }
 
-      const userId = this.ctx.state?.user?.userId;
+      const userId = this.ctx.state?.user?.id || this.ctx.state?.user?.userId;
 
       if (!userId) {
         return {
