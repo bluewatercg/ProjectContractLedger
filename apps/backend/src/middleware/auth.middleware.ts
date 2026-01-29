@@ -24,8 +24,9 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
       ];
 
       const path = ctx.path;
-      if (skipPaths.some(skipPath => path.startsWith(skipPath))) {
-        console.log('[AuthMiddleware] SKIP - Path in skipPaths');
+      const matchedSkipPath = skipPaths.find(skipPath => path.startsWith(skipPath));
+      if (matchedSkipPath) {
+        console.log('[AuthMiddleware] SKIP - Path in skipPaths, matched:', matchedSkipPath);
         await next();
         return;
       }
