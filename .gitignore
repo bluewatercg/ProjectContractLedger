@@ -28,3 +28,11 @@ apps/backend/node_modules
 .worktrees/
 .security-key
 logs/security/
+
+# AI Development Tools
+.agent/
+.agents/
+.claude/
+.codex/
+.github/skills/
+.opencode/
