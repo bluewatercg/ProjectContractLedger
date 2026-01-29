@@ -269,7 +269,7 @@ export class ReconciliationService {
     startDate?: string;
     endDate?: string;
     kitId: number;
-  }): Promise<{ data: Reconciliation[]; total: number }> {
+  }): Promise<{ items: Reconciliation[]; total: number }> {
     const page = params.page || 1;
     const pageSize = params.pageSize || 20;
 
@@ -319,7 +319,7 @@ export class ReconciliationService {
       .take(pageSize)
       .getManyAndCount();
 
-    return { data, total };
+    return { items: data, total };
   }
 
   /**
