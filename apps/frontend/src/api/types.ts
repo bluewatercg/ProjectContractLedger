@@ -307,3 +307,115 @@ export interface ApproveReconciliationDto {
   approved: boolean
   notes?: string
 }
+
+// 报表相关类型
+export interface ReportQueryParams {
+  startDate?: string
+  endDate?: string
+  groupBy?: 'day' | 'month' | 'quarter' | 'year'
+  status?: string
+  customerId?: number
+}
+
+export interface ExportReportDto {
+  reportType: 'contract' | 'invoice' | 'payment' | 'reconciliation' | 'financial'
+  format: 'excel' | 'pdf' | 'csv'
+  startDate?: string
+  endDate?: string
+  groupBy?: 'day' | 'month' | 'quarter' | 'year'
+  filters?: string
+}
+
+export interface ReportDataItem {
+  period: string
+  periodLabel: string
+  count?: number
+  amount?: number
+  [key: string]: any
+}
+
+export interface ContractReportData {
+  summary: {
+    totalCount: number
+    totalAmount: number
+    activeCount: number
+    completedCount: number
+    averageAmount: number
+  }
+  trend: ReportDataItem[]
+  statusDistribution: Array<{
+    status: string
+    statusLabel: string
+    count: number
+    amount: number
+    percentage: number
+  }>
+}
+
+export interface InvoiceReportData {
+  summary: {
+    totalCount: number
+    totalAmount: number
+    paidCount: number
+    paidAmount: number
+    unpaidAmount: number
+    overdueCount: number
+    overdueAmount: number
+  }
+  trend: ReportDataItem[]
+  statusDistribution: Array<{
+    status: string
+    statusLabel: string
+    count: number
+    amount: number
+    percentage: number
+  }>
+}
+
+export interface PaymentReportData {
+  summary: {
+    totalCount: number
+    totalAmount: number
+    completedCount: number
+    completedAmount: number
+    averageAmount: number
+  }
+  trend: ReportDataItem[]
+  methodDistribution: Array<{
+    method: string
+    methodLabel: string
+    count: number
+    amount: number
+    percentage: number
+  }>
+}
+
+export interface ReconciliationReportData {
+  summary: {
+    totalCount: number
+    matchedCount: number
+    unmatchedCount: number
+    totalDifference: number
+  }
+  trend: ReportDataItem[]
+  statusDistribution: Array<{
+    status: string
+    statusLabel: string
+    count: number
+    percentage: number
+  }>
+}
+
+export interface FinancialSummaryData {
+  contracts: ContractReportData
+  invoices: InvoiceReportData
+  payments: PaymentReportData
+  reconciliations: ReconciliationReportData
+  financialHealth: {
+    contractFulfillmentRate: number
+    invoicePaymentRate: number
+    collectionEfficiency: number
+    reconciliationAccuracy: number
+  }
+}
+

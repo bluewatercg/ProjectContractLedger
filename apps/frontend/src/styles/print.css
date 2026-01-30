@@ -1,0 +1,264 @@
+/* 打印样式 */
+@media print {
+  /* 隐藏非打印元素 */
+  .layout-header,
+  .layout-sidebar,
+  .el-menu,
+  .el-breadcrumb,
+  .el-pagination,
+  .el-button,
+  .el-dropdown,
+  .report-filter,
+  .chart-actions,
+  .no-print {
+    display: none !important;
+  }
+
+  /* 页面设置 */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* 重置布局 */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  .layout-main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 卡片样式 */
+  .el-card {
+    box-shadow: none !important;
+    border: none !important;
+    margin-bottom: 20px;
+  }
+
+  .el-card__header {
+    padding: 10px 0;
+    border-bottom: 2px solid #303133;
+  }
+
+  .el-card__body {
+    padding: 10px 0;
+  }
+
+  /* 表格打印优化 */
+  .el-table {
+    page-break-inside: auto;
+  }
+
+  .el-table thead {
+    display: table-header-group;
+  }
+
+  .el-table tbody {
+    display: table-row-group;
+  }
+
+  .el-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .el-table th,
+  .el-table td {
+    padding: 8px !important;
+    font-size: 12px;
+  }
+
+  /* 图表打印优化 */
+  .chart-container {
+    page-break-inside: avoid;
+  }
+
+  /* 统计卡片 */
+  .stat-card {
+    page-break-inside: avoid;
+    border: 1px solid #DCDFE6;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  /* 标题样式 */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    color: #303133;
+  }
+
+  /* 避免孤行和寡行 */
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* 链接样式 */
+  a {
+    text-decoration: none;
+    color: #303133;
+  }
+
+  a[href]:after {
+    content: none;
+  }
+
+  /* 颜色调整 */
+  * {
+    color: #303133 !important;
+    background: white !important;
+  }
+
+  /* 边框保留 */
+  .el-table,
+  .el-table th,
+  .el-table td {
+    border-color: #DCDFE6 !important;
+  }
+
+  /* 页眉页脚 */
+  .print-header {
+    position: running(header);
+  }
+
+  .print-footer {
+    position: running(footer);
+  }
+
+  @page {
+    @top-center {
+      content: element(header);
+    }
+    @bottom-center {
+      content: element(footer);
+    }
+  }
+
+  /* 分页控制 */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .page-break-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* 图表容器 */
+  .echarts-container {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* 汇总信息 */
+  .summary-section {
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #DCDFE6;
+  }
+
+  /* 状态标签 */
+  .el-tag {
+    border: 1px solid #DCDFE6 !important;
+    padding: 2px 8px;
+  }
+
+  /* 空状态 */
+  .el-empty {
+    display: none;
+  }
+
+  /* 加载状态 */
+  .el-loading-mask {
+    display: none !important;
+  }
+
+  /* 对话框 */
+  .el-dialog__wrapper {
+    position: static !important;
+  }
+
+  .el-dialog {
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .el-dialog__header,
+  .el-dialog__footer {
+    display: none !important;
+  }
+
+  .el-dialog__body {
+    padding: 0 !important;
+  }
+
+  /* 响应式调整 */
+  .el-row {
+    display: block !important;
+  }
+
+  .el-col {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* 打印预览样式（屏幕显示） */
+.print-preview {
+  background: #f5f5f5;
+  padding: 20px;
+}
+
+.print-preview-page {
+  background: white;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  margin: 0 auto;
+  max-width: 210mm;
+  min-height: 297mm;
+}
+
+.print-preview-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #303133;
+}
+
+.print-preview-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 16px;
+}
+
+.print-preview-meta {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.print-preview-body {
+  margin: 20px 0;
+}
+
+.print-preview-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #DCDFE6;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #909399;
+}

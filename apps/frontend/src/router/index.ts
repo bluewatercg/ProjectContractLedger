@@ -177,6 +177,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Settings',
         component: () => import('@/views/Settings.vue'),
         meta: { requiresAuth: true, title: '系统设置' }
+      },
+      {
+        path: 'reports',
+        name: 'Reports',
+        component: () => import('@/views/reports/ReportIndex.vue'),
+        meta: { requiresAuth: true, title: '报表中心' }
       }
     ]
   },

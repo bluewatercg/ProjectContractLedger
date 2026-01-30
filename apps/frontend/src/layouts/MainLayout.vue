@@ -81,6 +81,10 @@
             <el-icon><DocumentChecked /></el-icon>
             <span>发票对账</span>
           </el-menu-item>
+          <el-menu-item index="/reports">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>报表中心</span>
+          </el-menu-item>
           <el-menu-item index="/user-list">
             <el-icon><Avatar /></el-icon>
             <span>用户管理</span>

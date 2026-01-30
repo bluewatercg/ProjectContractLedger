@@ -8,12 +8,13 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
-// 样式 - 按顺序加载：设计系统 -> Element Plus主题 -> 全局样式 -> 页面样式 -> 动画
+// 样式 - 按顺序加载：设计系统 -> Element Plus主题 -> 全局样式 -> 页面样式 -> 动画 -> 打印样式
 import './styles/design-system.css'
 import './styles/element-theme.css'
 import './styles/index.css'
 import './styles/page.css'
 import './styles/animations.css'
+import './styles/print.css'
 
 // 创建应用实例
 const app = createApp(App)

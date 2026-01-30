@@ -812,3 +812,136 @@ export class AttachmentResponse {
   })
   uploaded_at: Date;
 }
+
+/**
+ * 报表相关接口
+ */
+export interface ReportQueryParams {
+  startDate?: string;
+  endDate?: string;
+  groupBy?: 'day' | 'month' | 'quarter' | 'year';
+  status?: string;
+  customerId?: number;
+  kitId?: number;
+}
+
+export class ExportReportDto {
+  @ApiProperty({
+    description: '报表类型',
+    example: 'contract',
+    enum: ['contract', 'invoice', 'payment', 'reconciliation', 'financial'],
+  })
+  reportType: string;
+
+  @ApiProperty({
+    description: '导出格式',
+    example: 'excel',
+    enum: ['excel', 'pdf', 'csv'],
+  })
+  format: string;
+
+  @ApiPropertyOptional({
+    description: '开始日期',
+    example: '2024-01-01',
+    format: 'date',
+  })
+  startDate?: string;
+
+  @ApiPropertyOptional({
+    description: '结束日期',
+    example: '2024-12-31',
+    format: 'date',
+  })
+  endDate?: string;
+
+  @ApiPropertyOptional({
+    description: '时间维度',
+    example: 'month',
+    enum: ['day', 'month', 'quarter', 'year'],
+  })
+  groupBy?: string;
+
+  @ApiPropertyOptional({
+    description: '其他筛选参数（JSON字符串）',
+    example: '{"status":"active"}',
+  })
+  filters?: string;
+}
+
+export interface ReportDataItem {
+  period: string;
+  periodLabel: string;
+  [key: string]: any;
+}
+
+export interface ContractReportData {
+  summary: {
+    totalCount: number;
+    totalAmount: number;
+    activeCount: number;
+    completedCount: number;
+    averageAmount: number;
+  };
+  trend: ReportDataItem[];
+  statusDistribution: Array<{
+    status: string;
+    statusLabel: string;
+    count: number;
+    amount: number;
+    percentage: number;
+  }>;
+}
+
+export interface InvoiceReportData {
+  summary: {
+    totalCount: number;
+    totalAmount: number;
+    paidCount: number;
+    paidAmount: number;
+    unpaidAmount: number;
+    overdueCount: number;
+    overdueAmount: number;
+  };
+  trend: ReportDataItem[];
+  statusDistribution: Array<{
+    status: string;
+    statusLabel: string;
+    count: number;
+    amount: number;
+    percentage: number;
+  }>;
+}
+
+export interface PaymentReportData {
+  summary: {
+    totalCount: number;
+    totalAmount: number;
+    completedCount: number;
+    completedAmount: number;
+    averageAmount: number;
+  };
+  trend: ReportDataItem[];
+  methodDistribution: Array<{
+    method: string;
+    methodLabel: string;
+    count: number;
+    amount: number;
+    percentage: number;
+  }>;
+}
+
+export interface ReconciliationReportData {
+  summary: {
+    totalCount: number;
+    matchedCount: number;
+    unmatchedCount: number;
+    totalDifference: number;
+  };
+  trend: ReportDataItem[];
+  statusDistribution: Array<{
+    status: string;
+    statusLabel: string;
+    count: number;
+    percentage: number;
+  }>;
+}
