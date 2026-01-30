@@ -84,7 +84,6 @@ export class ReportService {
     }
 
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery = this.contractRepository.createQueryBuilder('contract');
@@ -159,7 +158,6 @@ export class ReportService {
     }
 
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery = this.invoiceRepository.createQueryBuilder('invoice');
@@ -241,7 +239,6 @@ export class ReportService {
     }
 
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery = this.paymentRepository.createQueryBuilder('payment');
@@ -316,7 +313,6 @@ export class ReportService {
     }
 
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery =
@@ -445,7 +441,6 @@ export class ReportService {
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     const query = this.contractRepository.createQueryBuilder('contract');
 
@@ -536,7 +531,6 @@ export class ReportService {
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     const query = this.invoiceRepository.createQueryBuilder('invoice');
 
@@ -628,7 +622,6 @@ export class ReportService {
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     const query = this.paymentRepository.createQueryBuilder('payment');
 
@@ -720,7 +713,6 @@ export class ReportService {
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, kitId } = params;
-    const groupBy = params.groupBy || 'month';
 
     const query =
       this.reconciliationRepository.createQueryBuilder('reconciliation');
