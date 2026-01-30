@@ -37,6 +37,15 @@ export class InvoiceService {
   }
 
   /**
+   * 根据ID获取合同信息
+   */
+  async getContractById(contractId: number): Promise<Contract | null> {
+    return await this.contractRepository.findOne({
+      where: { id: contractId },
+    });
+  }
+
+  /**
    * 创建发票
    */
   async createInvoice(

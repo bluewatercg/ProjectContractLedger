@@ -36,13 +36,25 @@ export class ContractController {
     @Body() createContractDto: CreateContractDto
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
-      const userId = this.ctx.state?.user?.id || 1; // 默认使用1作为系统用户ID
+      const userId = this.ctx.state?.user?.id || 1;
+
+      // 优先使用客户的 kit_id，如果没有则使用当前用户的 kit_id
+      let kitId = this.ctx.state?.kitId;
+
+      // 如果提供了 customer_id，获取客户的 kit_id
+      if (createContractDto.customer_id) {
+        const customer = await this.contractService.getCustomerById(
+          createContractDto.customer_id
+        );
+        if (customer && customer.kit_id) {
+          kitId = customer.kit_id;
+        }
+      }
 
       if (!kitId) {
         return {
           success: false,
-          message: '请选择套装',
+          message: '请选择套装或选择有效的客户',
           code: 400,
         };
       }

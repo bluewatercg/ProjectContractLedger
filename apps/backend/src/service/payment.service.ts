@@ -37,6 +37,15 @@ export class PaymentService {
   }
 
   /**
+   * 根据ID获取发票信息
+   */
+  async getInvoiceById(invoiceId: number): Promise<Invoice | null> {
+    return await this.invoiceRepository.findOne({
+      where: { id: invoiceId },
+    });
+  }
+
+  /**
    * 创建支付记录
    */
   async createPayment(

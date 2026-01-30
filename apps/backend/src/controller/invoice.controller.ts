@@ -36,12 +36,23 @@ export class InvoiceController {
     @Body() createInvoiceDto: CreateInvoiceDto
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      // 优先使用合同的 kit_id，如果没有则使用当前用户的 kit_id
+      let kitId = this.ctx.state?.kitId;
+
+      // 如果提供了 contract_id，获取合同的 kit_id
+      if (createInvoiceDto.contract_id) {
+        const contract = await this.invoiceService.getContractById(
+          createInvoiceDto.contract_id
+        );
+        if (contract && contract.kit_id) {
+          kitId = contract.kit_id;
+        }
+      }
 
       if (!kitId) {
         return {
           success: false,
-          message: '请选择套装',
+          message: '请选择套装或选择有效的合同',
           code: 400,
         };
       }

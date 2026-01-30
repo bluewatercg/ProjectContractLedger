@@ -2,6 +2,7 @@ import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contract } from '../entity/contract.entity';
+import { Customer } from '../entity/customer.entity';
 import {
   CreateContractDto,
   UpdateContractDto,
@@ -15,6 +16,9 @@ export class ContractService {
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
 
+  @InjectEntityModel(Customer)
+  customerRepository: Repository<Customer>;
+
   @Inject()
   statisticsService: any; // 延迟注入避免循环依赖
 
@@ -23,6 +27,15 @@ export class ContractService {
    */
   private formatContractResponse(contract: Contract): any {
     return DateUtil.formatEntityResponse(contract, ['start_date', 'end_date']);
+  }
+
+  /**
+   * 根据ID获取客户信息
+   */
+  async getCustomerById(customerId: number): Promise<Customer | null> {
+    return await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
   }
 
   /**

@@ -36,12 +36,23 @@ export class PaymentController {
     @Body() createPaymentDto: CreatePaymentDto
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      // 优先使用发票的 kit_id，如果没有则使用当前用户的 kit_id
+      let kitId = this.ctx.state?.kitId;
+
+      // 如果提供了 invoice_id，获取发票的 kit_id
+      if (createPaymentDto.invoice_id) {
+        const invoice = await this.paymentService.getInvoiceById(
+          createPaymentDto.invoice_id
+        );
+        if (invoice && invoice.kit_id) {
+          kitId = invoice.kit_id;
+        }
+      }
 
       if (!kitId) {
         return {
           success: false,
-          message: '请选择套装',
+          message: '请选择套装或选择有效的发票',
           code: 400,
         };
       }
