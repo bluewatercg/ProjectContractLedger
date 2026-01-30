@@ -42,6 +42,8 @@ export const useKitStore = defineStore('kit', () => {
         viewAllKits.value = value
         if (value) {
             localStorage.setItem('viewAllKits', 'true')
+            // 清除当前套账ID，避免刷新后恢复到具体套账
+            localStorage.removeItem('currentKitId')
         } else {
             localStorage.removeItem('viewAllKits')
         }
@@ -98,6 +100,13 @@ export const useKitStore = defineStore('kit', () => {
         try {
             const kitList = await getUserKits(userId)
             setKits(kitList || [])
+
+            // 检查是否之前选择了"查看全部"
+            const savedViewAll = localStorage.getItem('viewAllKits')
+            if (savedViewAll === 'true' && kitList && kitList.length > 1) {
+                viewAllKits.value = true
+                return kitList
+            }
 
             // 尝试从 localStorage 恢复之前选择的套装
             const savedKitId = localStorage.getItem('currentKitId')
