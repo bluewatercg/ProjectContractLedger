@@ -10,12 +10,17 @@
           <!-- 套装切换器 -->
           <div class="kit-selector" v-if="kitStore.kits.length > 0">
             <el-select
-              v-model="currentKitId"
+              :model-value="kitStore.currentKitId"
               placeholder="选择套装"
               size="default"
               style="width: 160px"
               @change="handleKitChange"
             >
+              <el-option
+                v-if="kitStore.kits.length > 1"
+                label="全部套账"
+                :value="0"
+              />
               <el-option
                 v-for="kit in kitStore.kits"
                 :key="kit.id"
@@ -100,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -111,14 +116,6 @@ const route = useRoute()
 const authStore = useAuthStore()
 const kitStore = useKitStore()
 
-// 当前选中的套装ID
-const currentKitId = ref(kitStore.currentKitId)
-
-// 监听 kitStore 变化同步到本地
-watch(() => kitStore.currentKitId, (newId) => {
-  currentKitId.value = newId
-})
-
 // 计算属性
 const activeMenu = computed(() => route.path)
 const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?seed=${authStore.user?.username}`)
@@ -126,8 +123,12 @@ const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?se
 // 处理套装切换
 const handleKitChange = (kitId: number) => {
   if (kitStore.switchKit(kitId)) {
-    ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`)
-    // 立即强制刷新页面，避免显示混合状态（header显示新套账但内容显示旧套账）
+    if (kitId === 0) {
+      ElMessage.success('已切换到查看全部套账')
+    } else {
+      ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`)
+    }
+    // 立即强制刷新页面，避免显示混合状态
     window.location.reload()
   }
 }

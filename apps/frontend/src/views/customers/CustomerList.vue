@@ -27,16 +27,6 @@
             <el-option label="停用" value="inactive" />
           </el-select>
         </div>
-
-        <!-- 查看全部套账开关 -->
-        <div class="table-actions" v-if="kitStore.kits.length > 1">
-          <el-switch
-            v-model="viewAllKits"
-            active-text="查看全部套账"
-            inactive-text="当前套账"
-            @change="handleViewAllChange"
-          />
-        </div>
       </div>
       
       <div class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
@@ -48,7 +38,7 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="客户名称" />
         <!-- 套账列（仅在查看全部时显示） -->
-        <el-table-column v-if="viewAllKits" label="所属套账" width="120">
+        <el-table-column v-if="kitStore.viewAllKits" label="所属套账" width="120">
           <template #default="{ row }">
             <el-tag size="small" type="info">{{ getKitName(row.kit_id) }}</el-tag>
           </template>
@@ -87,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { customerApi } from '@/api'
@@ -106,22 +96,21 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const noMore = ref(false)
-const viewAllKits = ref(false)  // 是否查看全部套账
 
 const disabled = computed(() => loading.value || noMore.value)
+
+// 监听 kitStore 的 viewAllKits 和 currentKitId 变化，自动刷新数据
+watch([() => kitStore.viewAllKits, () => kitStore.currentKitId], () => {
+  currentPage.value = 1
+  customers.value = []
+  noMore.value = false
+  fetchCustomers(false)
+})
 
 // 获取套账名称
 const getKitName = (kitId: number) => {
   const kit = kitStore.kits.find(k => k.id === kitId)
   return kit?.name || '未知套账'
-}
-
-// 处理查看全部切换
-const handleViewAllChange = (value: boolean) => {
-  currentPage.value = 1
-  customers.value = []
-  noMore.value = false
-  fetchCustomers(false)
 }
 
 // 格式化日期
@@ -137,26 +126,26 @@ const fetchCustomers = async (append = false) => {
       customers.value = []
       noMore.value = false
     }
-    
+
     loading.value = true
     const response = await customerApi.getCustomers({
       page: currentPage.value,
       limit: pageSize.value,
       search: searchQuery.value,
       status: statusFilter.value,
-      viewAll: viewAllKits.value
+      viewAll: kitStore.viewAllKits
     })
-    
+
     if (response.success && response.data) {
       const newItems = response.data.items || []
       const totalCount = response.data.total
-      
+
       if (append) {
         customers.value = [...customers.value, ...newItems]
       } else {
         customers.value = newItems
       }
-      
+
       total.value = totalCount
       if (customers.value.length >= totalCount || newItems.length < pageSize.value) {
         noMore.value = true

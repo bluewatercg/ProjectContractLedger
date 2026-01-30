@@ -8,9 +8,14 @@ export const useKitStore = defineStore('kit', () => {
     const kits = ref<Kit[]>([])
     const currentKit = ref<Kit | null>(null)
     const isLoading = ref(false)
+    const viewAllKits = ref(false) // 是否查看全部套账
 
     // 计算属性
-    const currentKitId = computed(() => currentKit.value?.id || null)
+    const currentKitId = computed(() => {
+        // 如果查看全部套账，返回 0
+        if (viewAllKits.value) return 0
+        return currentKit.value?.id || null
+    })
     const hasMultipleKits = computed(() => kits.value.length > 1)
 
     // 设置用户的套装列表
@@ -21,17 +26,35 @@ export const useKitStore = defineStore('kit', () => {
     // 设置当前套装
     const setCurrentKit = (kit: Kit | null) => {
         currentKit.value = kit
+        viewAllKits.value = false // 切换到具体套账时，关闭查看全部
         if (kit) {
             localStorage.setItem('currentKitId', String(kit.id))
             localStorage.setItem('currentKit', JSON.stringify(kit))
+            localStorage.removeItem('viewAllKits')
         } else {
             localStorage.removeItem('currentKitId')
             localStorage.removeItem('currentKit')
         }
     }
 
+    // 设置查看全部套账
+    const setViewAllKits = (value: boolean) => {
+        viewAllKits.value = value
+        if (value) {
+            localStorage.setItem('viewAllKits', 'true')
+        } else {
+            localStorage.removeItem('viewAllKits')
+        }
+    }
+
     // 切换套装
     const switchKit = (kitId: number) => {
+        // 如果 kitId 为 0，表示查看全部套账
+        if (kitId === 0) {
+            setViewAllKits(true)
+            return true
+        }
+
         const kit = kits.value.find(k => k.id === kitId)
         if (kit) {
             setCurrentKit(kit)
@@ -43,6 +66,13 @@ export const useKitStore = defineStore('kit', () => {
     // 初始化套装状态
     const initializeKit = (kitList: Kit[], defaultKit: Kit | null) => {
         setKits(kitList)
+
+        // 检查是否之前选择了"查看全部"
+        const savedViewAll = localStorage.getItem('viewAllKits')
+        if (savedViewAll === 'true' && kitList.length > 1) {
+            setViewAllKits(true)
+            return
+        }
 
         // 尝试从本地存储恢复上次选择的套装
         const savedKitId = localStorage.getItem('currentKitId')
@@ -105,8 +135,10 @@ export const useKitStore = defineStore('kit', () => {
     const clearKits = () => {
         kits.value = []
         currentKit.value = null
+        viewAllKits.value = false
         localStorage.removeItem('currentKitId')
         localStorage.removeItem('currentKit')
+        localStorage.removeItem('viewAllKits')
     }
 
     return {
@@ -114,6 +146,7 @@ export const useKitStore = defineStore('kit', () => {
         kits,
         currentKit,
         isLoading,
+        viewAllKits,
 
         // 计算属性
         currentKitId,
@@ -122,6 +155,7 @@ export const useKitStore = defineStore('kit', () => {
         // 方法
         setKits,
         setCurrentKit,
+        setViewAllKits,
         switchKit,
         initializeKit,
         refreshKits,
