@@ -12,7 +12,7 @@ export const customerApi = {
   /**
    * 获取客户列表
    */
-  getCustomers(params: PaginationQuery & { search?: string }): Promise<ApiResponse<PaginationResult<Customer>>> {
+  getCustomers(params: PaginationQuery & { search?: string; viewAll?: boolean }): Promise<ApiResponse<PaginationResult<Customer>>> {
     return apiClient.get('/customers', { params }).then(res => res.data)
   },
 

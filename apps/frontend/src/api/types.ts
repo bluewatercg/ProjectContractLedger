@@ -67,6 +67,7 @@ export interface Customer {
   bank_name?: string
   status: string
   notes?: string
+  kit_id?: number
   created_at: string
   updated_at: string
 }

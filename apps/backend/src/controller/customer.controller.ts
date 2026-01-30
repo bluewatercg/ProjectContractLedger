@@ -172,10 +172,11 @@ export class CustomerController {
     },
   })
   async getCustomers(
-    @Query() query: PaginationQuery & { search?: string }
+    @Query() query: PaginationQuery & { search?: string; viewAll?: string }
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      // 如果 viewAll=true，则不传 kitId（查看全部套账）
+      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const result = await this.customerService.getCustomers(query, kitId);
       return {
         success: true,

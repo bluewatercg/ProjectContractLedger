@@ -12,6 +12,20 @@
         label-width="100px"
         v-loading="loading"
       >
+        <!-- 套账选择 -->
+        <el-form-item label="所属套账" prop="kitId" v-if="kitStore.kits.length > 1">
+          <KitSelect
+            v-model="form.kitId"
+            :disabled="isEdit"
+            placeholder="请选择套账"
+            style="width: 100%"
+          />
+          <div class="form-tip" v-if="!isEdit">
+            <el-icon><InfoFilled /></el-icon>
+            <span>选择此客户归属的套账，创建后不可修改</span>
+          </div>
+        </el-form-item>
+
         <el-form-item label="客户名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入客户名称" />
         </el-form-item>
@@ -73,11 +87,15 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 import { customerApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
+import KitSelect from '@/components/KitSelect.vue'
 import type { CreateCustomerDto, UpdateCustomerDto } from '@/api/types'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 表单引用
 const formRef = ref<FormInstance>()
@@ -91,7 +109,7 @@ const isEdit = computed(() => !!route.params.id)
 const customerId = computed(() => Number(route.params.id))
 
 // 表单数据
-const form = reactive<CreateCustomerDto>({
+const form = reactive<CreateCustomerDto & { kitId?: number }>({
   name: '',
   contact_person: '',
   phone: '',
@@ -100,7 +118,8 @@ const form = reactive<CreateCustomerDto>({
   tax_number: '',
   bank_account: '',
   bank_name: '',
-  notes: ''
+  notes: '',
+  kitId: kitStore.currentKitId || undefined
 })
 
 // 验证规则
@@ -110,6 +129,9 @@ const rules: FormRules = {
   ],
   email: [
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ],
+  kitId: [
+    { required: true, message: '请选择套账', trigger: 'change' }
   ]
 }
 
@@ -170,3 +192,50 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.page-container {
+  padding: 20px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
+
+.form-container {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+}
+
+.form-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #909399;
+}
+
+.form-tip .el-icon {
+  font-size: 14px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+</style>
