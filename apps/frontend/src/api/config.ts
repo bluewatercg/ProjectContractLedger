@@ -52,7 +52,7 @@ apiClient.interceptors.request.use(
 
     // 添加当前套装ID
     const kitStore = useKitStore()
-    if (kitStore.currentKitId) {
+    if (kitStore.currentKitId !== undefined && kitStore.currentKitId !== null) {
       config.headers = config.headers || {}
       config.headers['X-Kit-Id'] = String(kitStore.currentKitId)
     }
