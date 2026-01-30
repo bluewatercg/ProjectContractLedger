@@ -440,7 +440,7 @@ export class ReportService {
   private async getContractTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, kitId } = params;
+    const { startDate, endDate, groupBy = 'month', kitId } = params;
 
     const query = this.contractRepository.createQueryBuilder('contract');
 
@@ -530,7 +530,7 @@ export class ReportService {
   private async getInvoiceTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, kitId } = params;
+    const { startDate, endDate, groupBy = 'month', kitId } = params;
 
     const query = this.invoiceRepository.createQueryBuilder('invoice');
 
@@ -621,7 +621,7 @@ export class ReportService {
   private async getPaymentTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, kitId } = params;
+    const { startDate, endDate, groupBy = 'month', kitId } = params;
 
     const query = this.paymentRepository.createQueryBuilder('payment');
 
@@ -712,7 +712,7 @@ export class ReportService {
   private async getReconciliationTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, kitId } = params;
+    const { startDate, endDate, groupBy = 'month', kitId } = params;
 
     const query =
       this.reconciliationRepository.createQueryBuilder('reconciliation');
