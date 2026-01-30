@@ -15,11 +15,11 @@
     <el-option
       v-for="invoice in invoices"
       :key="invoice.id"
-      :label="`${formatDate(invoice.issue_date)} | ¥${formatCurrency(invoice.amount)}`"
+      :label="`${getCustomerName(invoice)} | ${formatDate(invoice.issue_date)} | ¥${formatCurrency(invoice.amount)}`"
       :value="invoice.id"
     >
       <div class="invoice-option">
-        <div class="invoice-number">{{ formatDate(invoice.issue_date) }} | ¥{{ formatCurrency(invoice.amount) }}</div>
+        <div class="invoice-number">{{ getCustomerName(invoice) }} | {{ formatDate(invoice.issue_date) }} | ¥{{ formatCurrency(invoice.amount) }}</div>
         <div class="invoice-info">{{ invoice.invoice_number }}</div>
       </div>
     </el-option>
@@ -104,6 +104,11 @@ const formatDate = (dateString: string) => {
     month: '2-digit',
     day: '2-digit'
   })
+}
+
+// 获取客户名称
+const getCustomerName = (invoice: Invoice) => {
+  return invoice.contract?.customer?.name || '未知客户'
 }
 
 // 获取状态文本
