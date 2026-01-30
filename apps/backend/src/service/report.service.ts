@@ -1,4 +1,4 @@
-import { Provide, Inject } from '@midwayjs/core';
+import { Provide } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contract } from '../entity/contract.entity';
@@ -83,7 +83,8 @@ export class ReportService {
       return cachedData;
     }
 
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery = this.contractRepository.createQueryBuilder('contract');
@@ -157,7 +158,8 @@ export class ReportService {
       return cachedData;
     }
 
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery = this.invoiceRepository.createQueryBuilder('invoice');
@@ -238,7 +240,8 @@ export class ReportService {
       return cachedData;
     }
 
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery = this.paymentRepository.createQueryBuilder('payment');
@@ -312,7 +315,8 @@ export class ReportService {
       return cachedData;
     }
 
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     // 构建基础查询
     const baseQuery =
@@ -440,7 +444,8 @@ export class ReportService {
   private async getContractTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     const query = this.contractRepository.createQueryBuilder('contract');
 
@@ -530,7 +535,8 @@ export class ReportService {
   private async getInvoiceTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     const query = this.invoiceRepository.createQueryBuilder('invoice');
 
@@ -621,7 +627,8 @@ export class ReportService {
   private async getPaymentTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     const query = this.paymentRepository.createQueryBuilder('payment');
 
@@ -712,7 +719,8 @@ export class ReportService {
   private async getReconciliationTrend(
     params: ReportQueryParams
   ): Promise<ReportDataItem[]> {
-    const { startDate, endDate, groupBy = 'month', kitId } = params;
+    const { startDate, endDate, kitId } = params;
+    const groupBy = params.groupBy || 'month';
 
     const query =
       this.reconciliationRepository.createQueryBuilder('reconciliation');
