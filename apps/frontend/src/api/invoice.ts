@@ -12,7 +12,7 @@ export const invoiceApi = {
   /**
    * 获取发票列表
    */
-  getInvoices(params: PaginationQuery & { contractId?: number; status?: string }): Promise<ApiResponse<PaginationResult<Invoice>>> {
+  getInvoices(params: PaginationQuery & { contractId?: number; status?: string; viewAll?: boolean }): Promise<ApiResponse<PaginationResult<Invoice>>> {
     return apiClient.get('/invoices', { params }).then(res => res.data)
   },
 
@@ -47,8 +47,8 @@ export const invoiceApi = {
   /**
    * 获取发票统计信息
    */
-  getInvoiceStats(): Promise<ApiResponse<any>> {
-    return apiClient.get('/invoices/stats/overview').then(res => res.data)
+  getInvoiceStats(params?: { viewAll?: boolean }): Promise<ApiResponse<any>> {
+    return apiClient.get('/invoices/stats/overview', { params }).then(res => res.data)
   },
 
   /**

@@ -77,10 +77,11 @@ export class PaymentController {
    */
   @Get('/')
   async getPayments(
-    @Query() query: PaginationQuery & { invoiceId?: number; status?: string }
+    @Query() query: PaginationQuery & { invoiceId?: number; status?: string; viewAll?: string }
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      // 如果 viewAll=true，则不传 kitId（查看全部套账）
+      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const result = await this.paymentService.getPayments(query, kitId);
       return {
         success: true,
@@ -219,9 +220,12 @@ export class PaymentController {
    * 获取支付统计信息
    */
   @Get('/stats/overview')
-  async getPaymentStats(): Promise<ApiResponse> {
+  async getPaymentStats(
+    @Query() query: { viewAll?: string }
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      // 如果 viewAll=true，则不传 kitId（查看全部套账）
+      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const stats = await this.paymentService.getPaymentStats(undefined, kitId);
       return {
         success: true,

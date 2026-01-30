@@ -12,7 +12,7 @@ export const paymentApi = {
   /**
    * 获取支付记录列表
    */
-  getPayments(params: PaginationQuery & { invoiceId?: number; status?: string }): Promise<ApiResponse<PaginationResult<Payment>>> {
+  getPayments(params: PaginationQuery & { invoiceId?: number; status?: string; viewAll?: boolean }): Promise<ApiResponse<PaginationResult<Payment>>> {
     return apiClient.get('/payments', { params }).then(res => res.data)
   },
 
@@ -54,7 +54,7 @@ export const paymentApi = {
   /**
    * 获取支付统计信息
    */
-  getPaymentStats(): Promise<ApiResponse<any>> {
-    return apiClient.get('/payments/stats/overview').then(res => res.data)
+  getPaymentStats(params?: { viewAll?: boolean }): Promise<ApiResponse<any>> {
+    return apiClient.get('/payments/stats/overview', { params }).then(res => res.data)
   }
 }
