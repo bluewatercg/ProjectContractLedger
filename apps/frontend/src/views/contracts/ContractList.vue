@@ -97,6 +97,12 @@
           <el-table-column prop="contract_number" label="合同编号" width="140" fixed />
           <el-table-column prop="title" label="合同标题" min-width="180" show-overflow-tooltip />
           <el-table-column prop="customer.name" label="客户名称" width="150" show-overflow-tooltip />
+          <!-- 套账列（仅在查看全部时显示） -->
+          <el-table-column v-if="kitStore.viewAllKits" label="所属套账" width="120">
+            <template #default="{ row }">
+              <el-tag size="small" type="info">{{ getKitName(row.kit_id) }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="财务状况" width="280">
             <template #default="{ row }">
               <div class="financial-status-cell" :class="`financial-${row.billingStatus}`">
@@ -168,16 +174,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Search } from "@element-plus/icons-vue";
 import { contractApi } from "@/api";
 import type { Contract, Customer } from "@/api/types";
+import { useKitStore } from "@/stores/kit";
 import CustomerSelect from "@/components/CustomerSelect.vue";
 import ContractCard from "@/components/ContractCard.vue";
 
 const router = useRouter();
+const kitStore = useKitStore();
 
 const savedViewMode = localStorage.getItem("contractViewMode") as
   | "table"
@@ -197,6 +205,14 @@ const noMore = ref(false);
 const viewMode = ref<"table" | "card">(savedViewMode || "table");
 
 const disabled = computed(() => loading.value || noMore.value);
+
+// 监听 kitStore 的 viewAllKits 和 currentKitId 变化，自动刷新数据
+watch([() => kitStore.viewAllKits, () => kitStore.currentKitId], () => {
+  currentPage.value = 1;
+  contracts.value = [];
+  noMore.value = false;
+  fetchContracts(false);
+});
 
 let searchTimeout: NodeJS.Timeout | null = null;
 
@@ -225,6 +241,12 @@ const handleViewModeChange = (mode: "table" | "card") => {
   viewMode.value = mode;
   localStorage.setItem("contractViewMode", mode);
   handleFilter(); // 切换视图时重置并刷新
+};
+
+// 获取套账名称
+const getKitName = (kitId: number) => {
+  const kit = kitStore.kits.find(k => k.id === kitId);
+  return kit?.name || '未知套账';
 };
 
 // 格式化货币
@@ -315,7 +337,7 @@ const fetchContracts = async (append = false) => {
       contracts.value = [];
       noMore.value = false;
     }
-    
+
     loading.value = true;
     const response = await contractApi.getContracts({
       page: currentPage.value,
@@ -324,18 +346,19 @@ const fetchContracts = async (append = false) => {
       status: statusFilter.value,
       billingStatus: billingStatusFilter.value,
       search: searchQuery.value || undefined,
+      viewAll: kitStore.viewAllKits,
     });
 
     if (response.success && response.data) {
       const newItems = response.data.items || [];
       const totalCount = response.data.total;
-      
+
       if (append) {
         contracts.value = sortContractsByPriority([...contracts.value, ...newItems]);
       } else {
         contracts.value = sortContractsByPriority(newItems);
       }
-      
+
       total.value = totalCount;
       if (contracts.value.length >= totalCount || newItems.length < pageSize.value) {
         noMore.value = true;

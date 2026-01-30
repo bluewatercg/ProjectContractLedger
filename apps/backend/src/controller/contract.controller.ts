@@ -83,10 +83,11 @@ export class ContractController {
    */
   @Get('/')
   async getContracts(
-    @Query() query: PaginationQuery & { customerId?: number; status?: string; search?: string }
+    @Query() query: PaginationQuery & { customerId?: number; status?: string; search?: string; viewAll?: string }
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      // 如果 viewAll=true，则不传 kitId（查看全部套账）
+      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const result = await this.contractService.getContracts(query, kitId);
       return {
         success: true,

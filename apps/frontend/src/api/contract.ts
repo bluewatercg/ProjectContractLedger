@@ -12,7 +12,7 @@ export const contractApi = {
   /**
    * 获取合同列表
    */
-  getContracts(params: PaginationQuery & { customerId?: number; status?: string; billingStatus?: string; search?: string }): Promise<ApiResponse<PaginationResult<Contract>>> {
+  getContracts(params: PaginationQuery & { customerId?: number; status?: string; billingStatus?: string; search?: string; viewAll?: boolean }): Promise<ApiResponse<PaginationResult<Contract>>> {
     return apiClient.get('/contracts', { params }).then(res => res.data)
   },
 
