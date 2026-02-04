@@ -54,7 +54,7 @@
                 @click="goToCreateInvoice"
                 class="action-button"
               >
-                去开票
+                开票
               </el-button>
             </div>
           </div>
@@ -137,7 +137,7 @@
                     @click="goToCreatePayment(scope.row.id)"
                     class="ml-2"
                   >
-                    去收款
+                    收款
                   </el-button>
                 </div>
               </div>
