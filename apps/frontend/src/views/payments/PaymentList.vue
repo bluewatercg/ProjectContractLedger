@@ -26,9 +26,9 @@
         </div>
       </div>
       
-      <div class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
+      <SkeletonLoader v-if="loading && currentPage === 1" type="table" :rows="10" :columns="10" />
+      <div v-else class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
         <el-table
-          v-loading="loading && currentPage === 1"
           :data="payments"
           style="width: 100%"
       >
@@ -97,6 +97,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { paymentApi } from '@/api'
 import type { Payment, Invoice } from '@/api/types'
 import InvoiceSelect from '@/components/InvoiceSelect.vue'
+import SkeletonLoader from '@/components/SkeletonLoader.vue'
 
 const router = useRouter()
 const route = useRoute()

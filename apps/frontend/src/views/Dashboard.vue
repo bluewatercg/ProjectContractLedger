@@ -638,6 +638,13 @@ import {
 } from "@/api/reminder";
 import type { DashboardStats } from "@/api/types";
 import { useKitStore } from "@/stores/kit";
+import {
+  createModernLineChart,
+  createModernBarChart,
+  createModernPieChart,
+  chartColors,
+  formatCurrency as formatChartCurrency
+} from '@/utils/chartTheme';
 
 const router = useRouter();
 const kitStore = useKitStore();
@@ -798,34 +805,22 @@ const initRevenueTrendChart = async () => {
     const res = await statisticsApi.getMonthlyRevenueTrend(selectedYear.value);
     if (res.success) {
       const data = res.data;
-      chart.setOption({
-        tooltip: {
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-        },
-        legend: { data: ["应收金额", "实收金额"] },
-        grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
-        xAxis: {
-          type: "category",
-          data: data.map((item) => item.monthName),
-        },
-        yAxis: { type: "value" },
+      const option = createModernLineChart({
+        months: data.map((item) => item.monthName),
         series: [
           {
-            name: "应收金额",
-            type: "bar",
+            name: '应收金额',
             data: data.map((item) => item.revenue),
-            itemStyle: { color: "#409eff" },
+            color: chartColors.primary[0]
           },
           {
-            name: "实收金额",
-            type: "line",
+            name: '实收金额',
             data: data.map((item) => item.payments),
-            itemStyle: { color: "#67c23a" },
-            smooth: true,
-          },
-        ],
+            color: chartColors.primary[1]
+          }
+        ]
       });
+      chart.setOption(option);
     }
   } finally {
     chart.hideLoading();
@@ -848,29 +843,8 @@ const initInvoiceStatusChart = async () => {
         name: item.status,
         value: item.count,
       }));
-      chart.setOption({
-        tooltip: { trigger: "item" },
-        legend: { bottom: "5%", left: "center" },
-        series: [
-          {
-            name: "发票状态",
-            type: "pie",
-            radius: ["40%", "70%"],
-            avoidLabelOverlap: false,
-            itemStyle: {
-              borderRadius: 10,
-              borderColor: "#fff",
-              borderWidth: 2,
-            },
-            label: { show: false, position: "center" },
-            emphasis: {
-              label: { show: true, fontSize: "20", fontWeight: "bold" },
-            },
-            labelLine: { show: false },
-            data: data,
-          },
-        ],
-      });
+      const option = createModernPieChart(data);
+      chart.setOption(option);
     }
   } finally {
     chart.hideLoading();
@@ -891,29 +865,26 @@ const initCustomerContributionChart = async () => {
     );
     if (res.success) {
       const data = res.data.sort((a, b) => a.total - b.total);
-      chart.setOption({
-        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-        grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
-        xAxis: { type: "value" },
-        yAxis: {
-          type: "category",
-          data: data.map((item) => item.name),
-        },
+      const option = createModernBarChart({
+        categories: data.map((item) => item.name),
         series: [
           {
-            name: "贡献总额",
-            type: "bar",
+            name: '贡献总额',
             data: data.map((item) => item.total),
-            itemStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                { offset: 0, color: "#83bff6" },
-                { offset: 0.5, color: "#188df0" },
-                { offset: 1, color: "#188df0" },
-              ]),
-            },
-          },
-        ],
+            color: chartColors.primary[0]
+          }
+        ]
       });
+      // 横向柱状图配置
+      option.xAxis.type = 'value';
+      option.yAxis = {
+        type: 'category',
+        data: data.map((item) => item.name),
+        axisLine: { lineStyle: { color: '#E2E8F0' } },
+        axisLabel: { color: '#64748B', fontSize: 12 },
+        axisTick: { show: false }
+      };
+      chart.setOption(option);
     }
   } finally {
     chart.hideLoading();
@@ -932,27 +903,12 @@ const initContractStatusChart = async () => {
       selectedYear.value,
     );
     if (res.success) {
-      chart.setOption({
-        tooltip: { trigger: "item" },
-        series: [
-          {
-            name: "合同状态",
-            type: "pie",
-            radius: "50%",
-            data: res.data.map((item) => ({
-              name: item.status,
-              value: item.count,
-            })),
-            emphasis: {
-              itemStyle: {
-                shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowColor: "rgba(0, 0, 0, 0.5)",
-              },
-            },
-          },
-        ],
-      });
+      const data = res.data.map((item) => ({
+        name: item.status,
+        value: item.count,
+      }));
+      const option = createModernPieChart(data);
+      chart.setOption(option);
     }
   } finally {
     chart.hideLoading();

@@ -54,103 +54,121 @@
         </div>
       </div>
 
-      <div 
-        v-if="viewMode === 'card'" 
-        class="contracts-grid" 
-        v-loading="loading && currentPage === 1"
-        v-infinite-scroll="loadMore"
-        :infinite-scroll-disabled="disabled"
-        :infinite-scroll-distance="200"
-      >
-        <ContractCard
-          v-for="contract in contracts"
-          :key="contract.id"
-          :contract="contract"
-          @view="viewContract"
-          @edit="editContract"
-          @invoice="goToInvoice"
-          @payment="goToPayment"
-          @delete="deleteContract"
+      <div v-if="viewMode === 'card'">
+        <SkeletonLoader
+          v-if="loading && currentPage === 1"
+          type="card"
+          :rows="3"
         />
+        <div
+          v-else
+          class="contracts-grid"
+          v-infinite-scroll="loadMore"
+          :infinite-scroll-disabled="disabled"
+          :infinite-scroll-distance="200"
+        >
+          <ContractCard
+            v-for="contract in contracts"
+            :key="contract.id"
+            :contract="contract"
+            @view="viewContract"
+            @edit="editContract"
+            @invoice="goToInvoice"
+            @payment="goToPayment"
+            @delete="deleteContract"
+          />
 
-        <div v-if="!loading && contracts.length === 0" class="card-empty-state">
-          <div class="empty-icon">📦📝💰</div>
-          <div class="empty-text">还没有创建任何合同</div>
-          <el-button
-            type="primary"
-            size="large"
-            @click="$router.push('/contracts/create')"
-          >
-            新建第一个合同
-          </el-button>
+          <div v-if="!loading && contracts.length === 0" class="card-empty-state">
+            <div class="empty-icon">📦📝💰</div>
+            <div class="empty-text">还没有创建任何合同</div>
+            <el-button
+              type="primary"
+              size="large"
+              @click="$router.push('/contracts/create')"
+            >
+              新建第一个合同
+            </el-button>
+          </div>
         </div>
       </div>
       
-      <div v-else class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
-        <el-table
-          v-loading="loading && currentPage === 1"
-          :data="contracts"
-          style="width: 100%"
-          :row-class-name="getRowClassName"
+      <div v-else>
+        <SkeletonLoader
+          v-if="loading && currentPage === 1"
+          type="table"
+          :rows="10"
+          :columns="9"
+        />
+        <div
+          v-else
+          class="table-infinite-container"
+          v-infinite-scroll="loadMore"
+          :infinite-scroll-disabled="disabled"
         >
+          <el-table
+            :data="contracts"
+            style="width: 100%"
+            :row-class-name="getRowClassName"
+          >
 
-          <el-table-column prop="contract_number" label="合同编号" width="140" fixed />
-          <el-table-column prop="title" label="合同标题" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="customer.name" label="客户名称" width="150" show-overflow-tooltip />
-          <!-- 套账列（仅在查看全部时显示） -->
-          <el-table-column v-if="kitStore.viewAllKits" label="所属套账" width="120">
-            <template #default="{ row }">
-              <el-tag size="small" type="info">{{ getKitName(row.kit_id) }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="财务状况" width="280">
-            <template #default="{ row }">
-              <div class="financial-status-cell" :class="`financial-${row.billingStatus}`">
-                <div class="financial-header">
-                  <span class="contract-amount">💰 ¥{{ formatCurrency(row.total_amount) }}</span>
-                  <el-tag :type="getBillingStatusType(row.billingStatus)" size="small">
-                    {{ row.billingStatusText || "-" }}
-                  </el-tag>
-                </div>
-                <div class="financial-progress">
-                  <div class="progress-item">
-                    <span class="progress-label">📄 开票:</span>
-                    <span class="progress-value">
-                      ¥{{ formatCurrency(row.invoicedAmount || 0) }}
-                      <span class="progress-percent">({{ getInvoicePercent(row.invoicedAmount, row.total_amount) }}%)</span>
-                    </span>
+            <el-table-column prop="contract_number" label="合同编号" width="140" fixed />
+            <el-table-column prop="title" label="合同标题" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="customer.name" label="客户名称" width="150" show-overflow-tooltip />
+            <!-- 套账列（仅在查看全部时显示） -->
+            <el-table-column v-if="kitStore.viewAllKits" label="所属套账" width="120">
+              <template #default="{ row }">
+                <el-tag size="small" type="info">{{ getKitName(row.kit_id) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="财务状况" width="280">
+              <template #default="{ row }">
+                <div class="financial-status-cell" :class="`financial-${row.billingStatus}`">
+                  <div class="financial-header">
+                    <span class="contract-amount">💰 ¥{{ formatCurrency(row.total_amount) }}</span>
+                    <el-tag :type="getBillingStatusType(row.billingStatus)" size="small">
+                      {{ row.billingStatusText || "-" }}
+                    </el-tag>
                   </div>
-                  <div class="progress-item">
-                    <span class="progress-label">💵 收款:</span>
-                    <span class="progress-value">
-                      ¥{{ formatCurrency(row.paidAmount || 0) }}
-                      <span class="progress-percent">({{ getPaymentPercent(row.paidAmount, row.total_amount) }}%)</span>
-                    </span>
+                  <div class="financial-progress">
+                    <div class="progress-item">
+                      <span class="progress-label">📄 开票:</span>
+                      <span class="progress-value">
+                        ¥{{ formatCurrency(row.invoicedAmount || 0) }}
+                        <span class="progress-percent">({{ getInvoicePercent(row.invoicedAmount, row.total_amount) }}%)</span>
+                      </span>
+                    </div>
+                    <div class="progress-item">
+                      <span class="progress-label">💵 收款:</span>
+                      <span class="progress-value">
+                        ¥{{ formatCurrency(row.paidAmount || 0) }}
+                        <span class="progress-percent">({{ getPaymentPercent(row.paidAmount, row.total_amount) }}%)</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="financial-remaining" v-if="row.unpaidAmount > 0 || row.uninvoicedAmount > 0">
+                    <span v-if="row.uninvoicedAmount > 0" class="remaining-tag">余额: ¥{{ formatCurrency(row.uninvoicedAmount) }}</span>
+                    <span v-if="row.unpaidAmount > 0" class="remaining-tag danger">未收款: ¥{{ formatCurrency(row.unpaidAmount) }}</span>
                   </div>
                 </div>
-                <div class="financial-remaining" v-if="row.unpaidAmount > 0 || row.uninvoicedAmount > 0">
-                  <span v-if="row.uninvoicedAmount > 0" class="remaining-tag">余额: ¥{{ formatCurrency(row.uninvoicedAmount) }}</span>
-                  <span v-if="row.unpaidAmount > 0" class="remaining-tag danger">未收款: ¥{{ formatCurrency(row.unpaidAmount) }}</span>
-                </div>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="end_date" label="到期日" width="110" />
-          <el-table-column prop="status" label="合同状态" width="90">
-            <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="280" fixed="right">
-            <template #default="{ row }">
-              <el-button size="small" @click="viewContract(row.id)">查看</el-button>
-              <el-button size="small" type="primary" @click="editContract(row.id)">编辑</el-button>
-              <el-button v-if="row.uninvoicedAmount > 0 && row.status === 'active'" size="small" type="warning" @click="goToInvoice(row.id)">去开票</el-button>
-              <el-button v-if="row.unpaidAmount > 0 && row.invoicedAmount > 0" size="small" type="success" @click="goToPayment(row.id)">去收款</el-button>
-              <el-button size="small" type="danger" @click="deleteContract(row.id)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column prop="end_date" label="到期日" width="110" />
+            <el-table-column prop="status" label="合同状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="280" fixed="right">
+              <template #default="{ row }">
+                <el-button size="small" @click="viewContract(row.id)">查看</el-button>
+                <el-button size="small" type="primary" @click="editContract(row.id)">编辑</el-button>
+                <el-button v-if="row.uninvoicedAmount > 0 && row.status === 'active'" size="small" type="warning" @click="goToInvoice(row.id)">去开票</el-button>
+                <el-button v-if="row.unpaidAmount > 0 && row.invoicedAmount > 0" size="small" type="success" @click="goToPayment(row.id)">去收款</el-button>
+                <el-button size="small" type="danger" @click="deleteContract(row.id)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
 
       <div class="load-more-status" v-if="contracts.length > 0">
@@ -183,6 +201,7 @@ import type { Contract, Customer } from "@/api/types";
 import { useKitStore } from "@/stores/kit";
 import CustomerSelect from "@/components/CustomerSelect.vue";
 import ContractCard from "@/components/ContractCard.vue";
+import SkeletonLoader from "@/components/SkeletonLoader.vue";
 
 const router = useRouter();
 const kitStore = useKitStore();

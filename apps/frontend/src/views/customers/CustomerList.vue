@@ -29,9 +29,9 @@
         </div>
       </div>
       
-      <div class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
+      <SkeletonLoader v-if="loading && currentPage === 1" type="table" :rows="10" :columns="kitStore.viewAllKits ? 8 : 7" />
+      <div v-else class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
         <el-table
-          v-loading="loading && currentPage === 1"
           :data="customers"
           style="width: 100%"
       >
@@ -83,6 +83,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { customerApi } from '@/api'
 import { useKitStore } from '@/stores/kit'
 import type { Customer } from '@/api/types'
+import SkeletonLoader from '@/components/SkeletonLoader.vue'
 
 const router = useRouter()
 const kitStore = useKitStore()

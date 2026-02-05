@@ -102,9 +102,16 @@
 
       <!-- 主内容区域 -->
       <div class="layout-main">
-        <router-view />
+        <router-view v-slot="{ Component, route }">
+          <transition :name="route.meta.transition || 'fade'" mode="out-in">
+            <component :is="Component" :key="route.path" />
+          </transition>
+        </router-view>
       </div>
     </div>
+
+    <!-- 移动端底部导航 -->
+    <MobileBottomNav />
   </div>
 </template>
 
@@ -114,6 +121,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useKitStore } from '@/stores/kit'
+import MobileBottomNav from '@/components/MobileBottomNav.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -302,6 +310,17 @@ const handleCommand = async (command: string) => {
   scroll-behavior: smooth;
 }
 
+/* 移动端底部导航适配 */
+@media (max-width: 767px) {
+  .layout-sidebar {
+    display: none; /* 隐藏侧边栏，使用底部导航 */
+  }
+
+  .layout-main {
+    padding-bottom: calc(24px + 72px); /* 原padding + 底部导航高度 */
+  }
+}
+
 /* 自定义滚动条样式 */
 .layout-main::-webkit-scrollbar {
   width: 8px;
@@ -318,6 +337,69 @@ const handleCommand = async (command: string) => {
 
 .layout-main::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+/* 页面过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 滑动过渡 */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* 缩放过渡 */
+.scale-enter-active,
+.scale-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scale-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.scale-leave-to {
+  opacity: 0;
+  transform: scale(1.05);
 }
 
 @media (max-width: 768px) {
