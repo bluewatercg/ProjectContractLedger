@@ -51,7 +51,7 @@
     <!-- 内容区域 -->
     <div class="layout-content">
       <!-- 侧边栏 -->
-      <div class="layout-sidebar">
+      <div class="layout-sidebar animate-slide-in-left">
         <el-menu
           :default-active="activeMenu"
           class="sidebar-menu"
@@ -172,9 +172,15 @@ const handleCommand = async (command: string) => {
 }
 
 .layout-header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
   z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  transition: all 0.3s ease;
 }
 
 .header-content {
@@ -183,12 +189,16 @@ const handleCommand = async (command: string) => {
   align-items: center;
   padding: 0 24px;
   height: 64px;
+  max-width: 1920px;
+  margin: 0 auto;
 }
 
 .header-left h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #1e293b);
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .header-right {
@@ -208,20 +218,23 @@ const handleCommand = async (command: string) => {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
   padding: 8px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
 }
 
 .user-info:hover {
-  background-color: #f5f5f5;
+  background: var(--color-bg-hover, #f8fafc);
+  border-color: var(--color-border-light, #e2e8f0);
 }
 
 .username {
-  font-size: 14px;
-  color: #333;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #1e293b);
 }
 
 .layout-content {
@@ -232,36 +245,116 @@ const handleCommand = async (command: string) => {
 
 .layout-sidebar {
   width: 250px;
-  background: #fff;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  box-shadow: 1px 0 0 rgba(15, 23, 42, 0.06);
   overflow-y: auto;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-menu {
   border-right: none;
   height: 100%;
+  padding: 16px 12px;
+}
+
+/* 优化菜单项样式 */
+.sidebar-menu :deep(.el-menu-item) {
+  border-radius: 8px;
+  margin-bottom: 4px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-menu :deep(.el-menu-item:hover) {
+  background: var(--color-bg-hover, #f8fafc);
+  color: var(--color-text-primary, #1e293b);
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active) {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  color: var(--color-accent, #3b82f6);
+  font-weight: 600;
+  position: relative;
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--color-accent, #3b82f6);
+  border-radius: 0 2px 2px 0;
+}
+
+.sidebar-menu :deep(.el-menu-item .el-icon) {
+  font-size: 20px;
+  margin-right: 12px;
 }
 
 .layout-main {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  background: #f5f5f5;
+  background: var(--color-bg-primary, #f8fafc);
+  scroll-behavior: smooth;
+}
+
+/* 自定义滚动条样式 */
+.layout-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.layout-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.layout-main::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.layout-main::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
 @media (max-width: 768px) {
   .layout-sidebar {
     width: 200px;
   }
-  
+
   .layout-main {
     padding: 16px;
+  }
+
+  .header-content {
+    padding: 0 16px;
+  }
+
+  .header-left h1 {
+    font-size: 1.125rem;
   }
 }
 
 @media (max-width: 480px) {
   .layout-sidebar {
-    display: none;
+    position: fixed;
+    left: -250px;
+    top: 64px;
+    bottom: 0;
+    z-index: 999;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .layout-sidebar.show {
+    left: 0;
+    box-shadow: 2px 0 8px rgba(15, 23, 42, 0.15);
+  }
+
+  .header-left h1 {
+    font-size: 1rem;
   }
 }
 </style>

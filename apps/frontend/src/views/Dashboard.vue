@@ -40,7 +40,7 @@
 
       <div class="financial-funnel">
         <!-- 1. 合同总额 -->
-        <div class="funnel-item">
+        <div class="funnel-item animate-slide-in-up">
           <div class="funnel-label">签署合同总额</div>
           <div class="funnel-value">
             ¥{{ formatCurrency(stats?.summary?.totalRevenue || 0) }}
@@ -52,7 +52,7 @@
         </div>
 
         <!-- 2. 已开票 -->
-        <div class="funnel-itemHighlight">
+        <div class="funnel-itemHighlight animate-slide-in-up delay-100">
           <div class="funnel-label">已开发票金额</div>
           <div class="funnel-value">
             ¥{{ formatCurrency(stats?.summary?.invoicedAmount || 0) }}
@@ -76,7 +76,7 @@
         </div>
 
         <!-- 3. 已回款 -->
-        <div class="funnel-itemSuccess">
+        <div class="funnel-itemSuccess animate-slide-in-up delay-200">
           <div class="funnel-label">已实际收款</div>
           <div class="funnel-value">
             ¥{{ formatCurrency(stats?.summary?.paidAmount || 0) }}
@@ -1124,40 +1124,56 @@ onUnmounted(() => {
 .funnel-itemHighlight,
 .funnel-itemSuccess {
   flex: 1;
-  background: #f8fafc;
+  background: white;
   padding: 24px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 2px solid #E2E8F0;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.funnel-item:hover,
+.funnel-itemHighlight:hover,
+.funnel-itemSuccess:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  border-color: #3B82F6;
 }
 
 .funnel-itemHighlight {
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+  border-color: #0EA5E9;
+  border-left-width: 4px;
 }
 
 .funnel-itemSuccess {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+  border-color: #22C55E;
+  border-left-width: 4px;
 }
 
 .funnel-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #64748b;
-  margin-bottom: 8px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .funnel-value {
-  font-size: 28px;
+  font-size: 2rem;
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 8px;
+  line-height: 1.2;
 }
 
 .funnel-desc {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #94a3b8;
+  font-weight: 500;
 }
 
 .funnel-progress {
@@ -1171,7 +1187,7 @@ onUnmounted(() => {
   transform: translateY(-50%);
   width: 30px;
   height: 2px;
-  background: #e2e8f0;
+  background: linear-gradient(90deg, #3B82F6 0%, #0EA5E9 100%);
   z-index: 2;
 }
 
@@ -1184,7 +1200,30 @@ onUnmounted(() => {
   height: 0;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-left: 8px solid #cbd5e1;
+  border-left: 8px solid #0EA5E9;
+}
+
+.funnel-connector::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 6px;
+  height: 6px;
+  background: #3B82F6;
+  border-radius: 50%;
+  animation: flowParticle 2s ease-in-out infinite;
+}
+
+@keyframes flowParticle {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(24px);
+    opacity: 0.3;
+  }
 }
 
 .financial-details-grid {
@@ -1198,35 +1237,37 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  background: white;
+  border: 2px solid #F1F5F9;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.detail-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .detail-card.primary {
-  background-color: #f0f9ff;
-  border-color: #e0f2fe;
-  color: #0369a1;
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border-color: #93C5FD;
 }
 .detail-card.success {
-  background-color: #f0fdf4;
-  border-color: #dcfce7;
-  color: #15803d;
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+  border-color: #86EFAC;
 }
 .detail-card.warning {
-  background-color: #fffbeb;
-  border-color: #fef3c7;
-  color: #b45309;
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border-color: #FDE68A;
 }
 .detail-card.danger {
-  background-color: #fef2f2;
-  border-color: #fee2e2;
-  color: #b91c1c;
+  background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+  border-color: #FECACA;
 }
 .detail-card.info {
-  background-color: #f8fafc;
-  border-color: #f1f5f9;
-  color: #475569;
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-color: #E2E8F0;
 }
 
 .detail-info {
@@ -2001,5 +2042,30 @@ onUnmounted(() => {
     width: 100%;
     justify-content: space-between;
   }
+}
+
+/* Animation classes for financial funnel */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-up.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animate-slide-in-up.delay-200 {
+  animation-delay: 0.2s;
 }
 </style>

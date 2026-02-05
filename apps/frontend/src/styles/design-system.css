@@ -3,80 +3,100 @@
  * 统一的设计规范，包括颜色、字体、间距、阴影等
  */
 
+/* ==================== 字体导入 Font Imports ==================== */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
 /* ==================== 颜色系统 Color System ==================== */
 :root {
-  /* 主色调 Primary Colors */
-  --color-primary: #409eff;
-  --color-primary-light: #79bbff;
-  --color-primary-lighter: #a0cfff;
-  --color-primary-dark: #337ecc;
+  /* 主色调 - 深海军蓝 Primary Colors - Deep Navy */
+  --color-primary: #0F172A;
+  --color-primary-light: #1E293B;
+  --color-primary-lighter: #334155;
+  --color-primary-dark: #020617;
+
+  /* 强调色 - 信任蓝 Accent Colors - Trust Blue */
+  --color-accent: #0369A1;
+  --color-accent-light: #0EA5E9;
+  --color-accent-lighter: #38BDF8;
+  --color-accent-hover: #0284C7;
+  --color-accent-dark: #075985;
+
+  /* CTA按钮 - 成功绿 CTA Button - Success Green */
+  --color-cta: #22C55E;
+  --color-cta-hover: #16A34A;
+  --color-cta-light: #4ADE80;
+  --color-cta-dark: #15803D;
 
   /* 成功色 Success */
-  --color-success: #67c23a;
-  --color-success-light: #95d475;
-  --color-success-lighter: #b3e19d;
-  --color-success-dark: #529b2e;
+  --color-success: #22C55E;
+  --color-success-light: #4ADE80;
+  --color-success-lighter: #86EFAC;
+  --color-success-dark: #16A34A;
 
   /* 警告色 Warning */
-  --color-warning: #e6a23c;
-  --color-warning-light: #ebb563;
-  --color-warning-lighter: #f3d19e;
-  --color-warning-dark: #b88230;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FBBF24;
+  --color-warning-lighter: #FCD34D;
+  --color-warning-dark: #D97706;
 
   /* 危险色 Danger */
-  --color-danger: #f56c6c;
-  --color-danger-light: #f89898;
-  --color-danger-lighter: #fab6b6;
-  --color-danger-dark: #c45656;
+  --color-danger: #EF4444;
+  --color-danger-light: #F87171;
+  --color-danger-lighter: #FCA5A5;
+  --color-danger-dark: #DC2626;
 
   /* 信息色 Info */
-  --color-info: #909399;
-  --color-info-light: #b1b3b8;
-  --color-info-lighter: #c8c9cc;
-  --color-info-dark: #73767a;
+  --color-info: #64748B;
+  --color-info-light: #94A3B8;
+  --color-info-lighter: #CBD5E1;
+  --color-info-dark: #475569;
 
-  /* 中性色 Neutral Colors */
-  --color-text-primary: #303133;
-  --color-text-regular: #606266;
-  --color-text-secondary: #909399;
-  --color-text-placeholder: #c0c4cc;
+  /* 文本色 Text Colors */
+  --color-text-primary: #0F172A;
+  --color-text-regular: #334155;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-text-placeholder: #94A3B8;
 
   /* 边框颜色 Border Colors */
-  --color-border-base: #dcdfe6;
-  --color-border-light: #e4e7ed;
-  --color-border-lighter: #ebeef5;
-  --color-border-extra-light: #f2f6fc;
+  --color-border-base: #E2E8F0;
+  --color-border-light: #E5E7EB;
+  --color-border-lighter: #F1F5F9;
+  --color-border-extra-light: #F8FAFC;
 
   /* 背景颜色 Background Colors */
-  --color-bg-page: #f5f7fa;
-  --color-bg-container: #ffffff;
-  --color-bg-overlay: rgba(0, 0, 0, 0.5);
-  --color-bg-hover: #f5f7fa;
-  --color-bg-active: #ecf5ff;
+  --color-bg-primary: #F8FAFC;
+  --color-bg-secondary: #F1F5F9;
+  --color-bg-card: #FFFFFF;
+  --color-bg-page: #F8FAFC;
+  --color-bg-container: #FFFFFF;
+  --color-bg-overlay: rgba(15, 23, 42, 0.5);
+  --color-bg-hover: #F1F5F9;
+  --color-bg-active: #EFF6FF;
 
   /* 状态颜色 Status Colors */
-  --color-status-draft-bg: #fafafa;
-  --color-status-draft-text: #666666;
-  --color-status-draft-border: #d9d9d9;
+  --color-status-draft-bg: #F8FAFC;
+  --color-status-draft-text: #64748B;
+  --color-status-draft-border: #E2E8F0;
 
-  --color-status-active-bg: #f0f9ff;
-  --color-status-active-text: #1890ff;
-  --color-status-active-border: #d1ecf1;
+  --color-status-active-bg: #EFF6FF;
+  --color-status-active-text: #0369A1;
+  --color-status-active-border: #BFDBFE;
 
-  --color-status-completed-bg: #f6ffed;
-  --color-status-completed-text: #52c41a;
-  --color-status-completed-border: #b7eb8f;
+  --color-status-completed-bg: #F0FDF4;
+  --color-status-completed-text: #16A34A;
+  --color-status-completed-border: #BBF7D0;
 
-  --color-status-inactive-bg: #fff2f0;
-  --color-status-inactive-text: #ff4d4f;
-  --color-status-inactive-border: #ffccc7;
+  --color-status-inactive-bg: #FEF2F2;
+  --color-status-inactive-text: #DC2626;
+  --color-status-inactive-border: #FECACA;
 }
 
 /* ==================== 字体系统 Typography System ==================== */
 :root {
   /* 字体家族 Font Family */
-  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  --font-family-base: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'IBM Plex Mono', 'SF Mono', Monaco, monospace;
 
   /* 字体大小 Font Sizes */
   --font-size-xs: 12px;
@@ -135,18 +155,18 @@
 /* ==================== 阴影系统 Shadow System ==================== */
 :root {
   --shadow-none: none;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
-  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.18);
-  --shadow-2xl: 0 16px 32px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-base: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 8px 16px rgba(15, 23, 42, 0.12);
+  --shadow-xl: 0 12px 24px rgba(15, 23, 42, 0.15);
+  --shadow-2xl: 0 16px 32px rgba(15, 23, 42, 0.18);
 
   /* 内阴影 Inner Shadow */
-  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-inner: inset 0 2px 4px rgba(15, 23, 42, 0.06);
 
   /* 悬浮阴影 Hover Shadow */
-  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-hover: 0 4px 16px rgba(15, 23, 42, 0.12);
 }
 
 /* ==================== 过渡动画 Transitions ==================== */
@@ -154,6 +174,7 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
   --transition-all: all var(--transition-base);
   --transition-colors: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
