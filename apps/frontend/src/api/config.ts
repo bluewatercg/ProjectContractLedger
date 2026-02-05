@@ -3,6 +3,10 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useKitStore } from '@/stores/kit'
 import { buildApiBaseUrl, getVersionInfo } from './version'
+import router from '@/router'
+
+// 401错误处理标志，避免重复弹窗和跳转
+let is401Handling = false
 
 // 运行时配置接口
 interface AppConfig {
@@ -96,10 +100,29 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 401:
-          ElMessage.error('登录已过期，请重新登录')
-          const authStore = useAuthStore()
-          authStore.logout()
-          window.location.href = '/login'
+          // 避免重复处理401错误
+          if (!is401Handling) {
+            is401Handling = true
+            ElMessage.error('登录已过期，请重新登录')
+
+            const authStore = useAuthStore()
+            authStore.logout()
+
+            // 使用Vue Router进行导航，保持单页应用体验
+            router.push({
+              path: '/login',
+              query: { redirect: router.currentRoute.value.fullPath }
+            }).then(() => {
+              // 导航完成后重置标志
+              setTimeout(() => {
+                is401Handling = false
+              }, 1000)
+            }).catch(() => {
+              // 如果router导航失败，使用window.location作为后备方案
+              window.location.href = '/login'
+              is401Handling = false
+            })
+          }
           break
         case 403:
           ElMessage.error('没有权限访问该资源')
