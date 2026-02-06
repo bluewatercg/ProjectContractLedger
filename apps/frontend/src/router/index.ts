@@ -41,6 +41,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '仪表板' }
       },
       {
+        path: 'business-categories',
+        name: 'BusinessCategories',
+        component: () => import('@/views/business-categories/BusinessCategoryTree.vue'),
+        meta: { requiresAuth: true, title: '业务类型管理' }
+      },
+      {
         path: 'customers',
         name: 'Customers',
         component: () => import('@/views/customers/CustomerList.vue'),
