@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 1 of 4 (业务类型基础设施)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-06 - Completed 01-01-PLAN.md (Backend API Infrastructure)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-06 - Completed 01-02-PLAN.md (Frontend Tree Management UI)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 4m 19s
-- Total execution time: 0.07 hours
+- Total plans completed: 2
+- Average duration: 4m 40s
+- Total execution time: 0.16 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 1 | 4m 19s | 4m 19s |
+| 01 | 2 | 9m 19s | 4m 40s |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4m 19s)
-- Trend: N/A (first plan)
+- Last 5 plans: 01-01 (4m 19s), 01-02 (5m)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -47,6 +47,8 @@ Recent decisions affecting current work:
 | adjacency-list-pattern | Used Adjacency List with parent_id self-reference | Simpler writes and moves, acceptable read performance |
 | in-memory-tree-building | Load all nodes in single query, build tree in memory | Avoids N+1 query problem |
 | sort-order-shifting | Shift sibling sort_orders when inserting/moving | Maintains correct ordering |
+| menu-placement | Business categories menu after dashboard | Logical grouping of management features |
+| drag-drop-restrictions | Only active nodes can be dragged/dropped | Prevents accidental reorganization of disabled categories |
 
 ### Pending Todos
 
@@ -58,6 +60,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T03:51:57Z
-Stopped at: Completed 01-01-PLAN.md (Backend API Infrastructure)
+Last session: 2026-02-06T03:52:35Z
+Stopped at: Completed 01-02-PLAN.md (Frontend Tree Management UI)
 Resume file: None
