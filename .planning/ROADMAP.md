@@ -27,10 +27,12 @@
   3. 用户可以删除业务类型（系统提示关联合同数量并确认）
   4. 用户可以拖拽排序业务类型并调整层级
   5. 用户可以启用/禁用业务类型（禁用后新合同不可选择该类型）
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 01-01: [TBD during plan-phase]
+- [ ] 01-01-PLAN.md — Backend infrastructure (Entity, Service, Controller)
+- [ ] 01-02-PLAN.md — Frontend tree management UI
+- [ ] 01-03-PLAN.md — Database migration and integration testing
 
 ### Phase 2: 合同集成
 **Goal**: 业务类型与合同流程完全集成，历史合同可批量分类
@@ -81,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. 业务类型基础设施 | 0/TBD | Not started | - |
+| 1. 业务类型基础设施 | 0/3 | Ready | - |
 | 2. 合同集成 | 0/TBD | Not started | - |
 | 3. 统计分析与可视化 | 0/TBD | Not started | - |
 | 4. 报表导出 | 0/TBD | Not started | - |
