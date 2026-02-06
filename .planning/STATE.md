@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 1 of 4 (业务类型基础设施)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-06 - Roadmap created
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-06 - Completed 01-01-PLAN.md (Backend API Infrastructure)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 4m 19s
+- Total execution time: 0.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01 | 1 | 4m 19s | 4m 19s |
 
 **Recent Trend:**
-- Last 5 plans: N/A
-- Trend: N/A
+- Last 5 plans: 01-01 (4m 19s)
+- Trend: N/A (first plan)
 
 *Updated after each plan completion*
 
@@ -42,18 +42,22 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- None yet (project just initialized)
+| ID | Decision | Reason |
+|----|----------|--------|
+| adjacency-list-pattern | Used Adjacency List with parent_id self-reference | Simpler writes and moves, acceptable read performance |
+| in-memory-tree-building | Load all nodes in single query, build tree in memory | Avoids N+1 query problem |
+| sort-order-shifting | Shift sibling sort_orders when inserting/moving | Maintains correct ordering |
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Roadmap created, ready for Phase 1 planning
+Last session: 2026-02-06T03:51:57Z
+Stopped at: Completed 01-01-PLAN.md (Backend API Infrastructure)
 Resume file: None
