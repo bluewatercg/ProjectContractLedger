@@ -10,7 +10,7 @@
 - Integer phases (1, 2, 3, 4): Planned milestone work
 - Decimal phases (e.g., 2.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: 业务类型基础设施** - 建立多层级业务类型树形管理能力
+- [x] **Phase 1: 业务类型基础设施** - 建立多层级业务类型树形管理能力
 - [ ] **Phase 2: 合同集成** - 将业务类型集成到合同流程并支持历史数据处理
 - [ ] **Phase 3: 统计分析与可视化** - 构建统计计算引擎、Dashboard卡片和独立分析页面
 - [ ] **Phase 4: 报表导出** - 生成Excel和PDF格式的业务分析报告
@@ -30,9 +30,9 @@
 **Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — Backend infrastructure (Entity, Service, Controller)
-- [ ] 01-02-PLAN.md — Frontend tree management UI
-- [ ] 01-03-PLAN.md — Database migration and integration testing
+- [x] 01-01-PLAN.md — Backend infrastructure (Entity, Service, Controller)
+- [x] 01-02-PLAN.md — Frontend tree management UI
+- [x] 01-03-PLAN.md — Database migration and integration testing
 
 ### Phase 2: 合同集成
 **Goal**: 业务类型与合同流程完全集成，历史合同可批量分类
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. 业务类型基础设施 | 0/3 | Ready | - |
+| 1. 业务类型基础设施 | 3/3 | Complete | 2026-02-06 |
 | 2. 合同集成 | 0/TBD | Not started | - |
 | 3. 统计分析与可视化 | 0/TBD | Not started | - |
 | 4. 报表导出 | 0/TBD | Not started | - |

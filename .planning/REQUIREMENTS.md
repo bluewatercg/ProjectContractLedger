@@ -7,14 +7,14 @@
 
 ### 业务类型分类管理 (Category Management)
 
-- [ ] **CAT-01**: 用户可以创建多层级业务类型（支持N层树形结构）
-- [ ] **CAT-02**: 用户可以编辑业务类型名称和层级关系
-- [ ] **CAT-03**: 用户可以删除业务类型（需要检查关联合同数量并提示）
-- [ ] **CAT-04**: 用户可以拖拽调整业务类型的排序和层级
-- [ ] **CAT-05**: 用户可以查看业务类型树形列表
+- [x] **CAT-01**: 用户可以创建多层级业务类型（支持N层树形结构）
+- [x] **CAT-02**: 用户可以编辑业务类型名称和层级关系
+- [x] **CAT-03**: 用户可以删除业务类型（需要检查关联合同数量并提示）
+- [x] **CAT-04**: 用户可以拖拽调整业务类型的排序和层级
+- [x] **CAT-05**: 用户可以查看业务类型树形列表
 - [ ] **CAT-06**: 用户在合同录入/编辑时可以选择业务类型（级联选择器）
 - [ ] **CAT-07**: 用户可以批量设置多个合同的业务类型（支持筛选条件）
-- [ ] **CAT-08**: 业务类型支持启用/禁用状态（禁用后不可选择，但已关联合同保留）
+- [x] **CAT-08**: 业务类型支持启用/禁用状态（禁用后不可选择，但已关联合同保留）
 
 ### Dashboard统计卡片 (Dashboard Stats)
 
@@ -97,12 +97,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAT-01 | Phase 1 | Pending |
-| CAT-02 | Phase 1 | Pending |
-| CAT-03 | Phase 1 | Pending |
-| CAT-04 | Phase 1 | Pending |
-| CAT-05 | Phase 1 | Pending |
-| CAT-08 | Phase 1 | Pending |
+| CAT-01 | Phase 1 | Complete |
+| CAT-02 | Phase 1 | Complete |
+| CAT-03 | Phase 1 | Complete |
+| CAT-04 | Phase 1 | Complete |
+| CAT-05 | Phase 1 | Complete |
+| CAT-08 | Phase 1 | Complete |
 | CAT-06 | Phase 2 | Pending |
 | CAT-07 | Phase 2 | Pending |
 | DASH-01 | Phase 3 | Pending |
