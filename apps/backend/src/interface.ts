@@ -945,3 +945,61 @@ export interface ReconciliationReportData {
     percentage: number;
   }>;
 }
+
+/**
+ * 业务类型相关接口
+ */
+export class CreateBusinessCategoryDto {
+  @ApiProperty({
+    description: '分类名称',
+    example: '软件开发',
+    maxLength: 100,
+  })
+  name: string;
+
+  @ApiPropertyOptional({
+    description: '父分类ID（不传或传null表示根节点）',
+    example: 1,
+    type: 'integer',
+  })
+  parent_id?: number;
+}
+
+export class UpdateBusinessCategoryDto {
+  @ApiPropertyOptional({
+    description: '分类名称',
+    example: '软件开发',
+    maxLength: 100,
+  })
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'disabled'],
+  })
+  status?: 'active' | 'disabled';
+}
+
+export class MoveNodeDto {
+  @ApiProperty({
+    description: '被移动的节点ID',
+    example: 1,
+    type: 'integer',
+  })
+  nodeId: number;
+
+  @ApiProperty({
+    description: '目标节点ID',
+    example: 2,
+    type: 'integer',
+  })
+  targetId: number;
+
+  @ApiProperty({
+    description: '放置类型：prev-放在目标前面，inner-放入目标内部，next-放在目标后面',
+    example: 'inner',
+    enum: ['prev', 'inner', 'next'],
+  })
+  dropType: 'prev' | 'inner' | 'next';
+}
