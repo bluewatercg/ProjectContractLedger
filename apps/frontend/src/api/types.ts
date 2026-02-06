@@ -419,3 +419,39 @@ export interface FinancialSummaryData {
   }
 }
 
+// 业务类型相关类型
+export interface BusinessCategory {
+  id: number
+  kit_id: number
+  parent_id: number | null
+  name: string
+  sort_order: number
+  status: 'active' | 'disabled'
+  created_by: number
+  created_at: string
+  updated_at: string
+  children?: BusinessCategory[]
+}
+
+export interface CreateBusinessCategoryDto {
+  name: string
+  parent_id?: number | null
+}
+
+export interface UpdateBusinessCategoryDto {
+  name?: string
+  status?: 'active' | 'disabled'
+}
+
+export interface MoveNodeDto {
+  nodeId: number
+  targetId: number
+  dropType: 'prev' | 'inner' | 'next'
+}
+
+export interface DeleteCategoryResult {
+  success: boolean
+  message?: string
+  contractCount?: number
+}
+
