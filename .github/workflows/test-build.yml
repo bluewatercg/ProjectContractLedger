@@ -47,10 +47,12 @@ jobs:
         context: ./apps/backend
         file: ./apps/backend/Dockerfile
         push: false  # 只构建不推送，用于测试
+        load: false  # 不加载到本地 docker，仅写入 GHA cache（消除 docker-container driver 警告）
         tags: ${{ steps.backend-meta.outputs.tags }}
         labels: ${{ steps.backend-meta.outputs.labels }}
         cache-from: type=gha,scope=backend
         cache-to: type=gha,mode=max,scope=backend
+        outputs: type=cacheonly
 
     - name: Build and push backend image (only for main branches)
       if: contains(fromJson('["main", "master", "develop"]'), github.ref_name)
@@ -100,10 +102,12 @@ jobs:
         context: ./apps/frontend
         file: ./apps/frontend/Dockerfile
         push: false  # 只构建不推送，用于测试
+        load: false  # 不加载到本地 docker，仅写入 GHA cache（消除 docker-container driver 警告）
         tags: ${{ steps.frontend-meta.outputs.tags }}
         labels: ${{ steps.frontend-meta.outputs.labels }}
         cache-from: type=gha,scope=frontend
         cache-to: type=gha,mode=max,scope=frontend
+        outputs: type=cacheonly
 
     - name: Build and push frontend image (only for main branches)
       if: contains(fromJson('["main", "master", "develop"]'), github.ref_name)
