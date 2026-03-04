@@ -19,8 +19,11 @@ export const contractApi = {
   /**
    * 根据ID获取合同详情
    */
-  getContractById(id: number): Promise<ApiResponse<Contract>> {
-    return apiClient.get(`/contracts/${id}`).then(res => res.data)
+  getContractById(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Contract>> {
+    return apiClient.get(`/contracts/${id}`, { params }).then(res => res.data)
   },
 
   /**
@@ -33,15 +36,22 @@ export const contractApi = {
   /**
    * 更新合同信息
    */
-  updateContract(id: number, data: UpdateContractDto): Promise<ApiResponse<Contract>> {
-    return apiClient.put(`/contracts/${id}`, data).then(res => res.data)
+  updateContract(
+    id: number,
+    data: UpdateContractDto,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Contract>> {
+    return apiClient.put(`/contracts/${id}`, data, { params }).then(res => res.data)
   },
 
   /**
    * 删除合同
    */
-  deleteContract(id: number): Promise<ApiResponse<void>> {
-    return apiClient.delete(`/contracts/${id}`).then(res => res.data)
+  deleteContract(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<void>> {
+    return apiClient.delete(`/contracts/${id}`, { params }).then(res => res.data)
   },
 
   /**

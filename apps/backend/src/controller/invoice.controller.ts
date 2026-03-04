@@ -101,9 +101,12 @@ export class InvoiceController {
    * 根据ID获取发票详情
    */
   @Get('/:id')
-  async getInvoiceById(@Param('id') id: number): Promise<ApiResponse> {
+  async getInvoiceById(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const invoice = await this.invoiceService.getInvoiceById(id, kitId);
       if (!invoice) {
         return {
@@ -133,10 +136,11 @@ export class InvoiceController {
   @Validate()
   async updateInvoice(
     @Param('id') id: number,
-    @Body() updateInvoiceDto: UpdateInvoiceDto
+    @Body() updateInvoiceDto: UpdateInvoiceDto,
+    @Query('viewAll') viewAll?: string
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const invoice = await this.invoiceService.updateInvoice(
         id,
         updateInvoiceDto,
@@ -167,9 +171,12 @@ export class InvoiceController {
    * 删除发票
    */
   @Del('/:id')
-  async deleteInvoice(@Param('id') id: number): Promise<ApiResponse> {
+  async deleteInvoice(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const success = await this.invoiceService.deleteInvoice(id, kitId);
       if (!success) {
         return {

@@ -190,6 +190,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Document, Money, Calendar, Memo } from '@element-plus/icons-vue'
 import { invoiceApi, contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
+import { useKitStore } from '@/stores/kit'
 import type { CreateInvoiceDto, UpdateInvoiceDto, Contract, Customer } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
 import ContractSelect from '@/components/ContractSelect.vue'
@@ -199,6 +200,7 @@ import AttachmentList from '@/components/AttachmentList.vue'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 表单引用
 const formRef = ref<FormInstance>()
@@ -305,7 +307,9 @@ const fetchInvoice = async () => {
 
   try {
     loading.value = true
-    const response = await invoiceApi.getInvoiceById(invoiceId.value)
+    const response = await invoiceApi.getInvoiceById(invoiceId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
 
     if (response.success && response.data) {
       const invoiceData = response.data
@@ -347,7 +351,11 @@ const handleSubmit = async () => {
 
     let response
     if (isEdit.value) {
-      response = await invoiceApi.updateInvoice(invoiceId.value, submitData as UpdateInvoiceDto)
+      response = await invoiceApi.updateInvoice(
+        invoiceId.value,
+        submitData as UpdateInvoiceDto,
+        { viewAll: kitStore.viewAllKits }
+      )
     } else {
       response = await invoiceApi.createInvoice(submitData)
     }
@@ -436,7 +444,9 @@ onMounted(async () => {
       // 获取合同详情以自动填充客户信息
       try {
         loading.value = true
-        const response = await contractApi.getContractById(id)
+        const response = await contractApi.getContractById(id, {
+          viewAll: kitStore.viewAllKits,
+        })
         if (response.success && response.data) {
           const contract = response.data
           if (contract.customer) {

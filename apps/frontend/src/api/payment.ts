@@ -19,8 +19,11 @@ export const paymentApi = {
   /**
    * 根据ID获取支付记录详情
    */
-  getPaymentById(id: number): Promise<ApiResponse<Payment>> {
-    return apiClient.get(`/payments/${id}`).then(res => res.data)
+  getPaymentById(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Payment>> {
+    return apiClient.get(`/payments/${id}`, { params }).then(res => res.data)
   },
 
   /**
@@ -33,15 +36,22 @@ export const paymentApi = {
   /**
    * 更新支付记录信息
    */
-  updatePayment(id: number, data: UpdatePaymentDto): Promise<ApiResponse<Payment>> {
-    return apiClient.put(`/payments/${id}`, data).then(res => res.data)
+  updatePayment(
+    id: number,
+    data: UpdatePaymentDto,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Payment>> {
+    return apiClient.put(`/payments/${id}`, data, { params }).then(res => res.data)
   },
 
   /**
    * 删除支付记录
    */
-  deletePayment(id: number): Promise<ApiResponse<void>> {
-    return apiClient.delete(`/payments/${id}`).then(res => res.data)
+  deletePayment(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<void>> {
+    return apiClient.delete(`/payments/${id}`, { params }).then(res => res.data)
   },
 
   /**

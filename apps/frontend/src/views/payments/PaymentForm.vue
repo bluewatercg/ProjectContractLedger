@@ -120,12 +120,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Document, Money, Memo } from '@element-plus/icons-vue'
 import { paymentApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { CreatePaymentDto, UpdatePaymentDto, Invoice, Customer } from '@/api/types'
 import InvoiceSelect from '@/components/InvoiceSelect.vue'
 import CustomerSelect from '@/components/CustomerSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 表单引用
 const formRef = ref<FormInstance>()
@@ -215,7 +217,9 @@ const fetchPayment = async () => {
 
   try {
     loading.value = true
-    const response = await paymentApi.getPaymentById(paymentId.value)
+    const response = await paymentApi.getPaymentById(paymentId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
 
     if (response.success && response.data) {
       const paymentData = response.data
@@ -255,7 +259,11 @@ const handleSubmit = async () => {
 
     let response
     if (isEdit.value) {
-      response = await paymentApi.updatePayment(paymentId.value, submitData as UpdatePaymentDto)
+      response = await paymentApi.updatePayment(
+        paymentId.value,
+        submitData as UpdatePaymentDto,
+        { viewAll: kitStore.viewAllKits }
+      )
     } else {
       response = await paymentApi.createPayment(submitData)
     }

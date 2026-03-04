@@ -140,6 +140,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { invoiceApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
+import { useKitStore } from '@/stores/kit'
 import type { Invoice } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
 import FileUpload from '@/components/FileUpload.vue'
@@ -147,6 +148,7 @@ import AttachmentList from '@/components/AttachmentList.vue'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 状态
 const loading = ref(false)
@@ -243,7 +245,9 @@ const getUnpaidAmount = () => {
 const fetchInvoice = async () => {
   try {
     loading.value = true
-    const response = await invoiceApi.getInvoiceById(invoiceId.value)
+    const response = await invoiceApi.getInvoiceById(invoiceId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
 
     if (response.success && response.data) {
       invoice.value = response.data

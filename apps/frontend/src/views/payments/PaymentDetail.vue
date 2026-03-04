@@ -54,10 +54,12 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { paymentApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { Payment } from '@/api/types'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 状态
 const loading = ref(false)
@@ -136,7 +138,9 @@ const getInvoiceStatusText = (status: string) => {
 const fetchPayment = async () => {
   try {
     loading.value = true
-    const response = await paymentApi.getPaymentById(paymentId.value)
+    const response = await paymentApi.getPaymentById(paymentId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
     
     if (response.success && response.data) {
       payment.value = response.data

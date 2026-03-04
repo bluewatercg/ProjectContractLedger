@@ -298,14 +298,15 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { InfoFilled, Document, Money, Refresh, Memo } from '@element-plus/icons-vue'
 import { contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
+import { useKitStore } from '@/stores/kit'
 import type { CreateContractDto, UpdateContractDto, Customer } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
 import CustomerSelect from '@/components/CustomerSelect.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import AttachmentList from '@/components/AttachmentList.vue'
-
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 表单引用
 const formRef = ref<FormInstance>()
@@ -495,7 +496,9 @@ const fetchContract = async () => {
 
   try {
     loading.value = true
-    const response = await contractApi.getContractById(contractId.value)
+    const response = await contractApi.getContractById(contractId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
 
     if (response.success && response.data) {
       const contract = response.data
@@ -552,7 +555,11 @@ const handleSubmit = async () => {
 
     let response
     if (isEdit.value) {
-      response = await contractApi.updateContract(contractId.value, submitData as UpdateContractDto)
+      response = await contractApi.updateContract(
+        contractId.value,
+        submitData as UpdateContractDto,
+        { viewAll: kitStore.viewAllKits }
+      )
     } else {
       response = await contractApi.createContract(submitData)
     }

@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { customerApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { Customer } from '@/api/types'
 
 // Props
@@ -71,6 +72,8 @@ const props = withDefaults(defineProps<Props>(), {
   onlyWithUnpaidInvoices: false,
   onlyWithActiveContracts: false
 })
+
+const kitStore = useKitStore()
 
 // Emits
 const emit = defineEmits<{
@@ -108,7 +111,9 @@ watch(selectedValue, (newValue) => {
 // 根据ID加载单个客户信息
 const loadCustomerById = async (customerId: number) => {
   try {
-    const response = await customerApi.getCustomerById(customerId)
+    const response = await customerApi.getCustomerById(customerId, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success && response.data) {
       // 检查客户是否已存在于列表中
       const existingIndex = customers.value.findIndex(c => c.id === customerId)
@@ -139,7 +144,8 @@ const searchCustomers = async (keyword: string = '', page: number = 1, append: b
       limit: pageSize,
       search: keyword.trim(),
       sortBy: 'name',
-      sortOrder: 'ASC'
+      sortOrder: 'ASC',
+      viewAll: kitStore.viewAllKits
     }
 
     // 如果只显示有未完全收款发票的客户

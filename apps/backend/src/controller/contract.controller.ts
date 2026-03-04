@@ -107,9 +107,12 @@ export class ContractController {
    * 根据ID获取合同详情
    */
   @Get('/:id')
-  async getContractById(@Param('id') id: number): Promise<ApiResponse> {
+  async getContractById(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const contract = await this.contractService.getContractById(id, kitId);
       if (!contract) {
         return {
@@ -139,10 +142,11 @@ export class ContractController {
   @Validate()
   async updateContract(
     @Param('id') id: number,
-    @Body() updateContractDto: UpdateContractDto
+    @Body() updateContractDto: UpdateContractDto,
+    @Query('viewAll') viewAll?: string
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const contract = await this.contractService.updateContract(
         id,
         updateContractDto,
@@ -173,9 +177,12 @@ export class ContractController {
    * 删除合同
    */
   @Del('/:id')
-  async deleteContract(@Param('id') id: number): Promise<ApiResponse> {
+  async deleteContract(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const success = await this.contractService.deleteContract(id, kitId);
       if (!success) {
         return {
@@ -219,4 +226,3 @@ export class ContractController {
     }
   }
 }
-

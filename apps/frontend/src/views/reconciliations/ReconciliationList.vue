@@ -358,6 +358,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { reconciliationApi } from '@/api/reconciliation'
 import { invoiceApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type {
   Reconciliation,
   ReconciliationStats,
@@ -367,6 +368,7 @@ import type {
 import InvoiceSelect from '@/components/InvoiceSelect.vue'
 
 const router = useRouter()
+const kitStore = useKitStore()
 
 // 状态
 const loading = ref(false)
@@ -601,7 +603,9 @@ const handleInvoiceChange = async (invoiceId: number) => {
   }
 
   try {
-    const response = await invoiceApi.getInvoiceById(invoiceId)
+    const response = await invoiceApi.getInvoiceById(invoiceId, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success && response.data) {
       availablePayments.value = response.data.payments?.filter(
         p => p.status === 'completed'

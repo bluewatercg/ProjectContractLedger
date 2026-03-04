@@ -19,8 +19,11 @@ export const invoiceApi = {
   /**
    * 根据ID获取发票详情
    */
-  getInvoiceById(id: number): Promise<ApiResponse<Invoice>> {
-    return apiClient.get(`/invoices/${id}`).then(res => res.data)
+  getInvoiceById(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Invoice>> {
+    return apiClient.get(`/invoices/${id}`, { params }).then(res => res.data)
   },
 
   /**
@@ -33,15 +36,22 @@ export const invoiceApi = {
   /**
    * 更新发票信息
    */
-  updateInvoice(id: number, data: UpdateInvoiceDto): Promise<ApiResponse<Invoice>> {
-    return apiClient.put(`/invoices/${id}`, data).then(res => res.data)
+  updateInvoice(
+    id: number,
+    data: UpdateInvoiceDto,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Invoice>> {
+    return apiClient.put(`/invoices/${id}`, data, { params }).then(res => res.data)
   },
 
   /**
    * 删除发票
    */
-  deleteInvoice(id: number): Promise<ApiResponse<void>> {
-    return apiClient.delete(`/invoices/${id}`).then(res => res.data)
+  deleteInvoice(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<void>> {
+    return apiClient.delete(`/invoices/${id}`, { params }).then(res => res.data)
   },
 
   /**

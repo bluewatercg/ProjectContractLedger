@@ -70,16 +70,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { invoiceApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { Invoice, Contract } from '@/api/types'
 import ContractSelect from '@/components/ContractSelect.vue'
 import SkeletonLoader from '@/components/SkeletonLoader.vue'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 状态
 const loading = ref(false)
@@ -92,6 +94,10 @@ const total = ref(0)
 const noMore = ref(false)
 
 const disabled = computed(() => loading.value || noMore.value)
+
+watch([() => kitStore.viewAllKits, () => kitStore.currentKitId], () => {
+  fetchInvoices(false)
+})
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
@@ -136,7 +142,8 @@ const fetchInvoices = async (append = false) => {
       page: currentPage.value,
       limit: pageSize.value,
       contractId: contractFilter.value || undefined,
-      status: statusFilter.value
+      status: statusFilter.value,
+      viewAll: kitStore.viewAllKits
     })
 
     if (response.success && response.data) {
@@ -199,7 +206,9 @@ const deleteInvoice = async (id: number) => {
       type: 'warning'
     })
     
-    const response = await invoiceApi.deleteInvoice(id)
+    const response = await invoiceApi.deleteInvoice(id, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success) {
       ElMessage.success('删除成功')
       fetchInvoices()

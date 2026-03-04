@@ -452,7 +452,9 @@ const deleteContract = async (id: number) => {
       type: "warning",
     });
 
-    const response = await contractApi.deleteContract(id);
+    const response = await contractApi.deleteContract(id, {
+      viewAll: kitStore.viewAllKits,
+    });
     if (response.success) {
       ElMessage.success("删除成功");
       fetchContracts();

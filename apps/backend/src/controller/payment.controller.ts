@@ -101,9 +101,12 @@ export class PaymentController {
    * 根据ID获取支付记录详情
    */
   @Get('/:id')
-  async getPaymentById(@Param('id') id: number): Promise<ApiResponse> {
+  async getPaymentById(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const payment = await this.paymentService.getPaymentById(id, kitId);
       if (!payment) {
         return {
@@ -133,10 +136,11 @@ export class PaymentController {
   @Validate()
   async updatePayment(
     @Param('id') id: number,
-    @Body() updatePaymentDto: UpdatePaymentDto
+    @Body() updatePaymentDto: UpdatePaymentDto,
+    @Query('viewAll') viewAll?: string
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const payment = await this.paymentService.updatePayment(
         id,
         updatePaymentDto,
@@ -167,9 +171,12 @@ export class PaymentController {
    * 删除支付记录
    */
   @Del('/:id')
-  async deletePayment(@Param('id') id: number): Promise<ApiResponse> {
+  async deletePayment(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const success = await this.paymentService.deletePayment(id, kitId);
       if (!success) {
         return {

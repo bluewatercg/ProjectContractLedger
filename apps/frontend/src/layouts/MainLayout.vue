@@ -136,14 +136,37 @@ const kitStore = useKitStore()
 const activeMenu = computed(() => route.path)
 const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?seed=${authStore.user?.username}`)
 
+const kitRouteFallbackMap: Record<string, string> = {
+  CustomerDetail: '/customers',
+  CustomerEdit: '/customers',
+  ContractDetail: '/contracts',
+  ContractEdit: '/contracts',
+  InvoiceDetail: '/invoices',
+  InvoiceEdit: '/invoices',
+  PaymentDetail: '/payments',
+  PaymentEdit: '/payments',
+  ReconciliationDetail: '/reconciliations',
+}
+
 // 处理套装切换
-const handleKitChange = (kitId: number) => {
+const handleKitChange = async (kitId: number) => {
   if (kitStore.switchKit(kitId)) {
     if (kitId === 0) {
       ElMessage.success('已切换到查看全部套账')
     } else {
       ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`)
     }
+
+    const routeName = route.name ? String(route.name) : ''
+    const fallbackPath = kitRouteFallbackMap[routeName]
+    if (fallbackPath && route.path !== fallbackPath) {
+      try {
+        await router.replace(fallbackPath)
+      } catch (error) {
+        console.error('Route fallback failed on kit switch:', error)
+      }
+    }
+
     // 立即强制刷新页面，避免显示混合状态
     window.location.reload()
   }

@@ -193,13 +193,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
+import { useKitStore } from '@/stores/kit'
 import type { Contract } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
 import FileUpload from '@/components/FileUpload.vue'
 import AttachmentList from '@/components/AttachmentList.vue'
-
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 状态
 const loading = ref(false)
@@ -354,7 +355,9 @@ const getInvoicePaidAmount = (invoice: any) => {
 const fetchContract = async () => {
   try {
     loading.value = true
-    const response = await contractApi.getContractById(contractId.value)
+    const response = await contractApi.getContractById(contractId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
     
     if (response.success && response.data) {
       contract.value = response.data

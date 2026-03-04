@@ -101,8 +101,14 @@ const fetchCustomer = async () => {
     if (response.success && response.data) {
       customer.value = response.data
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch customer:', error)
+    if (error?.message?.includes('客户不存在')) {
+      customer.value = undefined
+      ElMessage.warning('当前套账下不存在该客户，已返回客户列表')
+      router.replace('/customers')
+      return
+    }
     ElMessage.error('获取客户信息失败')
   } finally {
     loading.value = false
@@ -153,7 +159,9 @@ const deleteContract = async (id: number) => {
       type: 'warning'
     })
     
-    const response = await contractApi.deleteContract(id)
+    const response = await contractApi.deleteContract(id, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success) {
       ElMessage.success('删除成功')
       fetchCustomer() // 重新获取客户信息以更新合同列表

@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { contractApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { Contract } from '@/api/types'
 
 // Props
@@ -68,6 +69,8 @@ const props = withDefaults(defineProps<Props>(), {
   width: '100%',
   disabled: false
 })
+
+const kitStore = useKitStore()
 
 // Emits
 const emit = defineEmits<{
@@ -115,7 +118,9 @@ watch(() => props.customerId, async (newCustomerId) => {
     } else {
       // 如果不在当前列表中，需要通过API检查
       try {
-        const response = await contractApi.getContractById(selectedValue.value)
+        const response = await contractApi.getContractById(selectedValue.value, {
+          viewAll: kitStore.viewAllKits,
+        })
         if (response.success && response.data && response.data.customer_id !== newCustomerId) {
           selectedValue.value = null
           emit('change', null, null)
@@ -140,7 +145,9 @@ watch(selectedValue, (newValue) => {
 // 根据ID加载单个合同信息
 const loadContractById = async (contractId: number) => {
   try {
-    const response = await contractApi.getContractById(contractId)
+    const response = await contractApi.getContractById(contractId, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success && response.data) {
       // 检查合同是否已存在于列表中
       const existingIndex = contracts.value.findIndex(c => c.id === contractId)
@@ -171,7 +178,8 @@ const searchContracts = async (keyword: string = '', page: number = 1, append: b
       limit: pageSize,
       search: keyword.trim(),
       sortBy: 'created_at',
-      sortOrder: 'DESC'
+      sortOrder: 'DESC',
+      viewAll: kitStore.viewAllKits
     }
 
     // 如果指定了客户ID，添加筛选条件

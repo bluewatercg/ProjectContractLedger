@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { invoiceApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { Invoice } from '@/api/types'
 
 // Props
@@ -70,6 +71,8 @@ const props = withDefaults(defineProps<Props>(), {
   width: '100%',
   disabled: false
 })
+
+const kitStore = useKitStore()
 
 // Emits
 const emit = defineEmits<{
@@ -140,7 +143,9 @@ watch(selectedValue, (newValue) => {
 // 根据ID加载单个发票信息
 const loadInvoiceById = async (invoiceId: number) => {
   try {
-    const response = await invoiceApi.getInvoiceById(invoiceId)
+    const response = await invoiceApi.getInvoiceById(invoiceId, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success && response.data) {
       // 检查发票是否已存在于列表中
       const existingIndex = invoices.value.findIndex(i => i.id === invoiceId)
@@ -171,7 +176,8 @@ const searchInvoices = async (keyword: string = '', page: number = 1, append: bo
       limit: pageSize,
       search: keyword.trim(),
       sortBy: 'created_at',
-      sortOrder: 'DESC'
+      sortOrder: 'DESC',
+      viewAll: kitStore.viewAllKits
     }
 
     // 如果指定了合同ID，添加筛选条件
