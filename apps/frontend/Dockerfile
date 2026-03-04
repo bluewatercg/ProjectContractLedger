@@ -22,11 +22,7 @@ COPY package.json yarn.lock* ./
 # 注意：需要安装 devDependencies 因为 vite 等构建工具在其中
 RUN yarn config set network-timeout 300000 && \
     yarn config set registry https://registry.npmjs.org/ && \
-    if [ -f yarn.lock ]; then \
-      yarn install --frozen-lockfile --production=false --network-timeout 300000 --ignore-optional; \
-    else \
-      yarn install --production=false --network-timeout 300000 --ignore-optional; \
-    fi && \
+    yarn install --frozen-lockfile --production=false --network-timeout 300000 --ignore-optional && \
     yarn cache clean
 
 # 第三层：复制源代码（代码改动不会重新安装依赖）
