@@ -19,8 +19,11 @@ export const customerApi = {
   /**
    * 根据ID获取客户详情
    */
-  getCustomerById(id: number): Promise<ApiResponse<Customer>> {
-    return apiClient.get(`/customers/${id}`).then(res => res.data)
+  getCustomerById(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Customer>> {
+    return apiClient.get(`/customers/${id}`, { params }).then(res => res.data)
   },
 
   /**
@@ -33,15 +36,22 @@ export const customerApi = {
   /**
    * 更新客户信息
    */
-  updateCustomer(id: number, data: UpdateCustomerDto): Promise<ApiResponse<Customer>> {
-    return apiClient.put(`/customers/${id}`, data).then(res => res.data)
+  updateCustomer(
+    id: number,
+    data: UpdateCustomerDto,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<Customer>> {
+    return apiClient.put(`/customers/${id}`, data, { params }).then(res => res.data)
   },
 
   /**
    * 删除客户
    */
-  deleteCustomer(id: number): Promise<ApiResponse<void>> {
-    return apiClient.delete(`/customers/${id}`).then(res => res.data)
+  deleteCustomer(
+    id: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<void>> {
+    return apiClient.delete(`/customers/${id}`, { params }).then(res => res.data)
   },
 
   /**

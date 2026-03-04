@@ -196,7 +196,9 @@ const deleteCustomer = async (id: number) => {
       type: 'warning'
     })
     
-    const response = await customerApi.deleteCustomer(id)
+    const response = await customerApi.deleteCustomer(id, {
+      viewAll: kitStore.viewAllKits,
+    })
     if (response.success) {
       ElMessage.success('删除成功')
       fetchCustomers()

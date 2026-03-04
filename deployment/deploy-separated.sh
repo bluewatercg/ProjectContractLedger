@@ -138,7 +138,7 @@ cleanup_old_backups() {
         local deleted_count=0
         while IFS= read -r file; do
             rm -f "$file"
-            ((deleted_count++))
+            deleted_count=$((deleted_count + 1))
         done < <(find "${BACKUP_DIR}/database" -name "*.sql.gz" -type f -mtime +${BACKUP_RETENTION_DAYS})
 
         if [ $deleted_count -gt 0 ]; then
@@ -151,7 +151,7 @@ cleanup_old_backups() {
         local deleted_count=0
         while IFS= read -r file; do
             rm -f "$file"
-            ((deleted_count++))
+            deleted_count=$((deleted_count + 1))
         done < <(find "${BACKUP_DIR}/uploads" -name "*.tar.gz" -type f -mtime +${BACKUP_RETENTION_DAYS})
 
         if [ $deleted_count -gt 0 ]; then
@@ -320,7 +320,7 @@ rotate_logs() {
             gzip "$rotated_file"
             touch "$logfile"
 
-            ((rotated_count++))
+            rotated_count=$((rotated_count + 1))
             log_info "轮转日志: $(basename "$logfile")"
         fi
     done < <(find "$logs_host_path" -name "*.log" -type f -size +${LOG_MAX_SIZE_MB}M)
@@ -328,7 +328,7 @@ rotate_logs() {
     # 删除旧日志
     while IFS= read -r logfile; do
         rm -f "$logfile"
-        ((deleted_count++))
+        deleted_count=$((deleted_count + 1))
     done < <(find "$logs_host_path" -name "*.log.*.gz" -type f -mtime +${LOG_RETENTION_DAYS})
 
     if [ $rotated_count -gt 0 ]; then

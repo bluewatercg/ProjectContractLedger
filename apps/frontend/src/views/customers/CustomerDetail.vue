@@ -70,11 +70,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { customerApi, contractApi } from '@/api'
+import { useKitStore } from '@/stores/kit'
 import type { Customer } from '@/api/types'
 import ContractCard from '@/components/ContractCard.vue'
 
 const router = useRouter()
 const route = useRoute()
+const kitStore = useKitStore()
 
 // 状态
 const loading = ref(false)
@@ -92,7 +94,9 @@ const formatDate = (dateString: string) => {
 const fetchCustomer = async () => {
   try {
     loading.value = true
-    const response = await customerApi.getCustomerById(customerId.value)
+    const response = await customerApi.getCustomerById(customerId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
     
     if (response.success && response.data) {
       customer.value = response.data

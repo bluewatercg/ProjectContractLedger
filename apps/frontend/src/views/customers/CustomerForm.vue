@@ -141,7 +141,9 @@ const fetchCustomer = async () => {
   
   try {
     loading.value = true
-    const response = await customerApi.getCustomerById(customerId.value)
+    const response = await customerApi.getCustomerById(customerId.value, {
+      viewAll: kitStore.viewAllKits,
+    })
     
     if (response.success && response.data) {
       Object.assign(form, response.data)
@@ -164,7 +166,9 @@ const handleSubmit = async () => {
     
     let response
     if (isEdit.value) {
-      response = await customerApi.updateCustomer(customerId.value, form as UpdateCustomerDto)
+      response = await customerApi.updateCustomer(customerId.value, form as UpdateCustomerDto, {
+        viewAll: kitStore.viewAllKits,
+      })
     } else {
       response = await customerApi.createCustomer(form)
     }

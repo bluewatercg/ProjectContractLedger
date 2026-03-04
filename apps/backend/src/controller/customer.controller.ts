@@ -206,6 +206,13 @@ export class CustomerController {
     type: 'integer',
     example: 1,
   })
+  @ApiQuery({
+    name: 'viewAll',
+    description: '是否查看全部套账（true 时忽略当前套账过滤）',
+    required: false,
+    type: 'string',
+    example: 'true',
+  })
   @ApiOkResponse({
     description: '获取客户详情成功',
     schema: {
@@ -228,9 +235,12 @@ export class CustomerController {
       },
     },
   })
-  async getCustomerById(@Param('id') id: number): Promise<ApiResponse> {
+  async getCustomerById(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const customer = await this.customerService.getCustomerById(id, kitId);
       if (!customer) {
         return {
@@ -266,6 +276,13 @@ export class CustomerController {
     description: '客户ID',
     type: 'integer',
     example: 1,
+  })
+  @ApiQuery({
+    name: 'viewAll',
+    description: '是否查看全部套账（true 时忽略当前套账过滤）',
+    required: false,
+    type: 'string',
+    example: 'true',
   })
   @ApiBody({
     description: '客户更新信息',
@@ -307,10 +324,11 @@ export class CustomerController {
   @Validate()
   async updateCustomer(
     @Param('id') id: number,
-    @Body() updateCustomerDto: UpdateCustomerDto
+    @Body() updateCustomerDto: UpdateCustomerDto,
+    @Query('viewAll') viewAll?: string
   ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const customer = await this.customerService.updateCustomer(
         id,
         updateCustomerDto,
@@ -351,6 +369,13 @@ export class CustomerController {
     type: 'integer',
     example: 1,
   })
+  @ApiQuery({
+    name: 'viewAll',
+    description: '是否查看全部套账（true 时忽略当前套账过滤）',
+    required: false,
+    type: 'string',
+    example: 'true',
+  })
   @ApiOkResponse({
     description: '客户删除成功',
     schema: {
@@ -383,9 +408,12 @@ export class CustomerController {
       },
     },
   })
-  async deleteCustomer(@Param('id') id: number): Promise<ApiResponse> {
+  async deleteCustomer(
+    @Param('id') id: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
     try {
-      const kitId = this.ctx.state?.kitId;
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const success = await this.customerService.deleteCustomer(id, kitId);
       if (!success) {
         return {
@@ -452,4 +480,3 @@ export class CustomerController {
     }
   }
 }
-
