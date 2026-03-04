@@ -4,7 +4,7 @@
 # ============================================
 
 # 构建阶段
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 # 安装必要的构建工具（最小化）
 RUN apk add --no-cache python3 make g++
@@ -18,7 +18,7 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 # 第一层：复制依赖文件（利用 Docker 缓存）
 COPY package.json yarn.lock* ./
 
-# 第二层：安装依赖（简化策略，移除 verbose）
+# 第二层：安装依赖（基于 lockfile，确保可复现）
 # 注意：需要安装 devDependencies 因为 vite 等构建工具在其中
 RUN yarn config set network-timeout 300000 && \
     yarn config set registry https://registry.npmjs.org/ && \
