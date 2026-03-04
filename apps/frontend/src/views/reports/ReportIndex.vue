@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import ContractReport from './ContractReport.vue'
 import InvoiceReport from './InvoiceReport.vue'
 import PaymentReport from './PaymentReport.vue'
@@ -42,6 +42,9 @@ const activeTab = ref('contract')
 // Methods
 const handleTabChange = (tabName: string) => {
   console.log('Tab changed to:', tabName)
+  nextTick(() => {
+    window.dispatchEvent(new Event('resize'))
+  })
 }
 </script>
 

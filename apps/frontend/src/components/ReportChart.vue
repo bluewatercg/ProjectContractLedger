@@ -20,8 +20,13 @@
         </div>
       </template>
 
-      <div v-loading="loading" class="chart-container">
-        <div ref="chartRef" :style="{ width: '100%', height: height }"></div>
+      <div v-loading="loading" class="report-chart-container" :style="{ minHeight: height }">
+        <div
+          v-show="!isEmpty"
+          ref="chartRef"
+          class="report-chart-canvas"
+          :style="{ height: height }"
+        ></div>
         <el-empty v-if="!loading && isEmpty" description="暂无数据" />
       </div>
     </el-card>
@@ -29,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 
@@ -61,6 +66,7 @@ const props = withDefaults(defineProps<Props>(), {
 const chartRef = ref<HTMLElement>()
 const chartInstance = ref<echarts.ECharts>()
 const currentChartType = ref(props.chartType)
+let resizeObserver: ResizeObserver | null = null
 
 // Computed
 const isEmpty = computed(() => !props.data || props.data.length === 0)
@@ -69,17 +75,28 @@ const isEmpty = computed(() => !props.data || props.data.length === 0)
 const initChart = () => {
   if (!chartRef.value) return
 
+  chartInstance.value?.dispose()
   chartInstance.value = echarts.init(chartRef.value)
+  bindResizeObserver()
   updateChart()
+  nextTick(() => {
+    handleResize()
+    updateChart()
+  })
 
   // Handle window resize
   window.addEventListener('resize', handleResize)
 }
 
 const updateChart = () => {
-  if (!chartInstance.value || isEmpty.value) return
+  if (!chartInstance.value) return
+  if (isEmpty.value) {
+    chartInstance.value.clear()
+    return
+  }
 
   const option = getChartOption()
+  chartInstance.value.resize()
   chartInstance.value.setOption(option, true)
 }
 
@@ -225,6 +242,18 @@ const handleResize = () => {
   chartInstance.value?.resize()
 }
 
+const bindResizeObserver = () => {
+  if (typeof ResizeObserver === 'undefined' || !chartRef.value) return
+  const target = chartRef.value.parentElement
+  if (!target) return
+
+  resizeObserver?.disconnect()
+  resizeObserver = new ResizeObserver(() => {
+    handleResize()
+  })
+  resizeObserver.observe(target)
+}
+
 // Lifecycle
 onMounted(() => {
   initChart()
@@ -232,18 +261,30 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  resizeObserver?.disconnect()
+  resizeObserver = null
   chartInstance.value?.dispose()
 })
 
 // Watch data changes
 watch(() => props.data, () => {
-  updateChart()
+  nextTick(() => {
+    updateChart()
+  })
 }, { deep: true })
 
 watch(() => props.loading, (newVal) => {
   if (!newVal) {
-    updateChart()
+    nextTick(() => {
+      updateChart()
+    })
   }
+})
+
+watch(() => currentChartType.value, () => {
+  nextTick(() => {
+    updateChart()
+  })
 })
 </script>
 
@@ -264,11 +305,12 @@ watch(() => props.loading, (newVal) => {
   color: #303133;
 }
 
-.chart-container {
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.report-chart-container {
+  width: 100%;
+}
+
+.report-chart-canvas {
+  width: 100%;
 }
 
 @media (max-width: 768px) {
