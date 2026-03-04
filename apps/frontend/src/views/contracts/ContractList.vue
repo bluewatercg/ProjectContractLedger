@@ -385,6 +385,7 @@ const fetchContracts = async (append = false) => {
     }
   } catch (error) {
     console.error("Failed to fetch contracts:", error);
+    noMore.value = true; // 出错时停止无限滚动，防止无限重试
   } finally {
     loading.value = false;
   }

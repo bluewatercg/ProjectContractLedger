@@ -54,9 +54,9 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
 
-    // 添加当前套装ID
+    // 添加当前套装ID（0 表示全部账套模式，不发送头部，后端使用默认套装）
     const kitStore = useKitStore()
-    if (kitStore.currentKitId !== undefined && kitStore.currentKitId !== null) {
+    if (kitStore.currentKitId !== undefined && kitStore.currentKitId !== null && kitStore.currentKitId !== 0) {
       config.headers = config.headers || {}
       config.headers['X-Kit-Id'] = String(kitStore.currentKitId)
     }

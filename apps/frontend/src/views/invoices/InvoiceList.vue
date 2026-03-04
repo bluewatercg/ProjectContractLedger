@@ -156,6 +156,7 @@ const fetchInvoices = async (append = false) => {
     }
   } catch (error) {
     console.error('Failed to fetch invoices:', error)
+    noMore.value = true // 出错时停止无限滚动，防止无限重试
   } finally {
     loading.value = false
   }
