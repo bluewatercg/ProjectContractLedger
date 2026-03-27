@@ -149,6 +149,7 @@ export interface Invoice {
   id: number
   invoice_number: string
   contract_id: number
+  plan_id?: number | null
   amount: number
   tax_rate: number
   tax_amount: number
@@ -166,6 +167,7 @@ export interface Invoice {
 
 export interface CreateInvoiceDto {
   contract_id: number
+  plan_id?: number
   amount: number
   tax_rate?: number
   issue_date: string

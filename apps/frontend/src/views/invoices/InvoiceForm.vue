@@ -90,6 +90,27 @@
                 style="width: 100%"
               />
             </el-form-item>
+
+            <el-form-item
+              v-if="contractInvoicePlans.length > 0"
+              label="对应开票计划"
+              prop="plan_id"
+              class="form-item-full"
+            >
+              <el-select
+                v-model="form.plan_id"
+                placeholder="可选，选择对应的开票期数"
+                style="width: 100%"
+                clearable
+              >
+                <el-option
+                  v-for="plan in contractInvoicePlans"
+                  :key="plan.id"
+                  :label="`${plan.phase_name}（计划 ¥${formatPlanAmount(plan.planned_amount)}，已开 ¥${formatPlanAmount(plan.actual_invoiced_amount || 0)}）`"
+                  :value="plan.id"
+                />
+              </el-select>
+            </el-form-item>
           </div>
         </div>
 
@@ -191,7 +212,7 @@ import { Document, Money, Calendar, Memo } from '@element-plus/icons-vue'
 import { invoiceApi, contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
 import { useKitStore } from '@/stores/kit'
-import type { CreateInvoiceDto, UpdateInvoiceDto, Contract, Customer } from '@/api/types'
+import type { CreateInvoiceDto, UpdateInvoiceDto, Contract, Customer, ContractInvoicePlan } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
 import ContractSelect from '@/components/ContractSelect.vue'
 import CustomerSelect from '@/components/CustomerSelect.vue'
@@ -211,6 +232,7 @@ const submitting = ref(false)
 const selectedCustomerId = ref<number | null>(null)
 const attachments = ref<Attachment[]>([])
 const attachmentsLoading = ref(false)
+const contractInvoicePlans = ref<ContractInvoicePlan[]>([])
 
 // 计算属性
 const isEdit = computed(() => !!route.params.id)
@@ -219,6 +241,7 @@ const invoiceId = computed(() => Number(route.params.id))
 // 表单数据
 const form = reactive<UpdateInvoiceDto>({
   contract_id: 0,
+  plan_id: undefined,
   amount: 0,
   tax_rate: 0,
   issue_date: '',
@@ -249,6 +272,14 @@ const rules: FormRules = {
   ]
 }
 
+const formatPlanAmount = (amount: number | undefined | null) => {
+  if (!amount) return '0.00'
+  return new Intl.NumberFormat('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
 // 处理客户选择变化
 const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
   selectedCustomerId.value = customerId
@@ -261,12 +292,30 @@ const handleCustomerChange = (customerId: number | null, customer: Customer | nu
 }
 
 // 处理合同选择变化
-const handleContractChange = (contractId: number | null, contract: Contract | null) => {
+const handleContractChange = async (contractId: number | null, contract: Contract | null) => {
   form.contract_id = contractId || 0
+  form.plan_id = undefined
+  contractInvoicePlans.value = []
+
   // 如果选择了合同，自动设置客户
   if (contract && contract.customer) {
     selectedCustomerId.value = contract.customer.id
   }
+
+  // 加载该合同下的开票计划列表（用于绑定发票）
+  if (contractId) {
+    try {
+      const res = await contractApi.getContractById(contractId, {
+        viewAll: kitStore.viewAllKits,
+      })
+      if (res.success && res.data && Array.isArray(res.data.invoice_plans)) {
+        contractInvoicePlans.value = res.data.invoice_plans
+      }
+    } catch (error) {
+      console.error('Failed to fetch contract invoice plans:', error)
+    }
+  }
+
   console.log('Selected contract:', contract)
 }
 
@@ -440,8 +489,8 @@ onMounted(async () => {
     if (contractId) {
       const id = Number(contractId)
       form.contract_id = id
-      
-      // 获取合同详情以自动填充客户信息
+
+      // 获取合同详情以自动填充客户信息和开票计划
       try {
         loading.value = true
         const response = await contractApi.getContractById(id, {
@@ -451,6 +500,9 @@ onMounted(async () => {
           const contract = response.data
           if (contract.customer) {
             selectedCustomerId.value = contract.customer.id
+          }
+          if (Array.isArray(contract.invoice_plans)) {
+            contractInvoicePlans.value = contract.invoice_plans
           }
         }
       } catch (error) {

@@ -51,6 +51,7 @@
             :precision="2"
             size="small"
             style="width: 100%"
+            @change="onRatioChange(scope.row)"
           >
             <template #suffix>
               <span class="suffix-text">× 合同金额</span>
@@ -67,6 +68,7 @@
             :precision="2"
             size="small"
             style="width: 100%"
+            @change="onAmountChange(scope.row)"
           >
             <template #prefix>
               <span class="currency-symbol">¥</span>
@@ -162,6 +164,7 @@ interface PlanFormItem {
   planned_invoice_date?: string | null
   remind_days_before?: number | null
   status?: ContractInvoicePlan['status']
+  editMode?: 'ratio' | 'amount' | null
 }
 
 const props = defineProps<{
@@ -194,6 +197,30 @@ const totalMismatch = computed(() => {
   if (!contractAmount.value) return false
   return Math.abs(contractAmount.value - totalPlannedAmount.value) > 0.01
 })
+
+const onRatioChange = (row: PlanFormItem) => {
+  row.editMode = 'ratio'
+
+  if (!contractAmount.value || row.pay_ratio == null) {
+    return
+  }
+
+  row.planned_amount = Number(
+    (contractAmount.value * row.pay_ratio).toFixed(2)
+  )
+}
+
+const onAmountChange = (row: PlanFormItem) => {
+  row.editMode = 'amount'
+
+  if (!contractAmount.value || row.planned_amount == null) {
+    return
+  }
+
+  row.pay_ratio = Number(
+    (row.planned_amount / contractAmount.value).toFixed(4)
+  )
+}
 
 const getStatusType = (status?: string) => {
   const map: Record<string, string> = {
