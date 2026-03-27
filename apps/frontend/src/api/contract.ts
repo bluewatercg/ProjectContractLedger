@@ -5,7 +5,8 @@ import type {
   PaginationResult,
   Contract,
   CreateContractDto,
-  UpdateContractDto
+  UpdateContractDto,
+  ContractInvoicePlan
 } from './types'
 
 export const contractApi = {
@@ -24,6 +25,45 @@ export const contractApi = {
     params?: { viewAll?: boolean }
   ): Promise<ApiResponse<Contract>> {
     return apiClient.get(`/contracts/${id}`, { params }).then(res => res.data)
+  },
+
+  /**
+   * 获取合同下的开票计划列表
+   */
+  getContractInvoicePlans(
+    contractId: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<ContractInvoicePlan[]>> {
+    return apiClient.get(`/contracts/${contractId}/invoice-plans`, { params }).then(res => res.data)
+  },
+
+  /**
+   * 批量保存合同下的开票计划
+   */
+  saveContractInvoicePlans(
+    contractId: number,
+    plans: Array<{
+      id?: number
+      phase_name: string
+      pay_ratio?: number
+      planned_amount: number
+      planned_invoice_date?: string
+      remind_days_before?: number
+    }>,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<ContractInvoicePlan[]>> {
+    return apiClient.post(`/contracts/${contractId}/invoice-plans`, { plans }, { params }).then(res => res.data)
+  },
+
+  /**
+   * 删除单条开票计划
+   */
+  deleteContractInvoicePlan(
+    contractId: number,
+    planId: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<void>> {
+    return apiClient.delete(`/contracts/${contractId}/invoice-plans/${planId}`, { params }).then(res => res.data)
   },
 
   /**

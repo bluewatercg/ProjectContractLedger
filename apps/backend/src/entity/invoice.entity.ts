@@ -12,6 +12,7 @@ import { Contract } from './contract.entity';
 import { Payment } from './payment.entity';
 import { InvoiceAttachment } from './invoice-attachment.entity';
 import { Kit } from './kit.entity';
+import { ContractInvoicePlan } from './contract-invoice-plan.entity';
 
 @Entity('invoices')
 export class Invoice {
@@ -26,6 +27,9 @@ export class Invoice {
 
   @Column()
   contract_id: number;
+
+  @Column({ type: 'int', nullable: true })
+  plan_id: number | null;
 
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount: number;
@@ -71,6 +75,10 @@ export class Invoice {
   @ManyToOne(() => Contract, contract => contract.invoices)
   @JoinColumn({ name: 'contract_id' })
   contract: Contract;
+
+  @ManyToOne(() => ContractInvoicePlan, plan => plan.invoices, { nullable: true })
+  @JoinColumn({ name: 'plan_id' })
+  plan?: ContractInvoicePlan;
 
   @OneToMany(() => Payment, payment => payment.invoice)
   payments: Payment[];

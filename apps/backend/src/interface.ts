@@ -518,6 +518,13 @@ export class CreateInvoiceDto {
   })
   contract_id: number;
 
+  @ApiPropertyOptional({
+    description: '关联的合同开票计划ID',
+    example: 1,
+    type: 'integer',
+  })
+  plan_id?: number;
+
   @ApiProperty({
     description: '不含税金额',
     example: 10000.0,
@@ -570,6 +577,13 @@ export class UpdateInvoiceDto {
     type: 'integer',
   })
   contract_id?: number;
+
+  @ApiPropertyOptional({
+    description: '关联的合同开票计划ID',
+    example: 1,
+    type: 'integer',
+  })
+  plan_id?: number;
 
   @ApiPropertyOptional({
     description: '不含税金额',

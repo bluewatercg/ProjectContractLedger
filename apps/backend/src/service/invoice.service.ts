@@ -11,6 +11,7 @@ import {
   PaginationResult,
 } from '../interface';
 import { DateUtil } from '../utils/date.util';
+import { ContractInvoicePlan } from '../entity/contract-invoice-plan.entity';
 
 @Provide()
 export class InvoiceService {
@@ -28,6 +29,9 @@ export class InvoiceService {
 
   @Inject()
   contractService: any; // 延迟注入避免循环依赖
+
+  @Inject()
+  contractInvoicePlanService: any; // 合同开票计划服务
 
   /**
    * 格式化发票数据，处理日期字段
@@ -59,6 +63,22 @@ export class InvoiceService {
         createInvoiceDto.contract_id
       );
 
+      // 如果传入了 plan_id，先校验计划归属合同
+      if (createInvoiceDto.plan_id) {
+        const plan = await manager.findOne(ContractInvoicePlan, {
+          where: { id: createInvoiceDto.plan_id },
+        });
+        if (!plan) {
+          throw new Error('关联的开票计划不存在');
+        }
+        if (plan.contract_id !== createInvoiceDto.contract_id) {
+          throw new Error('开票计划所属合同与发票合同不一致');
+        }
+        if (plan.kit_id !== kitId) {
+          throw new Error('开票计划所属套账与当前套账不一致');
+        }
+      }
+
       // 生成发票编号
       const invoiceNumber = await this.generateInvoiceNumber();
 
@@ -80,6 +100,14 @@ export class InvoiceService {
       });
 
       const savedInvoice = await manager.save(invoice);
+
+      // 如果有关联计划，重算计划金额和状态
+      if (savedInvoice.plan_id) {
+        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
+          savedInvoice.plan_id,
+          manager
+        );
+      }
 
       // 清除相关缓存
       if (this.statisticsService?.invalidateInvoiceCache) {
@@ -205,87 +233,137 @@ export class InvoiceService {
     updateInvoiceDto: UpdateInvoiceDto,
     kitId?: number
   ): Promise<any | null> {
-    const whereCondition: any = { id };
-    if (kitId) {
-      whereCondition.kit_id = kitId;
-    }
+    return await this.dataSource.transaction(async manager => {
+      const whereCondition: any = { id };
+      if (kitId) {
+        whereCondition.kit_id = kitId;
+      }
 
-    const invoice = await this.invoiceRepository.findOne({ where: whereCondition });
+      const invoice = await manager.findOne(Invoice, { where: whereCondition });
 
-    if (!invoice) {
-      return null;
-    }
+      if (!invoice) {
+        return null;
+      }
 
-    // 处理日期字段
-    const updateData = { ...updateInvoiceDto };
-    if (updateData.issue_date) {
-      updateData.issue_date = DateUtil.parseDate(updateData.issue_date) as any;
-    }
-    if (updateData.due_date) {
-      updateData.due_date = DateUtil.parseDate(updateData.due_date) as any;
-    }
+      const oldPlanId = invoice.plan_id;
 
-    // 如果更新了金额或税率，重新计算
-    if (updateData.amount !== undefined || updateData.tax_rate !== undefined) {
-      const amount = updateData.amount ?? invoice.amount;
-      const tax_rate = updateData.tax_rate ?? invoice.tax_rate;
-      const tax_amount = amount * (tax_rate / 100);
-      const total_amount = amount + tax_amount;
+      // 处理日期字段
+      const updateData = { ...updateInvoiceDto } as any;
+      if (updateData.issue_date) {
+        updateData.issue_date = DateUtil.parseDate(updateData.issue_date) as any;
+      }
+      if (updateData.due_date) {
+        updateData.due_date = DateUtil.parseDate(updateData.due_date) as any;
+      }
 
-      updateData.tax_amount = tax_amount;
-      updateData.total_amount = total_amount;
-    }
+      // 如果更新了金额或税率，重新计算
+      if (updateData.amount !== undefined || updateData.tax_rate !== undefined) {
+        const amount = updateData.amount ?? invoice.amount;
+        const tax_rate = updateData.tax_rate ?? invoice.tax_rate;
+        const tax_amount = amount * (tax_rate / 100);
+        const total_amount = amount + tax_amount;
 
-    Object.assign(invoice, updateData);
-    const savedInvoice = await this.invoiceRepository.save(invoice);
+        updateData.tax_amount = tax_amount;
+        updateData.total_amount = total_amount;
+      }
 
-    // 清除相关缓存
-    if (this.statisticsService?.invalidateInvoiceCache) {
-      this.statisticsService.invalidateInvoiceCache();
-    }
+      // 如果更新了 plan_id，简单校验计划归属合同
+      if (updateData.plan_id) {
+        const plan = await manager.findOne(ContractInvoicePlan, {
+          where: { id: updateData.plan_id },
+        });
+        if (!plan) {
+          throw new Error('关联的开票计划不存在');
+        }
+        const contractId = updateData.contract_id ?? invoice.contract_id;
+        if (plan.contract_id !== contractId) {
+          throw new Error('开票计划所属合同与发票合同不一致');
+        }
+        if (plan.kit_id && kitId && plan.kit_id !== kitId) {
+          throw new Error('开票计划所属套账与当前套账不一致');
+        }
+      }
 
-    // 格式化返回数据，处理日期字段
-    return this.formatInvoiceResponse(savedInvoice);
+      Object.assign(invoice, updateData);
+      const savedInvoice = await manager.save(invoice);
+
+      // 清除相关缓存
+      if (this.statisticsService?.invalidateInvoiceCache) {
+        this.statisticsService.invalidateInvoiceCache();
+      }
+
+      // 计划联动：旧计划 & 新计划都重算
+      const newPlanId = savedInvoice.plan_id;
+      if (oldPlanId && oldPlanId !== newPlanId) {
+        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
+          oldPlanId,
+          manager
+        );
+      }
+      if (newPlanId) {
+        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
+          newPlanId,
+          manager
+        );
+      }
+
+      // 格式化返回数据，处理日期字段
+      return this.formatInvoiceResponse(savedInvoice);
+    });
   }
 
   /**
    * 删除发票
    */
   async deleteInvoice(id: number, kitId?: number): Promise<boolean> {
-    const whereCondition: any = { id };
-    if (kitId) {
-      whereCondition.kit_id = kitId;
-    }
-
-    // 先获取发票以获得 contract_id
-    const invoice = await this.invoiceRepository.findOne({
-      where: whereCondition,
-    });
-
-    const result = await this.invoiceRepository.delete(whereCondition);
-
-    // 清除相关缓存
-    if (result.affected > 0 && this.statisticsService?.invalidateInvoiceCache) {
-      this.statisticsService.invalidateInvoiceCache();
-    }
-
-    // 自动更新合同状态：无发票且无附件 -> draft（草稿）
-    if (
-      invoice &&
-      result.affected > 0 &&
-      this.contractService?.updateContractStatusByAttachmentsOrInvoices
-    ) {
-      try {
-        await this.contractService.updateContractStatusByAttachmentsOrInvoices(
-          invoice.contract_id
-        );
-      } catch (statusError) {
-        console.error('更新合同状态失败:', statusError.message);
-        // 不影响发票删除的成功，只记录错误
+    return await this.dataSource.transaction(async manager => {
+      const whereCondition: any = { id };
+      if (kitId) {
+        whereCondition.kit_id = kitId;
       }
-    }
 
-    return result.affected > 0;
+      // 先获取发票以获得 contract_id 和 plan_id
+      const invoice = await manager.findOne(Invoice, {
+        where: whereCondition,
+      });
+
+      if (!invoice) {
+        return false;
+      }
+
+      const planId = invoice.plan_id;
+      const result = await manager.delete(Invoice, whereCondition);
+
+      // 清除相关缓存
+      if (result.affected > 0 && this.statisticsService?.invalidateInvoiceCache) {
+        this.statisticsService.invalidateInvoiceCache();
+      }
+
+      // 删除后重算关联计划
+      if (result.affected > 0 && planId) {
+        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
+          planId,
+          manager
+        );
+      }
+
+      // 自动更新合同状态：无发票且无附件 -> draft（草稿）
+      if (
+        result.affected > 0 &&
+        this.contractService?.updateContractStatusByAttachmentsOrInvoices
+      ) {
+        try {
+          await this.contractService.updateContractStatusByAttachmentsOrInvoices(
+            invoice.contract_id
+          );
+        } catch (statusError) {
+          console.error('更新合同状态失败:', statusError.message);
+          // 不影响发票删除的成功，只记录错误
+        }
+      }
+
+      return result.affected > 0;
+    });
   }
 
   /**

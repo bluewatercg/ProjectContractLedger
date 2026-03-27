@@ -12,6 +12,7 @@ import { Customer } from './customer.entity';
 import { Invoice } from './invoice.entity';
 import { ContractAttachment } from './contract-attachment.entity';
 import { Kit } from './kit.entity';
+import { ContractInvoicePlan } from './contract-invoice-plan.entity';
 
 @Entity('contracts')
 export class Contract {
@@ -90,6 +91,9 @@ export class Contract {
 
   @OneToMany(() => Invoice, invoice => invoice.contract)
   invoices: Invoice[];
+
+  @OneToMany(() => ContractInvoicePlan, plan => plan.contract)
+  invoice_plans: ContractInvoicePlan[];
 
   @OneToMany(() => ContractAttachment, attachment => attachment.contract)
   attachments: ContractAttachment[];

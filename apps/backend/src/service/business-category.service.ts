@@ -39,7 +39,9 @@ export class BusinessCategoryService {
     const queryBuilder = this.categoryRepository
       .createQueryBuilder('category')
       .where('category.kit_id = :kitId', { kitId })
-      .orderBy('category.parent_id', 'ASC', 'NULLS FIRST')
+      // MySQL 不支持 "NULLS FIRST"，用 CASE 表达式保证根节点(parent_id IS NULL)优先
+      .orderBy('CASE WHEN category.parent_id IS NULL THEN 0 ELSE 1 END', 'ASC')
+      .addOrderBy('category.parent_id', 'ASC')
       .addOrderBy('category.sort_order', 'ASC');
 
     // 可选的状态过滤

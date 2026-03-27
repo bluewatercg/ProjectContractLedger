@@ -89,6 +89,23 @@ export interface UpdateCustomerDto extends Partial<CreateCustomerDto> {
 }
 
 // 合同相关类型
+export interface ContractInvoicePlan {
+  id: number
+  kit_id: number
+  contract_id: number
+  phase_name: string
+  pay_ratio: number
+  planned_amount: number
+  actual_invoiced_amount: number
+  planned_invoice_date?: string | null
+  remind_days_before?: number
+  status: 'pending' | 'partial_invoiced' | 'invoiced' | 'cancelled'
+  first_reminded_at?: string | null
+  last_reminded_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Contract {
   id: number
   contract_number: string
@@ -107,6 +124,7 @@ export interface Contract {
   updated_at: string
   customer?: Customer
   invoices?: Invoice[]
+  invoice_plans?: ContractInvoicePlan[]
 }
 
 export interface CreateContractDto {
