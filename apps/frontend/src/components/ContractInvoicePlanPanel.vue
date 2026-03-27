@@ -41,26 +41,26 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="支付比例" width="140">
+      <el-table-column label="支付比例(%)" width="150">
         <template #default="scope">
           <el-input-number
-            v-model="scope.row.pay_ratio"
+            v-model="scope.row.pay_ratio_percent"
             :min="0"
-            :max="1"
-            :step="0.05"
+            :max="100"
+            :step="5"
             :precision="2"
             size="small"
             style="width: 100%"
             @change="onRatioChange(scope.row)"
           >
             <template #suffix>
-              <span class="suffix-text">× 合同金额</span>
+              <span class="suffix-text">%</span>
             </template>
           </el-input-number>
         </template>
       </el-table-column>
 
-      <el-table-column label="计划金额" width="160">
+      <el-table-column label="计划金额" width="180">
         <template #default="scope">
           <el-input-number
             v-model="scope.row.planned_amount"
@@ -159,7 +159,8 @@ import { useKitStore } from '@/stores/kit'
 interface PlanFormItem {
   id?: number
   phase_name: string
-  pay_ratio?: number | null
+  pay_ratio?: number | null           // 0-1，用于提交后端
+  pay_ratio_percent?: number | null   // 0-100，界面显示/输入
   planned_amount: number
   planned_invoice_date?: string | null
   remind_days_before?: number | null
@@ -201,10 +202,14 @@ const totalMismatch = computed(() => {
 const onRatioChange = (row: PlanFormItem) => {
   row.editMode = 'ratio'
 
-  if (!contractAmount.value || row.pay_ratio == null) {
+  if (!contractAmount.value || row.pay_ratio_percent == null) {
     return
   }
 
+  // 百分比转为小数存储
+  row.pay_ratio = Number((row.pay_ratio_percent / 100).toFixed(4))
+
+  // 比例 → 金额
   row.planned_amount = Number(
     (contractAmount.value * row.pay_ratio).toFixed(2)
   )
@@ -217,9 +222,10 @@ const onAmountChange = (row: PlanFormItem) => {
     return
   }
 
-  row.pay_ratio = Number(
-    (row.planned_amount / contractAmount.value).toFixed(4)
-  )
+  // 金额 → 比例（先算小数，再转成百分比显示）
+  const ratio = row.planned_amount / contractAmount.value
+  row.pay_ratio = Number(ratio.toFixed(4))
+  row.pay_ratio_percent = Number((ratio * 100).toFixed(2))
 }
 
 const getStatusType = (status?: string) => {
@@ -246,11 +252,14 @@ const resetFromProps = () => {
   editablePlans.value = (props.plans || []).map(p => ({
     id: p.id,
     phase_name: p.phase_name,
+    // 后端存的是 0-1 的小数，这里转成 0-100 的百分比显示
     pay_ratio: p.pay_ratio ?? null,
+    pay_ratio_percent: p.pay_ratio != null ? Number((p.pay_ratio * 100).toFixed(2)) : null,
     planned_amount: Number(p.planned_amount || 0),
     planned_invoice_date: p.planned_invoice_date || null,
     remind_days_before: p.remind_days_before ?? 0,
-    status: p.status
+    status: p.status,
+    editMode: null,
   }))
 }
 
@@ -266,10 +275,12 @@ const addRow = () => {
   editablePlans.value.push({
     phase_name: `第${editablePlans.value.length + 1}期`,
     pay_ratio: null,
+    pay_ratio_percent: null,
     planned_amount: 0,
     planned_invoice_date: undefined,
     remind_days_before: 0,
-    status: 'pending'
+    status: 'pending',
+    editMode: null,
   })
 }
 
@@ -320,7 +331,8 @@ const handleSave = async () => {
     const payload = editablePlans.value.map(p => ({
       id: p.id,
       phase_name: p.phase_name,
-      pay_ratio: p.pay_ratio ?? undefined,
+      // 提交给后端仍然用 0-1 的小数
+      pay_ratio: p.pay_ratio ?? (p.pay_ratio_percent != null ? p.pay_ratio_percent / 100 : undefined),
       planned_amount: p.planned_amount,
       planned_invoice_date: p.planned_invoice_date || undefined,
       remind_days_before: p.remind_days_before ?? 0
