@@ -325,7 +325,7 @@ export class ContractService {
 
     const contract = await this.contractRepository.findOne({
       where: whereCondition,
-      relations: ['customer', 'invoices', 'invoices.payments'],
+      relations: ['customer', 'invoices', 'invoices.payments', 'invoice_plans'],
     });
 
     if (!contract) {
