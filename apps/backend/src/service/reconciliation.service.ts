@@ -489,4 +489,25 @@ export class ReconciliationService {
 
     return result;
   }
+
+  /**
+   * 删除对账记录（包含明细）
+   */
+  async deleteReconciliation(id: number, kitId: number): Promise<boolean> {
+    const reconciliation = await this.reconciliationRepository.findOne({
+      where: { id, kit_id: kitId },
+    });
+
+    if (!reconciliation) {
+      return false;
+    }
+
+    // 删除关联明细记录
+    await this.reconciliationDetailRepository.delete({
+      reconciliation_id: reconciliation.id,
+    });
+
+    const result = await this.reconciliationRepository.delete(reconciliation.id);
+    return result.affected > 0;
+  }
 }

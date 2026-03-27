@@ -120,7 +120,7 @@
               {{ formatDate(row.reconciled_at) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
+          <el-table-column label="操作" width="260" fixed="right">
             <template #default="{ row }">
               <el-button size="small" @click="viewDetail(row.id)">
                 查看
@@ -140,6 +140,13 @@
                 @click="approveReconciliation(row)"
               >
                 审批
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                @click="deleteReconciliation(row.id)"
+              >
+                删除
               </el-button>
             </template>
           </el-table-column>
@@ -689,6 +696,29 @@ const submitApproval = async () => {
     }
   } catch (error: any) {
     ElMessage.error(error.message || '审批失败')
+  }
+}
+
+// 删除对账记录
+const deleteReconciliation = async (id: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条对账记录吗？', '提示', {
+      type: 'warning',
+    })
+
+    const response = await reconciliationApi.deleteReconciliation(id)
+    if (!response.success) {
+      ElMessage.error(response.message || '删除失败')
+      return
+    }
+
+    ElMessage.success('删除成功')
+    fetchReconciliations()
+    fetchStats()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 

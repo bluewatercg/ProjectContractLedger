@@ -448,4 +448,49 @@ export class ReconciliationController {
       };
     }
   }
+
+  /**
+   * 删除对账记录
+   * DELETE /api/v1/reconciliations/:id
+   */
+  @Del('/:id')
+  async deleteReconciliation(
+    @Param('id') id: number
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
+      const success = await this.reconciliationService.deleteReconciliation(
+        id,
+        kitId
+      );
+
+      if (!success) {
+        return {
+          success: false,
+          message: '对账记录不存在',
+          code: 404,
+        };
+      }
+
+      return {
+        success: true,
+        message: '删除成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '删除对账记录失败',
+        code: 400,
+      };
+    }
+  }
 }

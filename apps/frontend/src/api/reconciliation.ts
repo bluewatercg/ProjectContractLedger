@@ -66,6 +66,15 @@ export const reconciliationApi = {
   },
 
   /**
+   * 删除对账记录
+   */
+  deleteReconciliation(id: number): Promise<ApiResponse<void>> {
+    return apiClient
+      .delete(`/reconciliations/${id}`)
+      .then(res => res.data)
+  },
+
+  /**
    * 处理差异
    */
   handleDifference(
