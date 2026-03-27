@@ -52,11 +52,7 @@
             size="small"
             style="width: 100%"
             @change="onRatioChange(scope.row)"
-          >
-            <template #suffix>
-              <span class="suffix-text">%</span>
-            </template>
-          </el-input-number>
+          />
         </template>
       </el-table-column>
 
@@ -417,11 +413,6 @@ const handleSave = async () => {
 
 .currency-symbol {
   font-size: 12px;
-  color: #909399;
-}
-
-.suffix-text {
-  font-size: 11px;
   color: #909399;
 }
 
