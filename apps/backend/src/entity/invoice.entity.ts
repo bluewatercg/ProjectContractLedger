@@ -51,7 +51,7 @@ export class Invoice {
 
   @Column({
     type: 'enum',
-    enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
+    enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled', 'bad_debt'],
     default: 'sent',
   })
   status: string;
@@ -61,6 +61,24 @@ export class Invoice {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
+
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    default: 0,
+    comment: '坏账金额',
+  })
+  bad_debt_amount: number;
+
+  @Column({ type: 'text', nullable: true, comment: '坏账原因' })
+  bad_debt_reason: string | null;
+
+  @Column({ type: 'int', nullable: true, comment: '坏账处理人' })
+  bad_debt_handler: number | null;
+
+  @Column({ type: 'datetime', nullable: true, comment: '坏账标记时间' })
+  bad_debt_marked_at: Date | null;
 
   @CreateDateColumn()
   created_at: Date;

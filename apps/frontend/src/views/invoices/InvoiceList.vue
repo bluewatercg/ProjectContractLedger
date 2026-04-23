@@ -24,6 +24,7 @@
             <el-option label="已支付" value="paid" />
             <el-option label="逾期" value="overdue" />
             <el-option label="已取消" value="cancelled" />
+            <el-option label="坏账" value="bad_debt" />
           </el-select>
         </div>
       </div>
@@ -111,7 +112,8 @@ const getStatusType = (status: string) => {
     sent: 'warning',
     paid: 'success',
     overdue: 'danger',
-    cancelled: 'primary'
+    cancelled: 'primary',
+    bad_debt: 'danger'
   }
   return statusMap[status] || 'info'
 }
@@ -123,7 +125,8 @@ const getStatusText = (status: string) => {
     sent: '已开票',
     paid: '已支付',
     overdue: '逾期',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    bad_debt: '坏账'
   }
   return statusMap[status] || status
 }

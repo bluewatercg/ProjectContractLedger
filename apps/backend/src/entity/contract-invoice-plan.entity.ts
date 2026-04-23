@@ -16,7 +16,8 @@ export type ContractInvoicePlanStatus =
   | 'pending'
   | 'partial_invoiced'
   | 'invoiced'
-  | 'cancelled';
+  | 'cancelled'
+  | 'bad_debt';
 
 @Entity('contract_invoice_plan')
 export class ContractInvoicePlan {
@@ -67,7 +68,7 @@ export class ContractInvoicePlan {
 
   @Column({
     type: 'enum',
-    enum: ['pending', 'partial_invoiced', 'invoiced', 'cancelled'],
+    enum: ['pending', 'partial_invoiced', 'invoiced', 'cancelled', 'bad_debt'],
     default: 'pending',
     comment: '计划状态',
   })

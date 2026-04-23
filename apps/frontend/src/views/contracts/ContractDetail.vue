@@ -6,6 +6,10 @@
       <div>
         <el-button @click="goBack">返回</el-button>
         <el-button type="primary" @click="editContract">编辑</el-button>
+        <template v-if="showRenewalActions">
+          <el-button type="success" @click="handleConfirmRenew">确认续签</el-button>
+          <el-button type="danger" @click="showNonRenewDialog = true">确认不续签</el-button>
+        </template>
       </div>
     </div>
     
@@ -197,6 +201,31 @@
         />
       </div>
     </div>
+
+    <!-- 确认不续签对话框 -->
+    <el-dialog
+      v-model="showNonRenewDialog"
+      title="确认不续签"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="nonRenewForm" label-width="100px">
+        <el-form-item label="不续签原因" required>
+          <el-input
+            v-model="nonRenewForm.reason"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入不续签原因"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showNonRenewDialog = false">取消</el-button>
+        <el-button type="danger" :loading="nonRenewLoading" @click="handleConfirmNonRenew">
+          确认不续签
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -222,6 +251,18 @@ const contract = ref<Contract>()
 const attachments = ref<Attachment[]>([])
 const attachmentsLoading = ref(false)
 const activeTab = ref<'invoices' | 'plans'>('invoices')
+
+// 续签/不续签相关状态
+const showNonRenewDialog = ref(false)
+const nonRenewLoading = ref(false)
+const nonRenewForm = ref({ reason: '' })
+
+// 是否显示续签操作按钮：执行中 + 需要续签 + 已过期
+const showRenewalActions = computed(() => {
+  if (!contract.value) return false
+  const isExpired = contract.value.end_date && new Date(contract.value.end_date) < new Date()
+  return contract.value.status === 'active' && contract.value.is_renewable && isExpired
+})
 
 // 计算属性
 const contractId = computed(() => Number(route.params.id))
@@ -284,7 +325,8 @@ const getStatusType = (status: string) => {
     draft: 'info',
     active: 'success',
     completed: 'primary',
-    cancelled: 'danger'
+    cancelled: 'danger',
+    expired_non_renewed: 'danger'
   }
   return statusMap[status] || 'info'
 }
@@ -295,7 +337,8 @@ const getStatusText = (status: string) => {
     draft: '草稿',
     active: '执行中',
     completed: '已完成',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    expired_non_renewed: '已到期-不续签'
   }
   return statusMap[status] || status
 }
@@ -307,7 +350,8 @@ const getInvoiceStatusType = (status: string) => {
     sent: 'warning',
     paid: 'success',
     overdue: 'danger',
-    cancelled: 'primary'
+    cancelled: 'primary',
+    bad_debt: 'danger'
   }
   return statusMap[status] || 'info'
 }
@@ -319,7 +363,8 @@ const getInvoiceStatusText = (status: string) => {
     sent: '已开票',
     paid: '已付款',
     overdue: '逾期',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    bad_debt: '坏账'
   }
   return statusMap[status] || status
 }
@@ -388,6 +433,44 @@ const fetchContract = async () => {
 const handlePlansUpdated = async () => {
   // 计划保存后，刷新合同详情，拿到最新的 invoice_plans 与发票联动统计
   await fetchContract()
+}
+
+// 确认续签
+const handleConfirmRenew = async () => {
+  try {
+    const response = await contractApi.confirmRenewal(contractId.value)
+    if (response.success) {
+      ElMessage.success('已确认续签')
+      await fetchContract()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '确认续签失败')
+  }
+}
+
+// 确认不续签
+const handleConfirmNonRenew = async () => {
+  if (!nonRenewForm.value.reason) {
+    ElMessage.warning('请填写不续签原因')
+    return
+  }
+
+  try {
+    nonRenewLoading.value = true
+    const response = await contractApi.confirmNonRenewal(contractId.value, {
+      reason: nonRenewForm.value.reason,
+    })
+    if (response.success) {
+      ElMessage.success('已确认不续签')
+      showNonRenewDialog.value = false
+      nonRenewForm.value.reason = ''
+      await fetchContract()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '确认不续签失败')
+  } finally {
+    nonRenewLoading.value = false
+  }
 }
 
 // 编辑合同

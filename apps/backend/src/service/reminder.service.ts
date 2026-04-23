@@ -133,7 +133,7 @@ export class ReminderService {
         shouldRemind = true;
         priority = 'high';
         type = contract.is_renewable ? 'contract_renewal' : 'contract_fulfillment';
-        title = contract.is_renewable ? '合同已到期，请处理续签' : '合同已到期，请确认履约关闭';
+        title = contract.is_renewable ? '合同已到期，请确认续签或不续签' : '合同已到期，请确认履约关闭';
         description = `合同 ${contract.contract_number} 已于 ${Math.abs(daysUntilDue)} 天前到期，目前状态仍为执行中，请及时处理。`;
       }
       // 2. 将到期合（续签）
@@ -265,7 +265,8 @@ export class ReminderService {
       )
       .where('invoice.status IN (:...statuses)', {
         statuses: ['draft', 'sent', 'paid', 'overdue'],
-      });
+      })
+      .andWhere('(invoice.bad_debt_amount IS NULL OR invoice.bad_debt_amount = 0 OR invoice.bad_debt_amount < invoice.total_amount)');
 
     if (kitId) {
       queryBuilder.andWhere('invoice.kit_id = :kitId', { kitId });

@@ -17,6 +17,7 @@ import {
   UpdateContractDto,
   PaginationQuery,
   ApiResponse,
+  ConfirmNonRenewalDto,
 } from '../interface';
 
 @Controller('/api/v1/contracts')
@@ -222,6 +223,67 @@ export class ContractController {
         success: false,
         message: error.message || '获取合同统计失败',
         code: 500,
+      };
+    }
+  }
+
+  /**
+   * 确认不续签：合同状态变为 expired_non_renewed
+   */
+  @Post('/:id/non-renew')
+  async confirmNonRenewal(
+    @Param('id') id: number,
+    @Body() dto: ConfirmNonRenewalDto
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      const userId = this.ctx.state?.user?.id || 1;
+
+      if (!dto?.reason) {
+        return {
+          success: false,
+          message: '请提供不续签原因',
+          code: 400,
+        };
+      }
+
+      const result = await this.contractService.confirmNonRenewal(id, dto, kitId, userId);
+      return {
+        success: true,
+        data: result,
+        message: '已确认不续签',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '确认不续签失败',
+        code: 400,
+      };
+    }
+  }
+
+  /**
+   * 确认续签：记录续签确认时间
+   */
+  @Post('/:id/renew')
+  async confirmRenewal(
+    @Param('id') id: number
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      const userId = this.ctx.state?.user?.id || 1;
+
+      const result = await this.contractService.confirmRenewal(id, kitId, userId);
+      return {
+        success: true,
+        data: result,
+        message: '已确认续签',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '确认续签失败',
+        code: 400,
       };
     }
   }

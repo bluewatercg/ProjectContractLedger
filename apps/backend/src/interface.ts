@@ -507,6 +507,46 @@ export class UpdateContractDto {
   renewal_reminder_days?: string;
 }
 
+export class ConfirmNonRenewalDto {
+  @ApiProperty({
+    description: '不续签原因',
+    example: '客户业务调整，不再合作',
+    type: 'string',
+  })
+  reason: string;
+
+  @ApiPropertyOptional({
+    description: '新合同ID（关联旧合同，表示替代关系）',
+    example: 42,
+    type: 'integer',
+  })
+  previous_contract_id?: number;
+}
+
+export class MarkBadDebtDto {
+  @ApiProperty({
+    description: '发票ID',
+    example: 1,
+    type: 'integer',
+  })
+  invoice_id: number;
+
+  @ApiProperty({
+    description: '坏账金额',
+    example: 70000.0,
+    type: 'number',
+    format: 'decimal',
+  })
+  bad_debt_amount: number;
+
+  @ApiPropertyOptional({
+    description: '坏账原因',
+    example: '客户经营困难，无法付款',
+    type: 'string',
+  })
+  bad_debt_reason?: string;
+}
+
 /**
  * 发票相关接口
  */

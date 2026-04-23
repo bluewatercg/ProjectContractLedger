@@ -5,6 +5,20 @@
       <div>
         <el-button @click="goBack">返回</el-button>
         <el-button type="primary" @click="editInvoice">编辑</el-button>
+        <el-button
+          v-if="canMarkBadDebt"
+          type="danger"
+          @click="showBadDebtDialog = true"
+        >
+          标记坏账
+        </el-button>
+        <el-button
+          v-if="hasBadDebt"
+          type="warning"
+          @click="handleUndoBadDebt"
+        >
+          撤销坏账
+        </el-button>
       </div>
     </div>
 
@@ -131,15 +145,72 @@
         />
       </div>
     </div>
+
+    <!-- 坏账信息卡片 -->
+    <div v-if="hasBadDebt" class="mt-6">
+      <el-card>
+        <template #header>
+          <div class="flex items-center">
+            <span class="font-semibold text-red-600">坏账信息</span>
+          </div>
+        </template>
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="坏账金额">
+            <span class="text-red-600 font-semibold">¥{{ formatCurrency(badDebtAmount) }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="坏账原因">{{ badDebtReason || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="标记时间">{{ badDebtMarkedAt || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+    </div>
+
+    <!-- 标记坏账对话框 -->
+    <el-dialog
+      v-model="showBadDebtDialog"
+      title="标记坏账"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="badDebtForm" label-width="120px">
+        <el-form-item label="坏账金额" required>
+          <el-input-number
+            v-model="badDebtForm.bad_debt_amount"
+            :min="0.01"
+            :max="unpaidAmount"
+            :precision="2"
+            :step="100"
+            style="width: 100%"
+          />
+          <div class="form-tip">
+            未收金额：¥{{ formatCurrency(unpaidAmount) }}
+          </div>
+        </el-form-item>
+        <el-form-item label="坏账原因" required>
+          <el-input
+            v-model="badDebtForm.bad_debt_reason"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入坏账原因"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showBadDebtDialog = false">取消</el-button>
+        <el-button type="danger" :loading="badDebtLoading" @click="handleMarkBadDebt">
+          确认标记
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { invoiceApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
+import { badDebtApi } from '@/api/badDebt'
 import { useKitStore } from '@/stores/kit'
 import type { Invoice } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
@@ -156,8 +227,46 @@ const invoice = ref<Invoice>()
 const attachments = ref<Attachment[]>([])
 const attachmentsLoading = ref(false)
 
+// 坏账相关状态
+const showBadDebtDialog = ref(false)
+const badDebtLoading = ref(false)
+const badDebtForm = ref({ bad_debt_amount: 0, bad_debt_reason: '' })
+
 // 计算属性
 const invoiceId = computed(() => Number(route.params.id))
+
+// 是否可以标记坏账（sent 或 overdue 状态）
+const canMarkBadDebt = computed(() => {
+  if (!invoice.value) return false
+  return ['sent', 'overdue'].includes(invoice.value.status)
+})
+
+// 是否已有坏账
+const hasBadDebt = computed(() => {
+  return !!invoice.value?.bad_debt_amount && Number(invoice.value.bad_debt_amount) > 0
+})
+
+// 坏账金额
+const badDebtAmount = computed(() => {
+  return Number(invoice.value?.bad_debt_amount || 0)
+})
+
+// 坏账原因
+const badDebtReason = computed(() => {
+  return invoice.value?.bad_debt_reason || '-'
+})
+
+// 坏账标记时间
+const badDebtMarkedAt = computed(() => {
+  if (!invoice.value?.bad_debt_marked_at) return '-'
+  return new Date(invoice.value.bad_debt_marked_at).toLocaleString('zh-CN')
+})
+
+// 未收款金额
+const unpaidAmount = computed(() => {
+  if (!invoice.value) return 0
+  return Number(invoice.value.total_amount) - getPaidAmount()
+})
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
@@ -176,7 +285,8 @@ const getStatusType = (status: string) => {
     sent: 'warning',
     paid: 'success',
     overdue: 'danger',
-    cancelled: 'primary'
+    cancelled: 'primary',
+    bad_debt: 'danger'
   }
   return statusMap[status] || 'info'
 }
@@ -188,7 +298,8 @@ const getStatusText = (status: string) => {
     sent: '已开票',
     paid: '已支付',
     overdue: '逾期',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    bad_debt: '坏账'
   }
   return statusMap[status] || status
 }
@@ -235,12 +346,6 @@ const getPaidAmount = () => {
     .reduce((sum, payment) => sum + Number(payment.amount), 0)
 }
 
-// 计算未收款金额
-const getUnpaidAmount = () => {
-  if (!invoice.value) return 0
-  return Number(invoice.value.total_amount) - getPaidAmount()
-}
-
 // 获取发票详情
 const fetchInvoice = async () => {
   try {
@@ -278,6 +383,64 @@ const editPayment = (paymentId: number) => {
 // 创建支付记录
 const createPayment = () => {
   router.push(`/payments/create?invoiceId=${invoiceId.value}`)
+}
+
+// 标记坏账
+const handleMarkBadDebt = async () => {
+  if (badDebtForm.value.bad_debt_amount <= 0) {
+    ElMessage.warning('坏账金额必须大于 0')
+    return
+  }
+  if (!badDebtForm.value.bad_debt_reason) {
+    ElMessage.warning('请填写坏账原因')
+    return
+  }
+
+  try {
+    badDebtLoading.value = true
+    const response = await badDebtApi.markAsBadDebt({
+      invoice_id: invoiceId.value,
+      bad_debt_amount: badDebtForm.value.bad_debt_amount,
+      bad_debt_reason: badDebtForm.value.bad_debt_reason,
+    })
+    if (response.success) {
+      ElMessage.success('已标记为坏账')
+      showBadDebtDialog.value = false
+      badDebtForm.value = { bad_debt_amount: 0, bad_debt_reason: '' }
+      await fetchInvoice()
+    } else {
+      ElMessage.error(response.message || '标记坏账失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '标记坏账失败')
+  } finally {
+    badDebtLoading.value = false
+  }
+}
+
+// 撤销坏账
+const handleUndoBadDebt = async () => {
+  try {
+    await ElMessageBox.confirm('确认撤销该发票的坏账标记？撤销后发票状态将恢复为逾期。', '确认撤销', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+
+  try {
+    const response = await badDebtApi.undoBadDebt(invoiceId.value)
+    if (response.success) {
+      ElMessage.success('已撤销坏账')
+      await fetchInvoice()
+    } else {
+      ElMessage.error(response.message || '撤销坏账失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '撤销坏账失败')
+  }
 }
 
 // 返回上一页

@@ -45,7 +45,7 @@ export class Contract {
 
   @Column({
     type: 'enum',
-    enum: ['draft', 'active', 'completed', 'cancelled'],
+    enum: ['draft', 'active', 'completed', 'cancelled', 'expired_non_renewed'],
     default: 'draft',
   })
   status: string;
@@ -65,6 +65,25 @@ export class Contract {
     comment: '续签提醒天数：5天、30天、60天（仅在is_renewable=true时有效）',
   })
   renewal_reminder_days: string;
+
+  @Column({
+    type: 'datetime',
+    nullable: true,
+    comment: '续签确认时间：用户确认续签后记录，过期但已确认的不自动完成',
+  })
+  renewal_confirmed_at: Date | null;
+
+  @Column({ type: 'text', nullable: true, comment: '不续签原因' })
+  non_renewal_reason: string | null;
+
+  @Column({ type: 'int', nullable: true, comment: '不续签决策人' })
+  non_renewal_decided_by: number | null;
+
+  @Column({ type: 'datetime', nullable: true, comment: '不续签决策时间' })
+  non_renewal_decided_at: Date | null;
+
+  @Column({ type: 'int', nullable: true, comment: '关联的旧合同ID（续签新合同）' })
+  previous_contract_id: number | null;
 
   @Column({ type: 'text', nullable: true })
   terms: string;
@@ -97,5 +116,12 @@ export class Contract {
 
   @OneToMany(() => ContractAttachment, attachment => attachment.contract)
   attachments: ContractAttachment[];
+
+  @ManyToOne(() => Contract, { nullable: true })
+  @JoinColumn({ name: 'previous_contract_id' })
+  previousContract: Contract;
+
+  @OneToMany(() => Contract, c => c.previousContract)
+  successorContracts: Contract[];
 }
 

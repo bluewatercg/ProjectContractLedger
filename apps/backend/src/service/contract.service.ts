@@ -8,6 +8,7 @@ import {
   UpdateContractDto,
   PaginationQuery,
   PaginationResult,
+  ConfirmNonRenewalDto,
 } from '../interface';
 import { DateUtil } from '../utils/date.util';
 
@@ -59,6 +60,9 @@ export class ContractService {
     });
 
     const savedContract = await this.contractRepository.save(contract);
+
+    // 同步企业活跃度
+    await this.syncCustomerStatus(contract.customer_id);
 
     // 清除相关缓存
     if (this.statisticsService?.invalidateContractCache) {
@@ -235,6 +239,7 @@ export class ContractService {
     uninvoicedAmount: number;
     paidAmount: number;
     unpaidAmount: number;
+    badDebtAmount: number;
     invoiceCount: number;
     billingStatus: string;
     billingStatusText: string;
@@ -245,6 +250,7 @@ export class ContractService {
     // 计算已开票金额和数量
     let invoicedAmount = 0;
     let invoiceCount = 0;
+    let badDebtAmount = 0;
     const invoiceStats = [];
 
     if (contract.invoices && Array.isArray(contract.invoices)) {
@@ -252,6 +258,12 @@ export class ContractService {
       contract.invoices.forEach((invoice: any) => {
         const invAmount = parseFloat(invoice.total_amount?.toString() || '0');
         invoicedAmount += invAmount;
+
+        // 累加坏账金额
+        const invBadDebt = parseFloat(invoice.bad_debt_amount?.toString() || '0');
+        if (invBadDebt > 0) {
+          badDebtAmount += invBadDebt;
+        }
 
         // 计算该张发票的已收金额
         const invPaidAmount =
@@ -307,6 +319,7 @@ export class ContractService {
       uninvoicedAmount,
       paidAmount: totalPaidAmount,
       unpaidAmount,
+      badDebtAmount,
       invoiceCount,
       billingStatus,
       billingStatusText,
@@ -364,8 +377,15 @@ export class ContractService {
       updateData.end_date = DateUtil.parseDate(updateData.end_date) as any;
     }
 
+    const oldStatus = contract.status;
+
     Object.assign(contract, updateData);
     const savedContract = await this.contractRepository.save(contract);
+
+    // 合同状态变更时同步企业活跃度
+    if (updateData.status && updateData.status !== oldStatus) {
+      await this.syncCustomerStatus(contract.customer_id);
+    }
 
     // 清除相关缓存
     if (this.statisticsService?.invalidateContractCache) {
@@ -460,7 +480,8 @@ export class ContractService {
       .leftJoinAndSelect('contract.invoices', 'invoice')
       .leftJoinAndSelect('invoice.payments', 'payment')
       .where('contract.status = :status', { status: 'active' })
-      .andWhere('contract.end_date <= :today', { today });
+      .andWhere('contract.end_date <= :today', { today })
+      .andWhere('contract.renewal_confirmed_at IS NULL');
 
     if (kitId) {
       queryBuilder.andWhere('contract.kit_id = :kitId', { kitId });
@@ -472,6 +493,11 @@ export class ContractService {
     for (const contract of contracts) {
       const stats = this.calculateFinancialStats(contract);
 
+      // 有坏账的合同不能自动完成
+      if (stats.badDebtAmount > 0) {
+        continue;
+      }
+
       // 如果财务状态也是已完成 (说明金额结清)
       if (stats.billingStatus === 'completed') {
         await this.contractRepository.update(contract.id, {
@@ -479,6 +505,9 @@ export class ContractService {
           updated_at: new Date()
         });
         completedCount++;
+
+        // 同步企业活跃度
+        await this.syncCustomerStatus(contract.customer_id);
       }
     }
 
@@ -531,5 +560,79 @@ export class ContractService {
         `Contract #${contractId} status updated: ${contract.status} -> ${newStatus} (attachments: ${contract.attachments?.length || 0}, invoices: ${contract.invoices?.length || 0})`
       );
     }
+  }
+
+  /**
+   * 确认不续签：合同状态变为 expired_non_renewed
+   */
+  async confirmNonRenewal(
+    contractId: number,
+    dto: ConfirmNonRenewalDto,
+    kitId: number,
+    userId: number
+  ): Promise<any> {
+    const contract = await this.contractRepository.findOne({ where: { id: contractId, kit_id: kitId } });
+    if (!contract) {
+      throw new Error('合同不存在');
+    }
+    if (contract.status !== 'active') {
+      throw new Error('仅执行中的合同可确认不续签');
+    }
+
+    const updateData: Partial<Contract> = {
+      status: 'expired_non_renewed',
+      non_renewal_reason: dto.reason,
+      non_renewal_decided_by: userId,
+      non_renewal_decided_at: new Date(),
+    };
+
+    if (dto.previous_contract_id) {
+      updateData.previous_contract_id = dto.previous_contract_id;
+    }
+
+    Object.assign(contract, updateData);
+    const savedContract = await this.contractRepository.save(contract);
+
+    // 同步企业活跃度
+    await this.syncCustomerStatus(contract.customer_id);
+
+    if (this.statisticsService?.invalidateContractCache) {
+      this.statisticsService.invalidateContractCache();
+    }
+
+    return this.formatContractResponse(savedContract);
+  }
+
+  /**
+   * 确认续签：记录续签确认时间，避免自动完成
+   */
+  async confirmRenewal(
+    contractId: number,
+    kitId: number,
+    userId: number
+  ): Promise<any> {
+    const contract = await this.contractRepository.findOne({ where: { id: contractId, kit_id: kitId } });
+    if (!contract) {
+      throw new Error('合同不存在');
+    }
+
+    contract.renewal_confirmed_at = new Date();
+    const savedContract = await this.contractRepository.save(contract);
+
+    return this.formatContractResponse(savedContract);
+  }
+
+  /**
+   * 根据合同状态同步企业活跃度
+   * 规则：有任一 active 合同 → active；所有合同都完成/取消/不续签 → inactive
+   */
+  async syncCustomerStatus(customerId: number): Promise<void> {
+    const activeCount = await this.contractRepository.count({
+      where: { customer_id: customerId, status: 'active' },
+    });
+
+    const newStatus = activeCount > 0 ? 'active' : 'inactive';
+
+    await this.customerRepository.update(customerId, { status: newStatus });
   }
 }

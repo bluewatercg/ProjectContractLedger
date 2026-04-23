@@ -246,6 +246,7 @@ const contractStatusOptions = [
   { label: "执行中", value: "active" },
   { label: "已完成", value: "completed" },
   { label: "已取消", value: "cancelled" },
+  { label: "已到期-不续签", value: "expired_non_renewed" },
 ];
 
 const billingStatusOptions = [
@@ -290,6 +291,7 @@ const getStatusType = (status: string) => {
     active: "success",
     completed: "primary",
     cancelled: "danger",
+    expired_non_renewed: "danger",
   };
   return statusMap[status] || "info";
 };
@@ -301,6 +303,7 @@ const getStatusText = (status: string) => {
     active: "执行中",
     completed: "已完成",
     cancelled: "已取消",
+    expired_non_renewed: "已到期-不续签",
   };
   return statusMap[status] || status;
 };

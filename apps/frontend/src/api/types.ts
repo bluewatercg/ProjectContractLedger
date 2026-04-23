@@ -99,7 +99,7 @@ export interface ContractInvoicePlan {
   actual_invoiced_amount: number
   planned_invoice_date?: string | null
   remind_days_before?: number
-  status: 'pending' | 'partial_invoiced' | 'invoiced' | 'cancelled'
+  status: 'pending' | 'partial_invoiced' | 'invoiced' | 'cancelled' | 'bad_debt'
   first_reminded_at?: string | null
   last_reminded_at?: string | null
   created_at: string
@@ -118,6 +118,11 @@ export interface Contract {
   status: string
   is_renewable: boolean
   renewal_reminder_days?: string
+  renewal_confirmed_at?: string
+  non_renewal_reason?: string
+  non_renewal_decided_by?: number
+  non_renewal_decided_at?: string
+  previous_contract_id?: number
   terms?: string
   notes?: string
   created_at: string
@@ -125,6 +130,8 @@ export interface Contract {
   customer?: Customer
   invoices?: Invoice[]
   invoice_plans?: ContractInvoicePlan[]
+  previousContract?: Contract
+  successorContracts?: Contract[]
 }
 
 export interface CreateContractDto {
@@ -138,10 +145,16 @@ export interface CreateContractDto {
   renewal_reminder_days?: string
   terms?: string
   notes?: string
+  previous_contract_id?: number
 }
 
 export interface UpdateContractDto extends Partial<CreateContractDto> {
   status?: string
+}
+
+export interface ConfirmNonRenewalDto {
+  reason: string
+  previous_contract_id?: number
 }
 
 // 发票相关类型
@@ -159,6 +172,10 @@ export interface Invoice {
   status: string
   description?: string
   notes?: string
+  bad_debt_amount?: number
+  bad_debt_reason?: string
+  bad_debt_handler?: number
+  bad_debt_marked_at?: string
   created_at: string
   updated_at: string
   contract?: Contract

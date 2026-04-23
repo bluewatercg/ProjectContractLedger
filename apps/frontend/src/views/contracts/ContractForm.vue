@@ -121,6 +121,28 @@
                 系统将在合同到期前按选定天数发送续签提醒
               </div>
             </el-form-item>
+
+            <el-form-item label="关联旧合同" class="form-item-full">
+              <el-select
+                v-model="previousContractId"
+                filterable
+                clearable
+                placeholder="可选：关联已到期或已完成的旧合同"
+                style="width: 100%"
+                :loading="oldContractsLoading"
+              >
+                <el-option
+                  v-for="c in oldContracts"
+                  :key="c.id"
+                  :label="`${c.contract_number} - ${c.title}`"
+                  :value="c.id"
+                />
+              </el-select>
+              <div class="form-tip">
+                <el-icon><InfoFilled /></el-icon>
+                关联旧合同后可追溯合同历史，支持选择已到期、已完成或已到期-不续签的合同
+              </div>
+            </el-form-item>
           </div>
         </div>
 
@@ -317,6 +339,11 @@ const submitting = ref(false)
 const contractData = ref<any>(null)
 const attachments = ref<Attachment[]>([])
 const attachmentsLoading = ref(false)
+
+// 关联旧合同相关状态
+const previousContractId = ref<number | null>(null)
+const oldContracts = ref<Array<{ id: number; contract_number: string; title: string }>>([])
+const oldContractsLoading = ref(false)
 
 // 计算属性
 const isEdit = computed(() => !!route.params.id)
@@ -515,12 +542,48 @@ const fetchContract = async () => {
         is_renewable: contract.is_renewable || false,
         renewal_reminder_days: contract.renewal_reminder_days || '30'
       })
+
+      // 编辑模式下加载关联旧合同
+      if (contract.previous_contract_id) {
+        previousContractId.value = contract.previous_contract_id
+      }
     }
   } catch (error) {
     console.error('Failed to fetch contract:', error)
     ElMessage.error('获取合同信息失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 加载可关联的旧合同列表
+const fetchOldContracts = async () => {
+  try {
+    oldContractsLoading.value = true
+    const response = await contractApi.getContracts({
+      page: 1,
+      limit: 100,
+      status: '',
+      viewAll: kitStore.viewAllKits,
+    })
+    if (response.success && response.data) {
+      // 过滤出可关联的合同：已完成、已到期-不续签、执行中但已过期的
+      oldContracts.value = response.data.items
+        .filter((c: any) => {
+          if (c.status === 'expired_non_renewed' || c.status === 'completed') return true
+          if (c.status === 'active' && c.end_date && new Date(c.end_date) < new Date()) return true
+          return false
+        })
+        .map((c: any) => ({
+          id: c.id,
+          contract_number: c.contract_number,
+          title: c.title,
+        }))
+    }
+  } catch (error) {
+    console.error('Failed to fetch old contracts:', error)
+  } finally {
+    oldContractsLoading.value = false
   }
 }
 
@@ -547,10 +610,15 @@ const handleSubmit = async () => {
     submitting.value = true
 
     // 格式化日期字段
-    const submitData = {
+    const submitData: any = {
       ...form,
       start_date: formatDate(form.start_date),
       end_date: formatDate(form.end_date)
+    }
+
+    // 创建合同时，如果选择了关联旧合同，添加到提交数据
+    if (!isEdit.value && previousContractId.value) {
+      submitData.previous_contract_id = previousContractId.value
     }
 
     let response
@@ -640,6 +708,9 @@ const handleDeleteAttachment = async (attachmentId: number) => {
 
 // 组件挂载时获取数据
 onMounted(async () => {
+  // 加载可关联的旧合同列表
+  await fetchOldContracts()
+
   // 如果是编辑模式，获取合同详情
   if (isEdit.value) {
     await fetchContract()

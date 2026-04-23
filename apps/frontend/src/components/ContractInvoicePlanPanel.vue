@@ -229,7 +229,8 @@ const getStatusType = (status?: string) => {
     pending: 'info',
     partial_invoiced: 'warning',
     invoiced: 'success',
-    cancelled: 'default'
+    cancelled: 'default',
+    bad_debt: 'danger'
   }
   return (status && map[status]) || 'info'
 }
@@ -239,7 +240,8 @@ const getStatusText = (status?: string) => {
     pending: '未开票',
     partial_invoiced: '部分开票',
     invoiced: '已开票',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    bad_debt: '坏账'
   }
   return (status && map[status]) || '未开票'
 }

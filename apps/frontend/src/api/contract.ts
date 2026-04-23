@@ -6,7 +6,8 @@ import type {
   Contract,
   CreateContractDto,
   UpdateContractDto,
-  ContractInvoicePlan
+  ContractInvoicePlan,
+  ConfirmNonRenewalDto
 } from './types'
 
 export const contractApi = {
@@ -99,5 +100,24 @@ export const contractApi = {
    */
   getContractStats(): Promise<ApiResponse<any>> {
     return apiClient.get('/contracts/stats/overview').then(res => res.data)
+  },
+
+  /**
+   * 确认不续签
+   */
+  confirmNonRenewal(
+    id: number,
+    data: ConfirmNonRenewalDto
+  ): Promise<ApiResponse<Contract>> {
+    return apiClient.post(`/contracts/${id}/non-renew`, data).then(res => res.data)
+  },
+
+  /**
+   * 确认续签
+   */
+  confirmRenewal(
+    id: number
+  ): Promise<ApiResponse<Contract>> {
+    return apiClient.post(`/contracts/${id}/renew`).then(res => res.data)
   }
 }
