@@ -119,5 +119,15 @@ export const contractApi = {
     id: number
   ): Promise<ApiResponse<Contract>> {
     return apiClient.post(`/contracts/${id}/renew`).then(res => res.data)
+  },
+
+  /**
+   * 批量设置业务分类
+   */
+  batchSetCategory(
+    ids: number[],
+    category_id: number | null
+  ): Promise<ApiResponse<{ updated: number }>> {
+    return apiClient.patch('/contracts/batch-category', { ids, category_id }).then(res => res.data)
   }
 }

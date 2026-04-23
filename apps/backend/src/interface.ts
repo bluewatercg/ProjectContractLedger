@@ -425,6 +425,13 @@ export class CreateContractDto {
     default: '30',
   })
   renewal_reminder_days?: string;
+
+  @ApiPropertyOptional({
+    description: '业务分类ID',
+    example: 1,
+    type: 'integer',
+  })
+  business_category_id?: number;
 }
 
 export class UpdateContractDto {
@@ -505,6 +512,13 @@ export class UpdateContractDto {
     enum: ['5', '30', '60'],
   })
   renewal_reminder_days?: string;
+
+  @ApiPropertyOptional({
+    description: '业务分类ID',
+    example: 1,
+    type: 'integer',
+  })
+  business_category_id?: number;
 }
 
 export class ConfirmNonRenewalDto {
@@ -521,6 +535,24 @@ export class ConfirmNonRenewalDto {
     type: 'integer',
   })
   previous_contract_id?: number;
+}
+
+export class BatchSetCategoryDto {
+  @ApiProperty({
+    description: '合同ID列表',
+    example: [1, 2, 3],
+    isArray: true,
+    type: 'integer',
+  })
+  ids: number[];
+
+  @ApiPropertyOptional({
+    description: '业务分类ID，传null表示清除分类',
+    example: 1,
+    type: 'integer',
+    nullable: true,
+  })
+  category_id: number | null;
 }
 
 export class MarkBadDebtDto {

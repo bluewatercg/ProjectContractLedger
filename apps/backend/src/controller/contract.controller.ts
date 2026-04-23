@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Del,
+  Patch,
   Body,
   Param,
   Query,
@@ -18,6 +19,7 @@ import {
   PaginationQuery,
   ApiResponse,
   ConfirmNonRenewalDto,
+  BatchSetCategoryDto,
 } from '../interface';
 
 @Controller('/api/v1/contracts')
@@ -284,6 +286,50 @@ export class ContractController {
         success: false,
         message: error.message || '确认续签失败',
         code: 400,
+      };
+    }
+  }
+
+  /**
+   * 批量设置业务分类
+   */
+  @Patch('/batch-category')
+  async batchSetCategory(
+    @Body() dto: BatchSetCategoryDto
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套账',
+          code: 400,
+        };
+      }
+
+      if (!dto?.ids || dto.ids.length === 0) {
+        return {
+          success: false,
+          message: '请选择要操作的合同',
+          code: 400,
+        };
+      }
+
+      const result = await this.contractService.batchSetCategory(
+        dto.ids,
+        dto.category_id,
+        kitId
+      );
+      return {
+        success: true,
+        data: result,
+        message: `已更新 ${result.updated} 个合同`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '批量设置分类失败',
+        code: 500,
       };
     }
   }

@@ -23,6 +23,10 @@
         <el-icon><User /></el-icon>
         {{ contract.customer?.name }}
       </span>
+      <span v-if="contract.businessCategory" class="category-tag">
+        <el-icon><Folder /></el-icon>
+        {{ contract.businessCategory.name }}
+      </span>
       <span class="end-date">
         <el-icon><Calendar /></el-icon>
         {{ contract.end_date }}
@@ -135,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { User, Calendar, Money, Document, Edit, Delete } from "@element-plus/icons-vue";
+import { User, Calendar, Money, Document, Edit, Delete, Folder } from "@element-plus/icons-vue";
 
 const props = defineProps<{
   contract: any;
@@ -294,6 +298,14 @@ const handleDelete = () => {
   align-items: center;
   gap: 4px;
   color: #909399;
+}
+
+.category-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #626adf;
+  font-size: 13px;
 }
 
 .amount-section {

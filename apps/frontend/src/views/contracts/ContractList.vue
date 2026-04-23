@@ -114,6 +114,12 @@
             <el-table-column prop="contract_number" label="合同编号" width="140" fixed />
             <el-table-column prop="title" label="合同标题" min-width="180" show-overflow-tooltip />
             <el-table-column prop="customer.name" label="客户名称" width="150" show-overflow-tooltip />
+            <el-table-column prop="businessCategory.name" label="业务分类" width="120" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span v-if="row.businessCategory">{{ row.businessCategory.name }}</span>
+                <span v-else style="color: #c0c4cc">-</span>
+              </template>
+            </el-table-column>
             <!-- 套账列（仅在查看全部时显示） -->
             <el-table-column v-if="kitStore.viewAllKits" label="所属套账" width="120">
               <template #default="{ row }">

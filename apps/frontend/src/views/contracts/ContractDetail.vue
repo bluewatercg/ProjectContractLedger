@@ -18,6 +18,7 @@
         <el-descriptions-item label="合同编号">{{ contract.contract_number }}</el-descriptions-item>
         <el-descriptions-item label="合同标题">{{ contract.title }}</el-descriptions-item>
         <el-descriptions-item label="客户名称">{{ contract.customer?.name || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="业务分类">{{ contract.businessCategory?.name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同金额">¥{{ formatCurrency(contract.total_amount) }}</el-descriptions-item>
         <el-descriptions-item label="开始日期">{{ contract.start_date }}</el-descriptions-item>
         <el-descriptions-item label="结束日期">{{ contract.end_date }}</el-descriptions-item>

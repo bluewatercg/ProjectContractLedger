@@ -57,6 +57,7 @@ export class ContractService {
       created_by: createdBy,
       start_date: DateUtil.parseDate(createContractDto.start_date),
       end_date: DateUtil.parseDate(createContractDto.end_date),
+      business_category_id: createContractDto.business_category_id ?? null,
     });
 
     const savedContract = await this.contractRepository.save(contract);
@@ -338,7 +339,7 @@ export class ContractService {
 
     const contract = await this.contractRepository.findOne({
       where: whereCondition,
-      relations: ['customer', 'invoices', 'invoices.payments', 'invoice_plans'],
+      relations: ['customer', 'invoices', 'invoices.payments', 'invoice_plans', 'businessCategory'],
     });
 
     if (!contract) {
@@ -634,5 +635,24 @@ export class ContractService {
     const newStatus = activeCount > 0 ? 'active' : 'inactive';
 
     await this.customerRepository.update(customerId, { status: newStatus });
+  }
+
+  /**
+   * 批量设置合同业务分类
+   */
+  async batchSetCategory(
+    ids: number[],
+    categoryId: number | null,
+    kitId: number
+  ): Promise<{ updated: number }> {
+    const result = await this.contractRepository
+      .createQueryBuilder()
+      .update()
+      .set({ business_category_id: categoryId, updated_at: new Date() })
+      .where('id IN (:...ids)', { ids })
+      .andWhere('kit_id = :kitId', { kitId })
+      .execute();
+
+    return { updated: result.affected || 0 };
   }
 }

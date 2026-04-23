@@ -31,6 +31,13 @@
               />
             </el-form-item>
 
+            <el-form-item label="业务分类" prop="business_category_id" class="form-item-full">
+              <BusinessCategorySelect
+                v-model="form.business_category_id"
+                placeholder="请选择业务分类（可选）"
+              />
+            </el-form-item>
+
             <el-form-item label="合同标题" prop="title" class="form-item-full">
               <el-input v-model="form.title" placeholder="请输入合同标题" />
             </el-form-item>
@@ -326,6 +333,7 @@ import type { Attachment } from '@/api/attachment'
 import CustomerSelect from '@/components/CustomerSelect.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import AttachmentList from '@/components/AttachmentList.vue'
+import BusinessCategorySelect from '@/components/BusinessCategorySelect.vue'
 const router = useRouter()
 const route = useRoute()
 const kitStore = useKitStore()
@@ -400,7 +408,8 @@ const form = reactive<CreateContractDto>({
   is_renewable: false,
   renewal_reminder_days: '30',
   terms: '',
-  notes: ''
+  notes: '',
+  business_category_id: undefined,
 })
 
 // 验证规则

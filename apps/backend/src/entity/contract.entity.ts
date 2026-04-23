@@ -13,6 +13,7 @@ import { Invoice } from './invoice.entity';
 import { ContractAttachment } from './contract-attachment.entity';
 import { Kit } from './kit.entity';
 import { ContractInvoicePlan } from './contract-invoice-plan.entity';
+import { BusinessCategory } from './business-category.entity';
 
 @Entity('contracts')
 export class Contract {
@@ -85,6 +86,9 @@ export class Contract {
   @Column({ type: 'int', nullable: true, comment: '关联的旧合同ID（续签新合同）' })
   previous_contract_id: number | null;
 
+  @Column({ type: 'int', nullable: true, comment: '业务分类ID' })
+  business_category_id: number | null;
+
   @Column({ type: 'text', nullable: true })
   terms: string;
 
@@ -123,5 +127,9 @@ export class Contract {
 
   @OneToMany(() => Contract, c => c.previousContract)
   successorContracts: Contract[];
+
+  @ManyToOne(() => BusinessCategory, { nullable: true })
+  @JoinColumn({ name: 'business_category_id' })
+  businessCategory: BusinessCategory;
 }
 

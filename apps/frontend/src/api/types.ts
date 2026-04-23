@@ -123,6 +123,7 @@ export interface Contract {
   non_renewal_decided_by?: number
   non_renewal_decided_at?: string
   previous_contract_id?: number
+  business_category_id?: number
   terms?: string
   notes?: string
   created_at: string
@@ -132,6 +133,7 @@ export interface Contract {
   invoice_plans?: ContractInvoicePlan[]
   previousContract?: Contract
   successorContracts?: Contract[]
+  businessCategory?: BusinessCategory
 }
 
 export interface CreateContractDto {
@@ -146,6 +148,7 @@ export interface CreateContractDto {
   terms?: string
   notes?: string
   previous_contract_id?: number
+  business_category_id?: number
 }
 
 export interface UpdateContractDto extends Partial<CreateContractDto> {
@@ -490,5 +493,10 @@ export interface DeleteCategoryResult {
   success: boolean
   message?: string
   contractCount?: number
+}
+
+export interface BatchSetCategoryDto {
+  ids: number[]
+  category_id: number | null
 }
 
