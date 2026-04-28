@@ -140,6 +140,9 @@ export default {
   // 企业微信推送配置
   wecom: {
     enabled: process.env.WECOM_ENABLED === 'true',
+    // 方式1：完整 webhook URL（推荐）
+    webhookUrl: process.env.WECOM_WEBHOOK_URL || '',
+    // 方式2：仅 key（自动拼接 URL）
     webhookKey: process.env.WECOM_WEBHOOK_KEY || '',
     // 定时推送 cron 表达式，默认：工作日 09:00
     cron: process.env.WECOM_CRON || '0 9 * * 1-5',

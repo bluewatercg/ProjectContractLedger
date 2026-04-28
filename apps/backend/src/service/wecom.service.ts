@@ -21,6 +21,7 @@ export class WecomService {
   @Config('wecom')
   wecomConfig: {
     enabled: boolean;
+    webhookUrl: string;
     webhookKey: string;
     cron: string;
     kitId: number;
@@ -29,16 +30,39 @@ export class WecomService {
 
   private cronJob: any = null;
 
+  /**
+   * 获取完整的 webhook URL
+   * 优先使用 webhookUrl，其次用 webhookKey 拼接
+   */
+  private getWebhookUrl(): string {
+    if (this.wecomConfig?.webhookUrl) {
+      return this.wecomConfig.webhookUrl;
+    }
+    if (this.wecomConfig?.webhookKey) {
+      return `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${this.wecomConfig.webhookKey}`;
+    }
+    return '';
+  }
+
   @Init()
   async init() {
-    if (!this.wecomConfig?.enabled || !this.wecomConfig?.webhookKey) {
-      console.log('[WecomService] WeCom push is disabled (missing webhookKey or enabled=false)');
+    const url = this.getWebhookUrl();
+    if (!this.wecomConfig?.enabled || !url) {
+      console.log('[WecomService] WeCom push is disabled (missing webhookUrl/webhookKey or enabled=false)');
+      console.log('[WecomService] Available config:', JSON.stringify({
+        enabled: this.wecomConfig?.enabled,
+        hasWebhookUrl: !!this.wecomConfig?.webhookUrl,
+        hasWebhookKey: !!this.wecomConfig?.webhookKey,
+        cron: this.wecomConfig?.cron,
+        kitId: this.wecomConfig?.kitId,
+      }));
       return;
     }
 
     // Start cron job
     this.startCronJob();
     console.log('[WecomService] WeCom push initialized, cron:', this.wecomConfig.cron);
+    console.log('[WecomService] Webhook URL masked:', url.replace(/key=\w+/, 'key=***'));
   }
 
   /**
@@ -67,6 +91,11 @@ export class WecomService {
    * 手动触发推送
    */
   async triggerPush(kitId?: number): Promise<{ success: boolean; message: string }> {
+    const url = this.getWebhookUrl();
+    if (!this.wecomConfig?.enabled || !url) {
+      return { success: false, message: '企业微信推送未配置，请设置 WECOM_WEBHOOK_KEY 或 WECOM_WEBHOOK_URL' };
+    }
+
     const targetKitId = kitId || this.wecomConfig?.kitId || 1;
     console.log(`[WecomService] Manual push triggered for kit ${targetKitId}`);
 
@@ -249,8 +278,12 @@ export class WecomService {
    * 推送 Markdown 到企业微信群机器人
    */
   private pushToWeCom(content: string): Promise<void> {
+    const url = this.getWebhookUrl();
+    if (!url) {
+      return Promise.reject(new Error('webhook URL 未配置'));
+    }
+
     return new Promise((resolve, reject) => {
-      const url = `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${this.wecomConfig.webhookKey}`;
       const body = JSON.stringify({
         msgtype: 'markdown_v2',
         markdown_v2: { content },
