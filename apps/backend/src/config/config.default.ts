@@ -137,6 +137,23 @@ export default {
     uploadDir: process.env.UPLOAD_DIR || '/app/uploads',
   },
 
+  // 企业微信推送配置
+  wecom: {
+    enabled: process.env.WECOM_ENABLED === 'true',
+    webhookKey: process.env.WECOM_WEBHOOK_KEY || '',
+    // 定时推送 cron 表达式，默认：工作日 09:00
+    cron: process.env.WECOM_CRON || '0 9 * * 1-5',
+    // 默认推送的套账 ID
+    kitId: parseInt(process.env.WECOM_KIT_ID || '1'),
+    // 可选推送板块
+    sections: [
+      { key: 'overview', label: '财务总览', enabled: true },
+      { key: 'aging', label: '应收账款账龄', enabled: true },
+      { key: 'renewals', label: '合同续签提醒', enabled: true },
+      { key: 'tasks', label: '待处理事项', enabled: true },
+    ],
+  },
+
   // 日志配置
   midwayLogger: {
     default: {

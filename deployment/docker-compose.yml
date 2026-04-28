@@ -54,6 +54,12 @@ services:
       - ENABLE_RATE_LIMIT=${ENABLE_RATE_LIMIT:-true}
       - MAX_REQUESTS_PER_MINUTE=${MAX_REQUESTS_PER_MINUTE:-100}
 
+      # 企业微信推送配置
+      - WECOM_ENABLED=${WECOM_ENABLED:-true}
+      - WECOM_WEBHOOK_KEY=${WECOM_WEBHOOK_KEY}
+      - WECOM_CRON=${WECOM_CRON:-0 9 * * 1-5}
+      - WECOM_KIT_ID=${WECOM_KIT_ID:-1}
+
     # 数据卷映射 - 使用绑定挂载到宿主机
     volumes:
       - ./data/logs:/app/logs

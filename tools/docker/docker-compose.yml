@@ -36,6 +36,10 @@ services:
       - DB_PASSWORD=contract_pass
       - DB_DATABASE=contract_ledger
       - BACKEND_PORT=8080
+      - WECOM_ENABLED=${WECOM_ENABLED:-true}
+      - WECOM_WEBHOOK_KEY=${WECOM_WEBHOOK_KEY}
+      - WECOM_CRON=${WECOM_CRON:-0 9 * * 1-5}
+      - WECOM_KIT_ID=${WECOM_KIT_ID:-1}
     ports:
       - "80:80"
       - "8080:8080"

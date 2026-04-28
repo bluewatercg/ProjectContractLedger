@@ -43,6 +43,12 @@ services:
       # 时区配置
       - TZ=${TZ:-Asia/Shanghai}
 
+      # 企业微信推送配置
+      - WECOM_ENABLED=${WECOM_ENABLED:-true}
+      - WECOM_WEBHOOK_KEY=${WECOM_WEBHOOK_KEY}
+      - WECOM_CRON=${WECOM_CRON:-0 9 * * 1-5}
+      - WECOM_KIT_ID=${WECOM_KIT_ID:-1}
+
     # 数据卷映射
     volumes:
       - backend_logs:/app/logs

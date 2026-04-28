@@ -14,7 +14,7 @@ export class KitMiddleware implements IMiddleware<Context, NextFunction> {
             console.log('[KitMiddleware] ctx.state.user BEFORE:', ctx.state?.user);
 
             // 跳过不需要kit验证的路由
-            const skipPaths = ['/api/v1/auth', '/api/v1/kits', '/health', '/swagger'];
+            const skipPaths = ['/api/v1/auth', '/api/v1/kits', '/api/v1/wecom', '/health', '/swagger'];
             const shouldSkip = skipPaths.some(path => ctx.path.startsWith(path));
 
             if (shouldSkip) {
