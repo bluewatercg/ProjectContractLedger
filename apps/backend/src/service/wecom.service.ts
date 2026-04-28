@@ -1,4 +1,5 @@
-import { Provide, Inject, Init, Config } from '@midwayjs/core';
+import { Provide, Init, Config, App, Scope, ScopeEnum } from '@midwayjs/core';
+import { IMidwayApplication } from '@midwayjs/core';
 import { StatisticsService } from './statistics.service';
 import { ReminderService } from './reminder.service';
 import * as https from 'https';
@@ -11,12 +12,10 @@ export interface WecomSection {
 }
 
 @Provide()
+@Scope(ScopeEnum.Singleton)
 export class WecomService {
-  @Inject()
-  statisticsService: StatisticsService;
-
-  @Inject()
-  reminderService: ReminderService;
+  @App()
+  app: IMidwayApplication;
 
   @Config('wecom')
   wecomConfig: {
@@ -32,7 +31,6 @@ export class WecomService {
 
   /**
    * 获取完整的 webhook URL
-   * 优先使用 webhookUrl，其次用 webhookKey 拼接
    */
   private getWebhookUrl(): string {
     if (this.wecomConfig?.webhookUrl) {
@@ -49,7 +47,7 @@ export class WecomService {
     const url = this.getWebhookUrl();
     if (!this.wecomConfig?.enabled || !url) {
       console.log('[WecomService] WeCom push is disabled (missing webhookUrl/webhookKey or enabled=false)');
-      console.log('[WecomService] Available config:', JSON.stringify({
+      console.log('[WecomService] Config:', JSON.stringify({
         enabled: this.wecomConfig?.enabled,
         hasWebhookUrl: !!this.wecomConfig?.webhookUrl,
         hasWebhookKey: !!this.wecomConfig?.webhookKey,
@@ -65,11 +63,7 @@ export class WecomService {
     console.log('[WecomService] Webhook URL masked:', url.replace(/key=\w+/, 'key=***'));
   }
 
-  /**
-   * 启动定时任务
-   */
   private startCronJob() {
-    // 动态导入 node-cron（如果未安装则跳过）
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const cron = require('node-cron');
@@ -109,30 +103,30 @@ export class WecomService {
     }
   }
 
-  /**
-   * 生成 Markdown 内容
-   */
+  // ======================== Markdown 生成 ========================
+
   private async generateMarkdown(kitId?: number): Promise<string> {
     const targetKitId = kitId || this.wecomConfig.kitId;
     const today = new Date().toISOString().split('T')[0];
     const sections = this.getEnabledSections();
 
-    // 并行获取数据
+    // 通过 applicationContext 获取 request-scoped 服务
+    const statisticsService = await this.app.getApplicationContext().getAsync<StatisticsService>('statisticsService');
+    const reminderService = await this.app.getApplicationContext().getAsync<ReminderService>('reminderService');
+
     const [dashboard, aging, reminders] = await Promise.all([
-      sections.includes('overview') ? this.statisticsService.getDashboardStats(undefined, targetKitId) : null,
-      sections.includes('aging') ? this.statisticsService.getAgingAnalysis(undefined, targetKitId) : null,
-      sections.includes('renewals') || sections.includes('tasks') ? this.reminderService.getAllReminders(targetKitId) : null,
+      sections.includes('overview') ? statisticsService.getDashboardStats(undefined, targetKitId) : null,
+      sections.includes('aging') ? statisticsService.getAgingAnalysis(undefined, targetKitId) : null,
+      sections.includes('renewals') || sections.includes('tasks') ? reminderService.getAllReminders(targetKitId) : null,
     ]);
 
     const lines: string[] = [];
 
-    // ---- Header ----
     lines.push(`# 📊 合同管理日报`);
     lines.push('');
     lines.push(`> 数据日期：${today} | 套账：套账${targetKitId}`);
     lines.push('');
 
-    // ---- Section 1: 财务总览 ----
     if (sections.includes('overview') && dashboard) {
       lines.push('');
       lines.push('---');
@@ -140,7 +134,6 @@ export class WecomService {
       this.buildOverviewSection(lines, dashboard);
     }
 
-    // ---- Section 2: 账龄分析 ----
     if (sections.includes('aging') && aging) {
       lines.push('');
       lines.push('---');
@@ -148,7 +141,6 @@ export class WecomService {
       this.buildAgingSection(lines, aging);
     }
 
-    // ---- Section 3: 续签提醒 ----
     if (sections.includes('renewals') && reminders) {
       const renewals = reminders.items.filter(i => i.type === 'contract_renewal');
       if (renewals.length > 0) {
@@ -159,7 +151,6 @@ export class WecomService {
       }
     }
 
-    // ---- Section 4: 待处理事项 ----
     if (sections.includes('tasks') && reminders) {
       const nonRenewal = reminders.items.filter(i => i.type !== 'contract_renewal');
       if (nonRenewal.length > 0) {
@@ -170,7 +161,6 @@ export class WecomService {
       }
     }
 
-    // ---- Footer ----
     lines.push('');
     lines.push('---');
     lines.push('');
@@ -179,16 +169,13 @@ export class WecomService {
     return lines.join('\n');
   }
 
-  /**
-   * 获取启用的板块
-   */
   private getEnabledSections(): string[] {
     return (this.wecomConfig.sections || [])
       .filter(s => s.enabled)
       .map(s => s.key);
   }
 
-  // ======================== 各板块构建方法 ========================
+  // ======================== 各板块构建 ========================
 
   private buildOverviewSection(lines: string[], dashboard: any) {
     const s = dashboard.summary || {};
@@ -274,9 +261,6 @@ export class WecomService {
     return `${((n / d) * 100).toFixed(1)}%`;
   }
 
-  /**
-   * 推送 Markdown 到企业微信群机器人
-   */
   private pushToWeCom(content: string): Promise<void> {
     const url = this.getWebhookUrl();
     if (!url) {
@@ -328,9 +312,6 @@ export class WecomService {
     });
   }
 
-  /**
-   * 获取配置
-   */
   getConfig() {
     return {
       enabled: this.wecomConfig?.enabled || false,
@@ -340,9 +321,6 @@ export class WecomService {
     };
   }
 
-  /**
-   * 停止定时任务
-   */
   stop() {
     if (this.cronJob) {
       this.cronJob.stop();

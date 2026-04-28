@@ -1,4 +1,4 @@
-import { Configuration, App } from '@midwayjs/core';
+import { Configuration, App, Inject } from '@midwayjs/core';
 import * as koa from '@midwayjs/koa';
 import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
@@ -12,6 +12,7 @@ import { ReportMiddleware } from './middleware/report.middleware';
 import { CorsMiddleware } from './middleware/cors.middleware';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { KitMiddleware } from './middleware/kit.middleware';
+import { WecomService } from './service/wecom.service';
 
 @Configuration({
   imports: [
@@ -31,12 +32,14 @@ export class MainConfiguration {
   @App('koa')
   app: koa.Application;
 
+  @Inject()
+  wecomService: WecomService;
+
   async onReady() {
-    // add middleware (注意顺序很重要: CORS -> Report -> Auth -> Kit)
+    // add middleware (CORS -> Report -> Auth -> Kit)
     this.app.useMiddleware([CorsMiddleware, ReportMiddleware, AuthMiddleware, KitMiddleware]);
 
     // add filter
     this.app.useFilter([NotFoundFilter, DefaultErrorFilter]);
   }
 }
-
