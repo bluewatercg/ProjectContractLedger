@@ -73,18 +73,26 @@ export class CustomerService {
       queryBuilder.where('customer.kit_id = :kitId', { kitId });
     }
 
-    // 状态筛选：支持 active / inactive / dormant
+    // 状态筛选：支持 active / inactive(历史合作) / dormant(停用)
+    // inactive = 1年内有过期合同
     // dormant = inactive + (last_contract_end_date IS NULL 或 > 1年)
     if (status) {
-      if (status === 'dormant') {
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      if (status === 'inactive') {
+        // 历史合作：inactive + 最后合同在1年内
+        queryBuilder.andWhere(
+          "(customer.status = 'inactive' AND customer.last_contract_end_date IS NOT NULL AND customer.last_contract_end_date >= :oneYearAgo)",
+          { oneYearAgo }
+        );
+      } else if (status === 'dormant') {
+        // 停用：inactive + 无合同或合同超过1年
         queryBuilder.andWhere(
           "(customer.status = 'inactive' AND (customer.last_contract_end_date IS NULL OR customer.last_contract_end_date < :oneYearAgo))",
           { oneYearAgo }
-        )
+        );
       } else {
-        queryBuilder.andWhere('customer.status = :status', { status })
+        queryBuilder.andWhere('customer.status = :status', { status });
       }
     }
 
