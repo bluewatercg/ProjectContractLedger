@@ -342,9 +342,9 @@ export class UpdateCustomerDto {
   notes?: string;
 
   @ApiPropertyOptional({
-    description: '客户状态',
+    description: '客户状态（由系统自动计算，不可手动修改）',
     example: 'active',
-    enum: ['active', 'inactive', 'suspended'],
+    enum: ['active', 'inactive'],
   })
   status?: string;
 }

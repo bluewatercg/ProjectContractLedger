@@ -62,6 +62,7 @@ export class CustomerService {
       search,
       hasUnpaidInvoices,
       hasActiveContracts,
+      status,
     } = query;
 
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
@@ -69,6 +70,21 @@ export class CustomerService {
     // 按kit_id过滤
     if (kitId) {
       queryBuilder.where('customer.kit_id = :kitId', { kitId });
+    }
+
+    // 状态筛选：支持 active / inactive / dormant
+    // dormant = inactive + (last_contract_end_date IS NULL 或 > 1年)
+    if (status) {
+      if (status === 'dormant') {
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+        queryBuilder.andWhere(
+          "(customer.status = 'inactive' AND (customer.last_contract_end_date IS NULL OR customer.last_contract_end_date < :oneYearAgo))",
+          { oneYearAgo }
+        )
+      } else {
+        queryBuilder.andWhere('customer.status = :status', { status })
+      }
     }
 
     // 如果需要筛选有未完全收款发票的客户
@@ -86,7 +102,7 @@ export class CustomerService {
           invoiceStatuses: ['draft', 'sent', 'overdue'],
         })
         .groupBy(
-          'customer.id, customer.kit_id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
+          'customer.id, customer.kit_id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.last_contract_end_date, customer.created_at, customer.updated_at'
         )
         .having('COALESCE(SUM(payment.amount), 0) < SUM(invoice.total_amount)');
     }
@@ -99,7 +115,7 @@ export class CustomerService {
           contractStatuses: ['draft', 'active', 'signed'],
         })
         .groupBy(
-          'customer.id, customer.kit_id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.created_at, customer.updated_at'
+          'customer.id, customer.kit_id, customer.name, customer.contact_person, customer.phone, customer.email, customer.address, customer.status, customer.last_contract_end_date, customer.created_at, customer.updated_at'
         );
     }
 

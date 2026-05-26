@@ -66,6 +66,7 @@ export interface Customer {
   bank_account?: string
   bank_name?: string
   status: string
+  last_contract_end_date?: string | null
   notes?: string
   kit_id?: number
   created_at: string

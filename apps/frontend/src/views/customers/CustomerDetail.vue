@@ -19,9 +19,12 @@
         <el-descriptions-item label="银行账户">{{ customer.bank_account || '-' }}</el-descriptions-item>
         <el-descriptions-item label="开户银行" :span="2">{{ customer.bank_name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="customer.status === 'active' ? 'success' : 'danger'">
-            {{ customer.status === 'active' ? '活跃' : '停用' }}
+          <el-tag :type="getStatusType">
+            {{ getStatusLabel }}
           </el-tag>
+          <span v-if="customer.last_contract_end_date" class="status-detail">
+            最后合同到期日：{{ formatDate(customer.last_contract_end_date) }}
+          </span>
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ formatDate(customer.created_at) }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ customer.notes || '-' }}</el-descriptions-item>
@@ -84,6 +87,21 @@ const customer = ref<Customer>()
 
 // 计算属性
 const customerId = computed(() => Number(route.params.id))
+
+// 状态展示计算
+const getStatusType = computed(() => {
+  if (!customer.value) return 'info'
+  if (customer.value.status === 'active') return 'success'
+  if (customer.value.last_contract_end_date) return 'warning'
+  return 'danger'
+})
+
+const getStatusLabel = computed(() => {
+  if (!customer.value) return '-'
+  if (customer.value.status === 'active') return '履约中'
+  if (customer.value.last_contract_end_date) return '历史合作'
+  return '停用'
+})
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -181,6 +199,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.status-detail {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+
 .contracts-section {
   margin-top: 32px;
   padding-top: 24px;

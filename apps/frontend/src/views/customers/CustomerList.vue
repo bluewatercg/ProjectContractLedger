@@ -21,10 +21,11 @@
               <el-icon><Search /></el-icon>
             </template>
           </el-input>
-          <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
+          <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 140px" @change="handleFilter">
             <el-option label="全部" value="" />
-            <el-option label="活跃" value="active" />
-            <el-option label="停用" value="inactive" />
+            <el-option label="履约中" value="active" />
+            <el-option label="历史合作" value="inactive" />
+            <el-option label="停用" value="dormant" />
           </el-select>
         </div>
       </div>
@@ -46,11 +47,18 @@
         <el-table-column prop="contact_person" label="联系人" />
         <el-table-column prop="phone" label="电话" />
         <el-table-column prop="email" label="邮箱" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'danger'">
-              {{ row.status === 'active' ? '活跃' : '停用' }}
-            </el-tag>
+            <el-tooltip :content="getStatusTooltip(row)" placement="top">
+              <el-tag :type="getStatusType(row)">
+                {{ getStatusLabel(row) }}
+              </el-tag>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column label="最后合同到期日" width="140">
+          <template #default="{ row }">
+            {{ row.last_contract_end_date ? formatDate(row.last_contract_end_date) : '-' }}
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180">
@@ -117,6 +125,38 @@ const getKitName = (kitId: number) => {
 // 格式化日期
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-CN')
+}
+
+// 状态展示：根据 status + last_contract_end_date 计算
+// - active → 履约中
+// - inactive + last_contract_end_date 在近1年内 → 历史合作
+// - inactive + last_contract_end_date 为 null 或超过1年 → 停用
+const getStatusType = (row: Customer): 'success' | 'warning' | 'danger' => {
+  if (row.status === 'active') return 'success'
+  if (row.last_contract_end_date) return 'warning'
+  return 'danger'
+}
+
+const getStatusLabel = (row: Customer): string => {
+  if (row.status === 'active') return '履约中'
+  if (row.last_contract_end_date) return '历史合作'
+  return '停用'
+}
+
+const getStatusTooltip = (row: Customer): string => {
+  if (row.status === 'active') return '当前有正在履约的合同'
+  if (row.last_contract_end_date) {
+    const end = new Date(row.last_contract_end_date)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    if (end >= oneYearAgo) {
+      return `最后合同于 ${formatDate(row.last_contract_end_date)} 到期，1年内未续约`
+    }
+  }
+  if (row.last_contract_end_date) {
+    return `最后合同于 ${formatDate(row.last_contract_end_date)} 到期，超过1年未续约`
+  }
+  return '从未有过合同'
 }
 
 // 获取客户列表

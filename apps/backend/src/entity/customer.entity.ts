@@ -47,8 +47,16 @@ export class Customer {
     type: 'enum',
     enum: ['active', 'inactive'],
     default: 'active',
+    comment: '客户活跃度：由合同状态自动驱动，不可手动修改',
   })
   status: string;
+
+  @Column({
+    type: 'datetime',
+    nullable: true,
+    comment: '最后合同到期日期：用于区分"历史合作"与"停用"',
+  })
+  last_contract_end_date: Date | null;
 
   @Column({ type: 'text', nullable: true })
   notes: string;

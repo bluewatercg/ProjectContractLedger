@@ -446,7 +446,7 @@ export class CustomerController {
   @ApiParam({
     name: 'status',
     description: '客户状态',
-    enum: ['active', 'inactive', 'suspended'],
+    enum: ['active', 'inactive'],
     example: 'active',
   })
   @ApiOkResponse({
