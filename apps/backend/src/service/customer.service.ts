@@ -51,6 +51,7 @@ export class CustomerService {
       search?: string;
       hasUnpaidInvoices?: boolean;
       hasActiveContracts?: boolean;
+      status?: string;
     },
     kitId?: number
   ): Promise<PaginationResult<Customer>> {
