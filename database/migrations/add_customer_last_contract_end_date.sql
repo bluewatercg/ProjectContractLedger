@@ -18,18 +18,9 @@ LEFT JOIN (
 SET c.last_contract_end_date = last.max_end_date
 WHERE last.max_end_date IS NOT NULL;
 
--- 3. 清除从未有合同或最后合同超过1年的客户的 last_contract_end_date
--- （这些客户应显示为"停用"而非"历史合作"）
-UPDATE customers c
-LEFT JOIN (
-  SELECT customer_id, MAX(end_date) AS max_end_date
-  FROM contracts
-  WHERE end_date IS NOT NULL
-  GROUP BY customer_id
-) last ON c.id = last.customer_id
-SET c.last_contract_end_date = NULL
-WHERE last.max_end_date IS NULL
-   OR last.max_end_date < DATE_SUB(NOW(), INTERVAL 1 YEAR);
+-- 3. 从未有过合同的客户保持 last_contract_end_date 为 NULL（前端显示"未合作"）
+--    有过合同但超过1年的客户保留实际到期日（前端显示"停用"）
+--    此步无需操作：第2步已将 NULL 值设为正确状态
 
 -- 4. 同步 status：有 active 合同的客户设为 active
 UPDATE customers c

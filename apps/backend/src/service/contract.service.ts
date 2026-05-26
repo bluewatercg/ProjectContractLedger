@@ -627,9 +627,9 @@ export class ContractService {
    * 根据合同状态同步企业活跃度（自动驱动，不可手动修改）
    * 规则：
    *   - 有任一 active 合同 → status='active'（履约中）
-   *   - 无 active 合同：
-   *     - 最后合同到期日距今 ≤ 1年 → status='inactive'，last_contract_end_date 已设置（前端显示"历史合作"）
-   *     - 最后合同到期日距今 > 1年 或从未有过合同 → status='inactive'，last_contract_end_date=null（前端显示"停用"）
+   *   - 无 active 合同，最后合同在 1年内 → status='inactive'，last_contract_end_date 已设置（前端显示"历史合作"）
+   *   - 无 active 合同，最后合同超 1年 → status='inactive'，last_contract_end_date 保留实际日期（前端显示"停用"）
+   *   - 从未有过任何合同 → status='inactive'，last_contract_end_date=null（前端显示"未合作"）
    */
   async syncCustomerStatus(customerId: number): Promise<void> {
     const activeCount = await this.contractRepository.count({
@@ -637,7 +637,6 @@ export class ContractService {
     });
 
     if (activeCount > 0) {
-      // 有正在履约的合同
       await this.customerRepository.update(customerId, {
         status: 'active',
       });
@@ -659,23 +658,11 @@ export class ContractService {
       return;
     }
 
-    const endDate = new Date(lastContract.end_date);
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-    if (endDate >= oneYearAgo) {
-      // 最后合同在1年内到期
-      await this.customerRepository.update(customerId, {
-        status: 'inactive',
-        last_contract_end_date: endDate,
-      });
-    } else {
-      // 最后合同超过1年未续约
-      await this.customerRepository.update(customerId, {
-        status: 'inactive',
-        last_contract_end_date: null,
-      });
-    }
+    // 有过合同，始终保留最后到期日（用于前端区分"历史合作"和"停用"）
+    await this.customerRepository.update(customerId, {
+      status: 'inactive',
+      last_contract_end_date: new Date(lastContract.end_date),
+    });
   }
 
   /**

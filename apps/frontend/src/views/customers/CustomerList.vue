@@ -130,17 +130,28 @@ const formatDate = (dateString: string) => {
 // 状态展示：根据 status + last_contract_end_date 计算
 // - active → 履约中
 // - inactive + last_contract_end_date 在近1年内 → 历史合作
-// - inactive + last_contract_end_date 为 null 或超过1年 → 停用
-const getStatusType = (row: Customer): 'success' | 'warning' | 'danger' => {
+// - inactive + last_contract_end_date 超过1年 → 停用
+// - inactive + last_contract_end_date 为 null → 未合作（从未有过合同）
+const getStatusType = (row: Customer): 'success' | 'warning' | 'danger' | 'info' => {
   if (row.status === 'active') return 'success'
-  if (row.last_contract_end_date) return 'warning'
-  return 'danger'
+  if (row.last_contract_end_date) {
+    const end = new Date(row.last_contract_end_date)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    return end >= oneYearAgo ? 'warning' : 'danger'
+  }
+  return 'info'
 }
 
 const getStatusLabel = (row: Customer): string => {
   if (row.status === 'active') return '履约中'
-  if (row.last_contract_end_date) return '历史合作'
-  return '停用'
+  if (row.last_contract_end_date) {
+    const end = new Date(row.last_contract_end_date)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    return end >= oneYearAgo ? '历史合作' : '停用'
+  }
+  return '未合作'
 }
 
 const getStatusTooltip = (row: Customer): string => {
@@ -152,8 +163,6 @@ const getStatusTooltip = (row: Customer): string => {
     if (end >= oneYearAgo) {
       return `最后合同于 ${formatDate(row.last_contract_end_date)} 到期，1年内未续约`
     }
-  }
-  if (row.last_contract_end_date) {
     return `最后合同于 ${formatDate(row.last_contract_end_date)} 到期，超过1年未续约`
   }
   return '从未有过合同'

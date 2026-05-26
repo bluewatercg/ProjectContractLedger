@@ -92,15 +92,25 @@ const customerId = computed(() => Number(route.params.id))
 const getStatusType = computed(() => {
   if (!customer.value) return 'info'
   if (customer.value.status === 'active') return 'success'
-  if (customer.value.last_contract_end_date) return 'warning'
-  return 'danger'
+  if (customer.value.last_contract_end_date) {
+    const end = new Date(customer.value.last_contract_end_date)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    return end >= oneYearAgo ? 'warning' : 'danger'
+  }
+  return 'info'
 })
 
 const getStatusLabel = computed(() => {
   if (!customer.value) return '-'
   if (customer.value.status === 'active') return '履约中'
-  if (customer.value.last_contract_end_date) return '历史合作'
-  return '停用'
+  if (customer.value.last_contract_end_date) {
+    const end = new Date(customer.value.last_contract_end_date)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    return end >= oneYearAgo ? '历史合作' : '停用'
+  }
+  return '未合作'
 })
 
 // 格式化日期
