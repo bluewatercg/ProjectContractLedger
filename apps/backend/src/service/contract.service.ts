@@ -30,6 +30,231 @@ export class ContractService {
     return DateUtil.formatEntityResponse(contract, ['start_date', 'end_date']);
   }
 
+  private toTimelineItem(contract: any, currentContractId?: number): any {
+    return {
+      id: contract.id,
+      kit_id: contract.kit_id,
+      customer_id: contract.customer_id,
+      contract_number: contract.contract_number,
+      title: contract.title,
+      total_amount: contract.total_amount,
+      status: contract.status,
+      start_date: contract.start_date,
+      end_date: contract.end_date,
+      previous_contract_id: contract.previous_contract_id ?? null,
+      created_at: contract.created_at,
+      updated_at: contract.updated_at,
+      isCurrent: currentContractId ? contract.id === currentContractId : false,
+    };
+  }
+
+  private compareContracts(a: any, b: any): number {
+    const aDate = new Date(a.start_date || a.created_at || 0).getTime();
+    const bDate = new Date(b.start_date || b.created_at || 0).getTime();
+    if (aDate !== bDate) return aDate - bDate;
+    return a.id - b.id;
+  }
+
+  private sameScope(a: any, b: any): boolean {
+    return a.kit_id === b.kit_id && a.customer_id === b.customer_id;
+  }
+
+  private createChain(items: any[], currentContractId?: number): any {
+    const timelineItems = items.map(item => this.toTimelineItem(item, currentContractId));
+    const totalAmount = items.reduce(
+      (sum, item) => sum + parseFloat(item.total_amount?.toString() || '0'),
+      0
+    );
+    const activeAmount = items
+      .filter(item => item.status === 'active')
+      .reduce(
+        (sum, item) => sum + parseFloat(item.total_amount?.toString() || '0'),
+        0
+      );
+    const hasBrokenLink = items.some(
+      item =>
+        item.previous_contract_id &&
+        !items.some(prev => prev.id === item.previous_contract_id)
+    );
+
+    return {
+      chainId: timelineItems.map(item => item.id).join('-'),
+      items: timelineItems,
+      contractCount: timelineItems.length,
+      totalAmount,
+      activeAmount,
+      rootContractId: timelineItems[0]?.id,
+      latestContractId: timelineItems[timelineItems.length - 1]?.id,
+      hasBrokenLink,
+      hasCycle: false,
+    };
+  }
+
+  private collectChainFromRoot(
+    root: any,
+    successorsByPreviousId: Map<number, any[]>,
+    visited: Set<number>,
+    path: Set<number>,
+    result: any[]
+  ): boolean {
+    if (path.has(root.id)) {
+      return true;
+    }
+    if (visited.has(root.id)) {
+      return false;
+    }
+
+    visited.add(root.id);
+    path.add(root.id);
+    result.push(root);
+
+    let hasCycle = false;
+    const successors = successorsByPreviousId.get(root.id) || [];
+    successors.sort((a, b) => this.compareContracts(a, b));
+    for (const successor of successors) {
+      hasCycle =
+        this.collectChainFromRoot(
+          successor,
+          successorsByPreviousId,
+          visited,
+          path,
+          result
+        ) || hasCycle;
+    }
+
+    path.delete(root.id);
+    return hasCycle;
+  }
+
+  public buildContractHistory(contracts: any[], currentContractId?: number): any {
+    const scopeSource =
+      contracts.find(contract => contract.id === currentContractId) || contracts[0];
+    const scopedContracts = scopeSource
+      ? contracts
+        .filter(contract => this.sameScope(contract, scopeSource))
+        .sort((a, b) => this.compareContracts(a, b))
+      : [];
+    const contractById = new Map(scopedContracts.map(contract => [contract.id, contract]));
+    const successorsByPreviousId = new Map<number, any[]>();
+
+    scopedContracts.forEach(contract => {
+      const previous = contract.previous_contract_id
+        ? contractById.get(contract.previous_contract_id)
+        : null;
+      if (previous && this.sameScope(previous, contract)) {
+        const successors = successorsByPreviousId.get(previous.id) || [];
+        successors.push(contract);
+        successorsByPreviousId.set(previous.id, successors);
+      }
+    });
+
+    const standaloneContracts = scopedContracts
+      .filter(contract => {
+        const hasPrevious = Boolean(contract.previous_contract_id);
+        const hasSuccessor = Boolean(successorsByPreviousId.get(contract.id)?.length);
+        return !hasPrevious && !hasSuccessor;
+      })
+      .sort((a, b) => this.compareContracts(b, a));
+
+    const visited = new Set<number>();
+    const contractChains: any[] = [];
+    const roots = scopedContracts.filter(contract => {
+      if (!contract.previous_contract_id) {
+        return Boolean(successorsByPreviousId.get(contract.id)?.length);
+      }
+      const previous = contractById.get(contract.previous_contract_id);
+      return !previous || !this.sameScope(previous, contract);
+    });
+
+    roots.sort((a, b) => this.compareContracts(a, b));
+    for (const root of roots) {
+      if (visited.has(root.id)) continue;
+      const items: any[] = [];
+      const hasCycle = this.collectChainFromRoot(
+        root,
+        successorsByPreviousId,
+        visited,
+        new Set<number>(),
+        items
+      );
+      if (items.length > 0) {
+        contractChains.push({
+          ...this.createChain(items, currentContractId),
+          hasCycle,
+        });
+      }
+    }
+
+    for (const contract of scopedContracts) {
+      if (visited.has(contract.id) || standaloneContracts.some(item => item.id === contract.id)) {
+        continue;
+      }
+      const items: any[] = [];
+      let current = contract;
+      let hasCycle = false;
+      const path = new Set<number>();
+
+      while (current) {
+        if (path.has(current.id)) {
+          hasCycle = true;
+          break;
+        }
+        if (visited.has(current.id)) {
+          break;
+        }
+        path.add(current.id);
+        visited.add(current.id);
+        items.push(current);
+        const successors = successorsByPreviousId.get(current.id) || [];
+        current = successors.sort((a, b) => this.compareContracts(a, b))[0];
+      }
+
+      if (items.length > 0) {
+        items.sort((a, b) => this.compareContracts(a, b));
+        contractChains.push({
+          ...this.createChain(items, currentContractId),
+          hasCycle,
+        });
+      }
+    }
+
+    return {
+      contractChains,
+      standaloneContracts,
+    };
+  }
+
+  public buildContractTimeline(contracts: any[], currentContractId: number): any {
+    const history = this.buildContractHistory(contracts, currentContractId);
+    const chain = history.contractChains.find(item =>
+      item.items.some(contract => contract.id === currentContractId)
+    );
+    if (chain) {
+      return chain;
+    }
+
+    const current = history.standaloneContracts.find(
+      contract => contract.id === currentContractId
+    );
+    const items = current ? [this.toTimelineItem(current, currentContractId)] : [];
+    return {
+      chainId: current ? String(current.id) : '',
+      items,
+      contractCount: items.length,
+      totalAmount: current
+        ? parseFloat(current.total_amount?.toString() || '0')
+        : 0,
+      activeAmount:
+        current?.status === 'active'
+          ? parseFloat(current.total_amount?.toString() || '0')
+          : 0,
+      rootContractId: current?.id,
+      latestContractId: current?.id,
+      hasBrokenLink: false,
+      hasCycle: false,
+    };
+  }
+
   /**
    * 根据ID获取客户信息
    */
@@ -382,8 +607,19 @@ export class ContractService {
       return null;
     }
 
+    const relatedContracts = await this.contractRepository.find({
+      where: {
+        customer_id: contract.customer_id,
+        kit_id: contract.kit_id,
+      } as any,
+    });
+    const contractTimeline = this.buildContractTimeline(relatedContracts, contract.id);
+
     // 格式化返回数据，处理日期字段
-    return this.formatContractResponse(contract);
+    return {
+      ...this.formatContractResponse(contract),
+      contractTimeline,
+    };
   }
 
   /**

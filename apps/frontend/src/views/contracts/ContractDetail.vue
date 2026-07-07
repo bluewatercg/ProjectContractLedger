@@ -35,6 +35,12 @@
         <el-descriptions-item label="备注" :span="2">{{ contract.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
 
+      <ContractRelationPanel
+        v-if="contract"
+        :timeline="contract.contractTimeline"
+        @view="viewRelatedContract"
+      />
+
       <!-- 发票和收款信息 -->
       <div v-if="contract" class="mt-6">
         <el-tabs v-model="activeTab">
@@ -231,7 +237,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { contractApi } from '@/api'
@@ -242,6 +248,7 @@ import type { Attachment } from '@/api/attachment'
 import FileUpload from '@/components/FileUpload.vue'
 import AttachmentList from '@/components/AttachmentList.vue'
 import ContractInvoicePlanPanel from '@/components/ContractInvoicePlanPanel.vue'
+import ContractRelationPanel from '@/components/ContractRelationPanel.vue'
 const router = useRouter()
 const route = useRoute()
 const kitStore = useKitStore()
@@ -494,6 +501,10 @@ const goToViewInvoice = (invoiceId: number) => {
   router.push(`/invoices/${invoiceId}`)
 }
 
+const viewRelatedContract = (id: number) => {
+  router.push(`/contracts/${id}`)
+}
+
 // 返回上一页
 const goBack = () => {
   router.go(-1)
@@ -554,6 +565,11 @@ const handleDeleteAttachment = async (attachmentId: number) => {
 onMounted(() => {
   fetchContract()
   fetchAttachments()
+})
+
+watch(contractId, async () => {
+  await fetchContract()
+  await fetchAttachments()
 })
 </script>
 

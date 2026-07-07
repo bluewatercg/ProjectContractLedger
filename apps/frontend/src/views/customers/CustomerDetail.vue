@@ -30,38 +30,52 @@
         <el-descriptions-item label="备注" :span="2">{{ customer.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
 
-      <!-- 关联合同列表 -->
+      <!-- 合同历史 -->
       <div v-if="customer" class="contracts-section">
         <div class="section-header">
-          <h3 class="section-title">关联合同</h3>
+          <h3 class="section-title">合同历史</h3>
           <el-button type="primary" size="small" @click="createContract">
             <el-icon><Plus /></el-icon>
             新建合同
           </el-button>
         </div>
 
-        <div v-if="customer.contracts && customer.contracts.length > 0" class="contracts-grid">
-          <ContractCard
-            v-for="contract in customer.contracts"
-            :key="contract.id"
-            :contract="contract"
-            @view="viewContract"
-            @edit="editContract"
-            @invoice="goToInvoice"
-            @payment="goToPayment"
-            @delete="deleteContract"
-          />
+        <div class="history-stats">
+          <div class="history-stat">
+            <span>合同总数</span>
+            <strong>{{ contractHistoryStats.total }}</strong>
+          </div>
+          <div class="history-stat">
+            <span>续签链数量</span>
+            <strong>{{ contractHistoryStats.chainCount }}</strong>
+          </div>
+          <div class="history-stat">
+            <span>一次性合同</span>
+            <strong>{{ contractHistoryStats.standaloneCount }}</strong>
+          </div>
+          <div class="history-stat">
+            <span>执行中合同</span>
+            <strong>{{ contractHistoryStats.activeCount }}</strong>
+          </div>
+          <div class="history-stat wide">
+            <span>累计合同金额</span>
+            <strong>¥{{ formatCurrency(contractHistoryStats.totalAmount) }}</strong>
+          </div>
+          <div class="history-stat wide">
+            <span>最近到期合同</span>
+            <strong>{{ contractHistoryStats.nearestEndLabel }}</strong>
+          </div>
         </div>
 
-        <el-empty
-          v-else
-          description="该客户暂无关联合同"
-          :image-size="150"
-        >
-          <el-button type="primary" @click="createContract">
-            新建第一个合同
-          </el-button>
-        </el-empty>
+        <CustomerContractGroups
+          :contract-chains="customer.contractChains || []"
+          :standalone-contracts="customer.standaloneContracts || []"
+          @view="viewContract"
+          @edit="editContract"
+          @invoice="goToInvoice"
+          @payment="goToPayment"
+          @delete="deleteContract"
+        />
       </div>
     </div>
   </div>
@@ -75,7 +89,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { customerApi, contractApi } from '@/api'
 import { useKitStore } from '@/stores/kit'
 import type { Customer } from '@/api/types'
-import ContractCard from '@/components/ContractCard.vue'
+import CustomerContractGroups from '@/components/CustomerContractGroups.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -87,6 +101,35 @@ const customer = ref<Customer>()
 
 // 计算属性
 const customerId = computed(() => Number(route.params.id))
+
+const allContracts = computed(() => customer.value?.contracts || [])
+
+const contractHistoryStats = computed(() => {
+  const contracts = allContracts.value
+  const totalAmount = contracts.reduce((sum, contract) => {
+    return sum + Number(contract.total_amount || 0)
+  }, 0)
+  const activeCount = contracts.filter(contract => contract.status === 'active').length
+  const sortedByEndDate = [...contracts]
+    .filter(contract => contract.end_date)
+    .sort((a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime())
+  const today = new Date()
+  const nearestUpcoming =
+    sortedByEndDate.find(contract => new Date(contract.end_date) >= today) ||
+    sortedByEndDate[sortedByEndDate.length - 1]
+  const nearestEndLabel = nearestUpcoming
+    ? `${nearestUpcoming.contract_number}（${formatDateOnly(nearestUpcoming.end_date)}）`
+    : '-'
+
+  return {
+    total: contracts.length,
+    chainCount: customer.value?.contractChains?.length || 0,
+    standaloneCount: customer.value?.standaloneContracts?.length || 0,
+    activeCount,
+    totalAmount,
+    nearestEndLabel
+  }
+})
 
 // 状态展示计算
 const getStatusType = computed(() => {
@@ -116,6 +159,14 @@ const getStatusLabel = computed(() => {
 // 格式化日期
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString('zh-CN')
+}
+
+const formatDateOnly = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('zh-CN')
+}
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('zh-CN').format(Number(amount || 0))
 }
 
 // 获取客户详情
@@ -235,30 +286,53 @@ onMounted(() => {
   margin: 0;
 }
 
-.contracts-grid {
+.history-stats {
   display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 12px;
-  padding: 4px;
+  margin-bottom: 22px;
 }
 
-/* Desktop: 4 columns */
-@media (min-width: 1200px) {
-  .contracts-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+.history-stat {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fff;
 }
 
-/* Tablet: 3 columns */
+.history-stat span {
+  display: block;
+  color: #606266;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.history-stat strong {
+  display: block;
+  color: #303133;
+  font-size: 20px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.history-stat.wide {
+  grid-column: span 2;
+}
+
 @media (min-width: 768px) and (max-width: 1199px) {
-  .contracts-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .history-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Mobile: 1 column */
 @media (max-width: 767px) {
-  .contracts-grid {
+  .history-stats {
     grid-template-columns: 1fr;
+  }
+
+  .history-stat.wide {
+    grid-column: auto;
   }
 }
 </style>

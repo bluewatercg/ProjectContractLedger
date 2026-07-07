@@ -8,9 +8,13 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AttachmentList: typeof import('./src/components/AttachmentList.vue')['default']
+    BusinessCategorySelect: typeof import('./src/components/BusinessCategorySelect.vue')['default']
     ContractCard: typeof import('./src/components/ContractCard.vue')['default']
     ContractInvoicePlanPanel: typeof import('./src/components/ContractInvoicePlanPanel.vue')['default']
+    ContractRelationPanel: typeof import('./src/components/ContractRelationPanel.vue')['default']
     ContractSelect: typeof import('./src/components/ContractSelect.vue')['default']
+    ContractTimeline: typeof import('./src/components/ContractTimeline.vue')['default']
+    CustomerContractGroups: typeof import('./src/components/CustomerContractGroups.vue')['default']
     CustomerSelect: typeof import('./src/components/CustomerSelect.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
@@ -59,6 +63,7 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElTransfer: typeof import('element-plus/es')['ElTransfer']
     ElTree: typeof import('element-plus/es')['ElTree']
+    ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     EmptyState: typeof import('./src/components/EmptyState.vue')['default']
     FileUpload: typeof import('./src/components/FileUpload.vue')['default']

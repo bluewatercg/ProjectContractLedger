@@ -179,7 +179,14 @@ export class CustomerService {
       });
     }
 
-    return customer;
+    const contractHistory = this.contractService.buildContractHistory(
+      customer.contracts || []
+    );
+
+    return {
+      ...customer,
+      ...contractHistory,
+    };
   }
 
   /**
@@ -279,4 +286,3 @@ export class CustomerService {
     };
   }
 }
-

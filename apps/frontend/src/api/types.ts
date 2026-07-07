@@ -71,6 +71,9 @@ export interface Customer {
   kit_id?: number
   created_at: string
   updated_at: string
+  contracts?: Contract[]
+  contractChains?: ContractChain[]
+  standaloneContracts?: Contract[]
 }
 
 export interface CreateCustomerDto {
@@ -135,7 +138,53 @@ export interface Contract {
   previousContract?: Contract
   successorContracts?: Contract[]
   businessCategory?: BusinessCategory
+  contractTimeline?: ContractTimeline
+  invoicedAmount?: number
+  uninvoicedAmount?: number
+  paidAmount?: number
+  unpaidAmount?: number
+  badDebtAmount?: number
+  invoiceCount?: number
+  billingStatus?: string
+  billingStatusText?: string
+  invoiceStats?: Array<{
+    id: number
+    invoice_number: string
+    total_amount: number
+    paidAmount: number
+    status: string
+  }>
 }
+
+export interface ContractTimelineItem {
+  id: number
+  kit_id?: number
+  customer_id: number
+  contract_number: string
+  title: string
+  total_amount: number
+  status: string
+  start_date?: string | null
+  end_date?: string | null
+  previous_contract_id?: number | null
+  created_at: string
+  updated_at: string
+  isCurrent?: boolean
+}
+
+export interface ContractTimeline {
+  chainId: string
+  items: ContractTimelineItem[]
+  contractCount: number
+  totalAmount: number
+  activeAmount: number
+  rootContractId?: number
+  latestContractId?: number
+  hasBrokenLink: boolean
+  hasCycle: boolean
+}
+
+export interface ContractChain extends ContractTimeline {}
 
 export interface CreateContractDto {
   customer_id: number
