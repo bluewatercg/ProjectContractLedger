@@ -81,14 +81,14 @@ const getStatusText = (status: string) => {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(220px, 1fr);
-  gap: 0;
+  gap: 12px;
   overflow-x: auto;
   padding: 4px 2px 8px;
 }
 
 .timeline-node {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: 34px minmax(0, 1fr);
   min-width: 0;
   cursor: pointer;
 }
@@ -97,7 +97,8 @@ const getStatusText = (status: string) => {
   position: relative;
   display: flex;
   justify-content: center;
-  padding-top: 8px;
+  align-items: center;
+  min-width: 0;
 }
 
 .marker-dot {
@@ -119,13 +120,16 @@ const getStatusText = (status: string) => {
 .marker-line {
   position: absolute;
   left: 50%;
-  top: 20px;
-  width: calc(100% + 186px);
+  top: 50%;
+  width: calc(100% + 12px);
   height: 2px;
   background: #dcdfe6;
+  transform: translateY(-50%);
 }
 
 .node-body {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid #e4e7ed;
@@ -199,6 +203,12 @@ const getStatusText = (status: string) => {
 
   .timeline-node {
     grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  .node-marker {
+    align-items: flex-start;
+    padding-top: 8px;
   }
 
   .marker-line {
@@ -206,6 +216,7 @@ const getStatusText = (status: string) => {
     top: 30px;
     width: 2px;
     height: calc(100% + 10px);
+    transform: translateX(-50%);
   }
 }
 </style>
