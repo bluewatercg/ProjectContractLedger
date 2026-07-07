@@ -233,6 +233,42 @@ export class ContractService {
   }
 
   /**
+   * 获取可关联旧合同列表
+   */
+  async getPreviousContractOptions(
+    customerId: number,
+    currentContractId?: number,
+    kitId?: number
+  ): Promise<any[]> {
+    const queryBuilder = this.contractRepository
+      .createQueryBuilder('contract')
+      .where('contract.customer_id = :customerId', { customerId });
+
+    if (kitId) {
+      queryBuilder.andWhere('contract.kit_id = :kitId', { kitId });
+    }
+
+    if (currentContractId) {
+      queryBuilder.andWhere('contract.id != :currentContractId', {
+        currentContractId,
+      });
+      queryBuilder.andWhere(
+        'NOT EXISTS (SELECT 1 FROM contracts linked WHERE linked.previous_contract_id = contract.id AND linked.id != :currentContractId)',
+        { currentContractId }
+      );
+    } else {
+      queryBuilder.andWhere(
+        'NOT EXISTS (SELECT 1 FROM contracts linked WHERE linked.previous_contract_id = contract.id)'
+      );
+    }
+
+    queryBuilder.orderBy('contract.created_at', 'DESC');
+
+    const contracts = await queryBuilder.getMany();
+    return contracts.map(contract => this.formatContractResponse(contract));
+  }
+
+  /**
    * 计算合同的财务统计信息
    */
   public calculateFinancialStats(contract: any): {

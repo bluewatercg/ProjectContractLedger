@@ -29,6 +29,17 @@ export const contractApi = {
   },
 
   /**
+   * 获取可关联旧合同列表
+   */
+  getPreviousContractOptions(params: {
+    customerId: number
+    currentContractId?: number
+    viewAll?: boolean
+  }): Promise<ApiResponse<Contract[]>> {
+    return apiClient.get('/contracts/previous-options', { params }).then(res => res.data)
+  },
+
+  /**
    * 获取合同下的开票计划列表
    */
   getContractInvoicePlans(

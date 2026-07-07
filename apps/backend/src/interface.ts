@@ -432,6 +432,13 @@ export class CreateContractDto {
     type: 'integer',
   })
   business_category_id?: number;
+
+  @ApiPropertyOptional({
+    description: '关联的旧合同ID（续签新合同）',
+    example: 1,
+    type: 'integer',
+  })
+  previous_contract_id?: number | null;
 }
 
 export class UpdateContractDto {
@@ -519,6 +526,13 @@ export class UpdateContractDto {
     type: 'integer',
   })
   business_category_id?: number;
+
+  @ApiPropertyOptional({
+    description: '关联的旧合同ID（续签新合同）',
+    example: 1,
+    type: 'integer',
+  })
+  previous_contract_id?: number | null;
 }
 
 export class ConfirmNonRenewalDto {

@@ -147,7 +147,7 @@
               </el-select>
               <div class="form-tip">
                 <el-icon><InfoFilled /></el-icon>
-                关联旧合同后可追溯合同历史，支持选择已到期、已完成或已到期-不续签的合同
+                关联旧合同后可追溯合同历史，支持选择本公司未被关联的其他合同
               </div>
             </el-form-item>
           </div>
@@ -434,6 +434,11 @@ const rules: FormRules = {
 // 处理客户选择变化
 const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
   form.customer_id = customerId || 0
+  previousContractId.value = null
+  oldContracts.value = []
+  if (customerId) {
+    fetchOldContracts()
+  }
   console.log('Selected customer:', customer)
 }
 
@@ -567,22 +572,20 @@ const fetchContract = async () => {
 
 // 加载可关联的旧合同列表
 const fetchOldContracts = async () => {
+  if (!form.customer_id) {
+    oldContracts.value = []
+    return
+  }
+
   try {
     oldContractsLoading.value = true
-    const response = await contractApi.getContracts({
-      page: 1,
-      limit: 100,
-      status: '',
+    const response = await contractApi.getPreviousContractOptions({
+      customerId: form.customer_id,
+      currentContractId: isEdit.value ? contractId.value : undefined,
       viewAll: kitStore.viewAllKits,
     })
     if (response.success && response.data) {
-      // 过滤出可关联的合同：已完成、已到期-不续签、执行中但已过期的
-      oldContracts.value = response.data.items
-        .filter((c: any) => {
-          if (c.status === 'expired_non_renewed' || c.status === 'completed') return true
-          if (c.status === 'active' && c.end_date && new Date(c.end_date) < new Date()) return true
-          return false
-        })
+      oldContracts.value = response.data
         .map((c: any) => ({
           id: c.id,
           contract_number: c.contract_number,
@@ -625,10 +628,7 @@ const handleSubmit = async () => {
       end_date: formatDate(form.end_date)
     }
 
-    // 创建合同时，如果选择了关联旧合同，添加到提交数据
-    if (!isEdit.value && previousContractId.value) {
-      submitData.previous_contract_id = previousContractId.value
-    }
+    submitData.previous_contract_id = previousContractId.value || null
 
     let response
     if (isEdit.value) {
@@ -717,13 +717,13 @@ const handleDeleteAttachment = async (attachmentId: number) => {
 
 // 组件挂载时获取数据
 onMounted(async () => {
-  // 加载可关联的旧合同列表
-  await fetchOldContracts()
-
   // 如果是编辑模式，获取合同详情
   if (isEdit.value) {
     await fetchContract()
+    await fetchOldContracts()
     await fetchAttachments()
+  } else if (form.customer_id) {
+    await fetchOldContracts()
   }
 })
 </script>

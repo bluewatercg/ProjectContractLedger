@@ -107,6 +107,44 @@ export class ContractController {
   }
 
   /**
+   * 获取可关联旧合同列表
+   */
+  @Get('/previous-options')
+  async getPreviousContractOptions(
+    @Query('customerId') customerId: number,
+    @Query('currentContractId') currentContractId?: number,
+    @Query('viewAll') viewAll?: string
+  ): Promise<ApiResponse> {
+    try {
+      if (!customerId) {
+        return {
+          success: false,
+          message: '请选择客户',
+          code: 400,
+        };
+      }
+
+      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const result = await this.contractService.getPreviousContractOptions(
+        Number(customerId),
+        currentContractId ? Number(currentContractId) : undefined,
+        kitId
+      );
+      return {
+        success: true,
+        data: result,
+        message: '获取可关联旧合同列表成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '获取可关联旧合同列表失败',
+        code: 500,
+      };
+    }
+  }
+
+  /**
    * 根据ID获取合同详情
    */
   @Get('/:id')
