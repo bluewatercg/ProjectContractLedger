@@ -112,6 +112,10 @@ export class ReminderService {
 
     // 获取即将到期或已到期但未关闭的合同
     const expiringContracts = await queryBuilder
+      .andWhere('contract.renewal_confirmed_at IS NULL')
+      .andWhere(
+        'NOT EXISTS (SELECT 1 FROM contracts successor WHERE successor.previous_contract_id = contract.id)'
+      )
       .andWhere('contract.end_date <= :futureDate', { futureDate })
       // 不再限制 end_date > today，以便包含已到期的合同
       .getMany();
