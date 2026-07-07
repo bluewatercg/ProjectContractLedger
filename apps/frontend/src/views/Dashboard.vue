@@ -48,8 +48,8 @@
           <div class="funnel-desc">
             共 {{ stats?.contracts?.total || 0 }} 份合同
           </div>
-          <div class="funnel-connector"></div>
         </div>
+        <div class="funnel-connector" aria-hidden="true"></div>
 
         <!-- 2. 已开票 -->
         <div class="funnel-itemHighlight animate-slide-in-up delay-100">
@@ -72,8 +72,8 @@
               stroke-width="12"
             />
           </div>
-          <div class="funnel-connector"></div>
         </div>
+        <div class="funnel-connector" aria-hidden="true"></div>
 
         <!-- 3. 已回款 -->
         <div class="funnel-itemSuccess animate-slide-in-up delay-200">
@@ -1068,18 +1068,17 @@ onUnmounted(() => {
 }
 
 .financial-funnel {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr) 40px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
   margin-bottom: 40px;
-  position: relative;
 }
 
 .funnel-item,
 .funnel-itemHighlight,
 .funnel-itemSuccess {
-  flex: 1;
+  min-width: 0;
   background: white;
   padding: 24px;
   border-radius: 12px;
@@ -1137,14 +1136,11 @@ onUnmounted(() => {
 }
 
 .funnel-connector {
-  position: absolute;
-  right: -25px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 30px;
+  align-self: center;
+  position: relative;
   height: 2px;
   background: linear-gradient(90deg, #3B82F6 0%, #0EA5E9 100%);
-  z-index: 2;
+  z-index: 1;
 }
 
 .funnel-connector::after {
@@ -1636,15 +1632,17 @@ onUnmounted(() => {
 
 @media (max-width: 1200px) {
   .financial-funnel {
-    flex-wrap: wrap;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
   }
+
   .funnel-item,
   .funnel-itemHighlight,
   .funnel-itemSuccess {
-    flex: none;
-    width: calc(50% - 10px);
+    width: auto;
     margin-bottom: 20px;
   }
+
   .funnel-connector {
     display: none;
   }
@@ -1655,10 +1653,14 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  .financial-funnel {
+    grid-template-columns: 1fr;
+  }
+
   .funnel-item,
   .funnel-itemHighlight,
   .funnel-itemSuccess {
-    width: 100%;
+    width: auto;
   }
 
   .action-buttons {

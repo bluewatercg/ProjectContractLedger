@@ -83,18 +83,16 @@
 
 /* ==================== 漏斗图样式 Funnel Chart ==================== */
 .financial-funnel {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  gap: var(--spacing-6);
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--spacing-6) minmax(0, 1fr) var(--spacing-6) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
 }
 
 .funnel-item,
 .funnel-itemHighlight,
 .funnel-itemSuccess {
-  flex: 1;
-  min-width: 250px;
+  min-width: 0;
   padding: var(--spacing-6);
   border-radius: var(--radius-base);
   text-align: center;
@@ -148,11 +146,8 @@
 }
 
 .funnel-connector {
-  position: absolute;
-  right: calc(-1 * var(--spacing-6) / 2);
-  top: 50%;
-  transform: translateY(-50%);
-  width: var(--spacing-6);
+  align-self: center;
+  position: relative;
   height: 2px;
   background: var(--color-border-base);
 }
@@ -276,7 +271,8 @@
 /* ==================== 响应式调整 Responsive Adjustments ==================== */
 @media (max-width: 768px) {
   .financial-funnel {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-4);
   }
 
   .funnel-connector {
@@ -312,7 +308,7 @@
   .funnel-item,
   .funnel-itemHighlight,
   .funnel-itemSuccess {
-    min-width: 100%;
+    width: 100%;
   }
 
   .funnel-value {
