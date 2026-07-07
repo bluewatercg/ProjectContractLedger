@@ -304,4 +304,32 @@ onMounted(() => {
 .settings-section li {
   margin-bottom: 8px;
 }
+
+@media (max-width: 767px) {
+  :deep(.el-tabs__nav-scroll) {
+    overflow-x: auto;
+  }
+
+  :deep(.el-tabs__nav) {
+    white-space: nowrap;
+  }
+
+  :deep(.el-form) {
+    max-width: 100% !important;
+  }
+
+  :deep(.el-form-item) {
+    display: block;
+  }
+
+  :deep(.el-form-item__label) {
+    width: auto !important;
+    justify-content: flex-start;
+    margin-bottom: 6px;
+  }
+
+  :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
+}
 </style>

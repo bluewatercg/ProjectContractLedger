@@ -73,4 +73,14 @@ const handleTabChange = (tabName: string) => {
 :deep(.el-tab-pane) {
   height: 100%;
 }
+
+@media (max-width: 767px) {
+  :deep(.el-tabs__nav-scroll) {
+    overflow-x: auto;
+  }
+
+  :deep(.el-tabs__nav) {
+    white-space: nowrap;
+  }
+}
 </style>

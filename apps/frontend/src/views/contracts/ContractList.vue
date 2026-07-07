@@ -570,10 +570,41 @@ onMounted(() => {
 
   .table-search {
     flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+    gap: 12px;
+  }
+
+  .table-search :deep(.el-input),
+  .table-search :deep(.el-select) {
+    width: 100% !important;
+  }
+
+  .filter-group {
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .filter-group :deep(.el-segmented) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .filter-group :deep(.el-segmented__group) {
+    width: max-content;
+    min-width: 100%;
   }
 
   .view-switcher {
     justify-content: center;
+  }
+
+  .view-switcher :deep(.el-segmented) {
+    max-width: 100%;
   }
 }
 

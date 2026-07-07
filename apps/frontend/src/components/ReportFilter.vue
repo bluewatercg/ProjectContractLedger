@@ -234,9 +234,29 @@ const handlePrint = () => {
     align-items: stretch;
   }
 
+  .filter-item {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filter-item :deep(.el-date-editor),
+  .filter-item :deep(.el-select),
+  .filter-item :deep(.el-input__wrapper) {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
   .filter-actions {
     margin-left: 0;
     flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-actions :deep(.el-button),
+  .filter-actions :deep(.el-dropdown) {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
   }
 }
 </style>
