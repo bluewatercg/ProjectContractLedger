@@ -73,6 +73,10 @@
             <el-icon><Document /></el-icon>
             <span>合同管理</span>
           </el-menu-item>
+          <el-menu-item index="/subscriptions">
+            <el-icon><Bell /></el-icon>
+            <span>订阅台账</span>
+          </el-menu-item>
           <el-menu-item index="/invoices">
             <el-icon><Tickets /></el-icon>
             <span>发票管理</span>
@@ -146,6 +150,7 @@ const kitRouteFallbackMap: Record<string, string> = {
   PaymentDetail: '/payments',
   PaymentEdit: '/payments',
   ReconciliationDetail: '/reconciliations',
+  SubscriptionDetail: '/subscriptions',
 }
 
 // 处理套装切换

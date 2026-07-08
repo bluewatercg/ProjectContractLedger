@@ -71,6 +71,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '编辑客户' }
       },
       {
+        path: 'subscriptions',
+        name: 'Subscriptions',
+        component: () => import('@/views/subscriptions/index.vue'),
+        meta: { requiresAuth: true, title: '订阅台账' }
+      },
+      {
+        path: 'subscriptions/:id',
+        name: 'SubscriptionDetail',
+        component: () => import('@/views/subscriptions/detail.vue'),
+        meta: { requiresAuth: true, title: '订阅详情' }
+      },
+      {
         path: 'contracts',
         name: 'Contracts',
         component: () => import('@/views/contracts/ContractList.vue'),

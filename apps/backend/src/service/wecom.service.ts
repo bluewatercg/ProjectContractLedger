@@ -2,6 +2,7 @@ import { Provide, Init, Config, App, Scope, ScopeEnum } from '@midwayjs/core';
 import { IMidwayApplication } from '@midwayjs/core';
 import { StatisticsService } from './statistics.service';
 import { ReminderService } from './reminder.service';
+import { SubscriptionService, DueSubscription } from './subscription.service';
 import * as https from 'https';
 import * as http from 'http';
 
@@ -28,6 +29,8 @@ export class WecomService {
   };
 
   private cronJob: any = null;
+  private lastSubscriptionItems: DueSubscription[] = [];
+  private isPushing = false;
 
   /**
    * 获取完整的 webhook URL
@@ -69,11 +72,19 @@ export class WecomService {
       const cron = require('node-cron');
       this.cronJob = cron.schedule(this.wecomConfig.cron, async () => {
         console.log('[WecomService] Running scheduled WeCom push');
+        if (this.isPushing) {
+          console.warn('[WecomService] Previous push is still running, skip current schedule');
+          return;
+        }
+        this.isPushing = true;
         try {
           const markdown = await this.generateMarkdown();
           await this.pushToWeCom(markdown);
+          await this.markSubscriptionPushLogs();
         } catch (error) {
           console.error('[WecomService] Scheduled push failed:', error);
+        } finally {
+          this.isPushing = false;
         }
       });
     } catch (e) {
@@ -93,13 +104,21 @@ export class WecomService {
     const targetKitId = kitId || this.wecomConfig?.kitId || 1;
     console.log(`[WecomService] Manual push triggered for kit ${targetKitId}`);
 
+    if (this.isPushing) {
+      return { success: false, message: '已有推送任务正在执行，请稍后重试' };
+    }
+
+    this.isPushing = true;
     try {
       const markdown = await this.generateMarkdown(targetKitId);
       await this.pushToWeCom(markdown);
+      await this.markSubscriptionPushLogs();
       return { success: true, message: '推送成功' };
     } catch (error: any) {
       console.error('[WecomService] Manual push failed:', error);
       return { success: false, message: error.message || '推送失败' };
+    } finally {
+      this.isPushing = false;
     }
   }
 
@@ -113,12 +132,16 @@ export class WecomService {
     // 通过 applicationContext 获取 request-scoped 服务
     const statisticsService = await this.app.getApplicationContext().getAsync<StatisticsService>('statisticsService');
     const reminderService = await this.app.getApplicationContext().getAsync<ReminderService>('reminderService');
+    const subscriptionService = await this.app.getApplicationContext().getAsync<SubscriptionService>('subscriptionService');
 
-    const [dashboard, aging, reminders] = await Promise.all([
+    const [dashboard, aging, reminders, subscriptionReminders] = await Promise.all([
       sections.includes('overview') ? statisticsService.getDashboardStats(undefined, targetKitId) : null,
       sections.includes('aging') ? statisticsService.getAgingAnalysis(undefined, targetKitId) : null,
       sections.includes('renewals') || sections.includes('tasks') ? reminderService.getAllReminders(targetKitId) : null,
+      sections.includes('subscriptions') ? subscriptionService.getDueSubscriptionsForPush(targetKitId) : null,
     ]);
+
+    this.lastSubscriptionItems = subscriptionReminders || [];
 
     const lines: string[] = [];
 
@@ -159,6 +182,13 @@ export class WecomService {
         lines.push('');
         this.buildTasksSection(lines, nonRenewal);
       }
+    }
+
+    if (sections.includes('subscriptions') && subscriptionReminders && subscriptionReminders.length > 0) {
+      lines.push('');
+      lines.push('---');
+      lines.push('');
+      this.buildSubscriptionSection(lines, subscriptionReminders);
     }
 
     lines.push('');
@@ -247,6 +277,38 @@ export class WecomService {
       }
       lines.push('');
     }
+  }
+
+
+  private buildSubscriptionSection(lines: string[], items: DueSubscription[]) {
+    lines.push(`**🔔 订阅到期提醒（${items.length}项）**`);
+    lines.push('');
+    for (const item of items.slice(0, 10)) {
+      const days = item.daysUntilExpiry ?? 0;
+      const status = days < 0 ? `<font color="warning">⚠️ 已逾期 ${Math.abs(days)} 天</font>` : `剩余 ${days} 天`;
+      const ownerName = item.owner?.full_name || item.owner?.username || `用户${item.owner_user_id}`;
+      const typeName = item.type?.name || '-';
+      const renewUrl = item.renewal_url ? ` | [续费入口](${item.renewal_url})` : '';
+      lines.push(`- **${item.name}** | ${typeName} | ${item.subject} | 到期日：${this.formatDateText(item.current_expiry_date)} | ${status} | 责任人：<@${ownerName}>${renewUrl}`);
+    }
+    lines.push('');
+    lines.push('> 请责任人在台账中点击“已续费”完成闭环，系统将自动滚动下一到期日。');
+    lines.push('');
+  }
+
+  private async markSubscriptionPushLogs(): Promise<void> {
+    if (this.lastSubscriptionItems.length === 0) {
+      return;
+    }
+    const subscriptionService = await this.app.getApplicationContext().getAsync<SubscriptionService>('subscriptionService');
+    await subscriptionService.markSubscriptionsPushed(this.lastSubscriptionItems);
+    this.lastSubscriptionItems = [];
+  }
+
+  private formatDateText(value: Date | string): string {
+    if (!value) return '-';
+    if (typeof value === 'string') return value.split('T')[0];
+    return value.toISOString().split('T')[0];
   }
 
   // ======================== 工具方法 ========================

@@ -154,6 +154,7 @@ export default {
       { key: 'aging', label: '应收账款账龄', enabled: true },
       { key: 'renewals', label: '合同续签提醒', enabled: true },
       { key: 'tasks', label: '待处理事项', enabled: true },
+      { key: 'subscriptions', label: '订阅到期提醒', enabled: true },
     ],
   },
 

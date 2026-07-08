@@ -550,3 +550,119 @@ export interface BatchSetCategoryDto {
   category_id: number | null
 }
 
+
+// 订阅到期提醒相关类型
+export interface SubscriptionType {
+  id: number
+  kit_id: number
+  name: string
+  code: string
+  is_default: boolean
+  sort_order: number
+  status: 'active' | 'disabled'
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface SubscriptionRecord {
+  id: number
+  kit_id: number
+  type_id: number
+  name: string
+  subject: string
+  provider?: string | null
+  renewal_url?: string | null
+  current_expiry_date: string
+  renewal_period_value: number
+  renewal_period_unit: 'day' | 'month' | 'year'
+  remind_days_before: number
+  owner_user_id: number
+  cc_user_ids?: string | null
+  cc_user_id_list?: number[]
+  fee?: number | null
+  notes?: string | null
+  status: 'active' | 'inactive'
+  created_by: number
+  updated_by?: number | null
+  created_at: string
+  updated_at: string
+  type?: SubscriptionType
+  owner?: UserInfo
+  renewal_log?: SubscriptionRenewalLog
+  daysUntilExpiry?: number
+  expiryStatus?: 'normal' | 'expiring' | 'overdue'
+}
+
+export interface SubscriptionRenewalLog {
+  id: number
+  subscription_id: number
+  kit_id: number
+  previous_expiry_date: string
+  new_expiry_date: string
+  renewal_period_value: number
+  renewal_period_unit: 'day' | 'month' | 'year'
+  operated_by: number
+  operated_at: string
+  remarks?: string | null
+  operator?: UserInfo
+  attachments?: SubscriptionRenewalAttachment[]
+}
+
+export interface SubscriptionQuery extends PaginationQuery {
+  type_id?: number
+  owner_user_id?: number
+  status?: 'active' | 'inactive'
+  expiry_status?: 'normal' | 'expiring' | 'overdue'
+  search?: string
+}
+
+export interface CreateSubscriptionTypeDto {
+  name: string
+  code: string
+  sort_order?: number
+  status?: 'active' | 'disabled'
+}
+
+export interface UpdateSubscriptionTypeDto {
+  name?: string
+  sort_order?: number
+  status?: 'active' | 'disabled'
+}
+
+export interface CreateSubscriptionDto {
+  type_id: number
+  name: string
+  subject: string
+  provider?: string
+  renewal_url?: string
+  current_expiry_date: string
+  renewal_period_value: number
+  renewal_period_unit: 'day' | 'month' | 'year'
+  remind_days_before: number
+  owner_user_id: number
+  cc_user_ids?: number[]
+  fee?: number
+  notes?: string
+  status?: 'active' | 'inactive'
+}
+
+export interface UpdateSubscriptionDto extends Partial<CreateSubscriptionDto> {}
+
+export interface RenewSubscriptionDto {
+  remarks?: string
+}
+
+export interface SubscriptionRenewalAttachment {
+  attachment_id: number
+  renewal_log_id: number
+  subscription_id: number
+  kit_id: number
+  attachment_type: 'contract' | 'invoice'
+  file_name: string
+  file_path: string
+  file_type?: string | null
+  file_size?: number | null
+  uploaded_by?: number | null
+  uploaded_at: string
+}

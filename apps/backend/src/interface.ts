@@ -1103,3 +1103,160 @@ export class MoveNodeDto {
   })
   dropType: 'prev' | 'inner' | 'next';
 }
+
+/**
+ * 订阅到期提醒相关接口
+ */
+export interface SubscriptionQuery extends PaginationQuery {
+  type_id?: number;
+  owner_user_id?: number;
+  status?: 'active' | 'inactive';
+  expiry_status?: 'normal' | 'expiring' | 'overdue';
+  search?: string;
+}
+
+export class CreateSubscriptionTypeDto {
+  @ApiProperty({
+    description: '事项类型名称',
+    example: 'SSL证书',
+    maxLength: 50,
+  })
+  name: string;
+
+  @ApiProperty({
+    description: '事项类型编码，套账内唯一',
+    example: 'ssl_cert',
+    maxLength: 50,
+  })
+  code: string;
+
+  @ApiPropertyOptional({
+    description: '排序序号',
+    example: 10,
+    type: 'integer',
+  })
+  sort_order?: number;
+
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'disabled'],
+  })
+  status?: 'active' | 'disabled';
+}
+
+export class UpdateSubscriptionTypeDto {
+  @ApiPropertyOptional({
+    description: '事项类型名称',
+    example: '商标续展',
+    maxLength: 50,
+  })
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: '排序序号',
+    example: 20,
+    type: 'integer',
+  })
+  sort_order?: number;
+
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'disabled'],
+  })
+  status?: 'active' | 'disabled';
+}
+
+export class CreateSubscriptionDto {
+  @ApiProperty({ description: '事项类型ID', example: 1, type: 'integer' })
+  type_id: number;
+
+  @ApiProperty({ description: '事项名称', example: 'example.com SSL证书', maxLength: 200 })
+  name: string;
+
+  @ApiProperty({ description: '主体：账号/域名/公司名', example: 'example.com', maxLength: 200 })
+  subject: string;
+
+  @ApiPropertyOptional({ description: '供应商/服务商', example: '腾讯云', maxLength: 100 })
+  provider?: string;
+
+  @ApiPropertyOptional({ description: '续费入口URL', example: 'https://console.cloud.tencent.com/ssl', maxLength: 500 })
+  renewal_url?: string;
+
+  @ApiProperty({ description: '当前到期日', example: '2026-12-31', format: 'date' })
+  current_expiry_date: string;
+
+  @ApiProperty({ description: '续费周期数值', example: 1, type: 'integer' })
+  renewal_period_value: number;
+
+  @ApiProperty({ description: '续费周期单位', example: 'year', enum: ['day', 'month', 'year'] })
+  renewal_period_unit: 'day' | 'month' | 'year';
+
+  @ApiProperty({ description: '提前提醒天数', example: 30, type: 'integer' })
+  remind_days_before: number;
+
+  @ApiProperty({ description: '主责任人ID', example: 1, type: 'integer' })
+  owner_user_id: number;
+
+  @ApiPropertyOptional({ description: '抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
+  cc_user_ids?: number[];
+
+  @ApiPropertyOptional({ description: '年费/单次费用', example: 1999.0, type: 'number', format: 'decimal' })
+  fee?: number;
+
+  @ApiPropertyOptional({ description: '备注', example: '自动续费需提前确认发票', maxLength: 500 })
+  notes?: string;
+
+  @ApiPropertyOptional({ description: '状态', example: 'active', enum: ['active', 'inactive'] })
+  status?: 'active' | 'inactive';
+}
+
+export class UpdateSubscriptionDto {
+  @ApiPropertyOptional({ description: '事项类型ID', example: 1, type: 'integer' })
+  type_id?: number;
+
+  @ApiPropertyOptional({ description: '事项名称', example: 'example.com SSL证书', maxLength: 200 })
+  name?: string;
+
+  @ApiPropertyOptional({ description: '主体：账号/域名/公司名', example: 'example.com', maxLength: 200 })
+  subject?: string;
+
+  @ApiPropertyOptional({ description: '供应商/服务商', example: '腾讯云', maxLength: 100 })
+  provider?: string;
+
+  @ApiPropertyOptional({ description: '续费入口URL', example: 'https://console.cloud.tencent.com/ssl', maxLength: 500 })
+  renewal_url?: string;
+
+  @ApiPropertyOptional({ description: '当前到期日', example: '2026-12-31', format: 'date' })
+  current_expiry_date?: string;
+
+  @ApiPropertyOptional({ description: '续费周期数值', example: 1, type: 'integer' })
+  renewal_period_value?: number;
+
+  @ApiPropertyOptional({ description: '续费周期单位', example: 'year', enum: ['day', 'month', 'year'] })
+  renewal_period_unit?: 'day' | 'month' | 'year';
+
+  @ApiPropertyOptional({ description: '提前提醒天数', example: 30, type: 'integer' })
+  remind_days_before?: number;
+
+  @ApiPropertyOptional({ description: '主责任人ID', example: 1, type: 'integer' })
+  owner_user_id?: number;
+
+  @ApiPropertyOptional({ description: '抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
+  cc_user_ids?: number[];
+
+  @ApiPropertyOptional({ description: '年费/单次费用', example: 1999.0, type: 'number', format: 'decimal' })
+  fee?: number;
+
+  @ApiPropertyOptional({ description: '备注', example: '自动续费需提前确认发票', maxLength: 500 })
+  notes?: string;
+
+  @ApiPropertyOptional({ description: '状态', example: 'active', enum: ['active', 'inactive'] })
+  status?: 'active' | 'inactive';
+}
+
+export class RenewSubscriptionDto {
+  @ApiPropertyOptional({ description: '续费备注', example: '已完成续费', maxLength: 500 })
+  remarks?: string;
+}

@@ -8,6 +8,7 @@ export { statisticsApi } from './statistics'
 export { reminderApi } from './reminder'
 export { reconciliationApi } from './reconciliation'
 export { businessCategoryApi } from './business-category'
+export { subscriptionApi } from './subscription'
 
 // 导出类型
 export * from './types'

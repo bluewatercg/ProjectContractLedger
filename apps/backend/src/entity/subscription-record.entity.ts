@@ -1,0 +1,105 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Kit } from './kit.entity';
+import { User } from './user.entity';
+import { SubscriptionType } from './subscription-type.entity';
+
+@Entity('subscription_records')
+export class SubscriptionRecord {
+  @PrimaryGeneratedColumn({ comment: '主键ID' })
+  id: number;
+
+  @Column({ name: 'kit_id', comment: '套账ID' })
+  kit_id: number;
+
+  @Column({ name: 'type_id', comment: '事项类型ID' })
+  type_id: number;
+
+  @Column({ length: 200, comment: '事项名称' })
+  name: string;
+
+  @Column({ length: 200, comment: '主体：账号/域名/公司名' })
+  subject: string;
+
+  @Column({ length: 100, nullable: true, comment: '供应商/服务商' })
+  provider: string | null;
+
+  @Column({ name: 'renewal_url', length: 500, nullable: true, comment: '续费入口URL' })
+  renewal_url: string | null;
+
+  @Column({ name: 'current_expiry_date', type: 'date', comment: '当前到期日' })
+  current_expiry_date: Date;
+
+  @Column({ name: 'renewal_period_value', type: 'int', comment: '续费周期数值' })
+  renewal_period_value: number;
+
+  @Column({
+    name: 'renewal_period_unit',
+    type: 'enum',
+    enum: ['day', 'month', 'year'],
+    comment: '续费周期单位：day-天，month-月，year-年',
+  })
+  renewal_period_unit: 'day' | 'month' | 'year';
+
+  @Column({ name: 'remind_days_before', type: 'int', default: 30, comment: '提前提醒天数' })
+  remind_days_before: number;
+
+  @Column({ name: 'owner_user_id', comment: '主责任人ID' })
+  owner_user_id: number;
+
+  @Column({ name: 'cc_user_ids', length: 500, nullable: true, comment: '抄送人ID列表，逗号分隔' })
+  cc_user_ids: string | null;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, comment: '年费/单次费用' })
+  fee: number | null;
+
+  @Column({ type: 'text', nullable: true, comment: '备注' })
+  notes: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: ['active', 'inactive'],
+    default: 'active',
+    comment: '状态：active-启用，inactive-停用',
+  })
+  status: 'active' | 'inactive';
+
+  @Column({ name: 'created_by', comment: '创建人ID' })
+  created_by: number;
+
+  @Column({ name: 'updated_by', nullable: true, comment: '最后更新人ID' })
+  updated_by: number | null;
+
+  @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
+  created_at: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', comment: '更新时间' })
+  updated_at: Date;
+
+  @ManyToOne(() => Kit)
+  @JoinColumn({ name: 'kit_id' })
+  kit: Kit;
+
+  @ManyToOne(() => SubscriptionType)
+  @JoinColumn({ name: 'type_id' })
+  type: SubscriptionType;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'owner_user_id' })
+  owner: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by' })
+  creator: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'updated_by' })
+  updater: User;
+}
