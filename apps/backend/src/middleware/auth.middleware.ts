@@ -15,6 +15,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         '/api/v1/auth/refresh',
         '/api/v1/wecom/push',
         '/api/v1/wecom/config',
+        '/api/v1/subscriptions/attachments/public-preview',
         '/api-docs',
         '/swagger-ui/',
         '/favicon.ico',
