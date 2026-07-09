@@ -199,8 +199,8 @@ describe('SubscriptionService.getDueSubscriptionsForPush', () => {
   it('returns active subscriptions that are within reminder window and excludes already pushed today', async () => {
     const service = createService();
     const getMany = jest.fn().mockResolvedValue([
-      { id: 1, kit_id: 2, current_expiry_date: '2024-01-20', remind_days_before: 30, status: 'active' },
-      { id: 2, kit_id: 2, current_expiry_date: '2024-03-20', remind_days_before: 30, status: 'active' },
+      { id: 1, kit_id: 2, current_expiry_date: '2024-01-20', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
+      { id: 2, kit_id: 2, current_expiry_date: '2024-03-20', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
     ]);
     const qb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -219,4 +219,26 @@ describe('SubscriptionService.getDueSubscriptionsForPush', () => {
     expect(result.map(item => item.id)).toEqual([1]);
     expect(result[0].daysUntilExpiry).toBe(10);
   });
+  it('pushes once mode only on the configured reminder date', async () => {
+    const service = createService();
+    const getMany = jest.fn().mockResolvedValue([
+      { id: 1, kit_id: 2, current_expiry_date: '2024-02-09', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
+      { id: 2, kit_id: 2, current_expiry_date: '2024-02-10', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
+      { id: 3, kit_id: 2, current_expiry_date: '2024-02-08', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
+    ]);
+    const qb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany,
+    };
+    (service.subscriptionRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+    (service.pushLogRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+    const result = await service.getDueSubscriptionsForPush(2, '2024-01-10');
+
+    expect(result.map(item => item.id)).toEqual([1, 3]);
+  });
+
 });

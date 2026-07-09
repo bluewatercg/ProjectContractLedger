@@ -577,6 +577,7 @@ export interface SubscriptionRecord {
   renewal_period_value: number
   renewal_period_unit: 'day' | 'month' | 'year'
   remind_days_before: number
+  reminder_mode?: 'once' | 'daily'
   owner_name?: string | null
   owner_user_id?: number | null
   cc_user_ids?: string | null
@@ -643,6 +644,7 @@ export interface CreateSubscriptionDto {
   renewal_period_value: number
   renewal_period_unit: 'day' | 'month' | 'year'
   remind_days_before: number
+  reminder_mode?: 'once' | 'daily'
   owner_name: string
   owner_user_id?: number
   cc_names?: string

@@ -51,6 +51,15 @@ export class SubscriptionRecord {
   @Column({ name: 'remind_days_before', type: 'int', default: 30, comment: '提前提醒天数' })
   remind_days_before: number;
 
+  @Column({
+    name: 'reminder_mode',
+    type: 'enum',
+    enum: ['once', 'daily'],
+    default: 'daily',
+    comment: '提醒方式：once-仅提醒一次，daily-到期前每日提醒',
+  })
+  reminder_mode: 'once' | 'daily';
+
   @Column({ name: 'owner_name', length: 100, nullable: true, comment: '主负责人名称（非系统用户）' })
   owner_name: string | null;
 

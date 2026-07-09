@@ -167,6 +167,7 @@ export class SubscriptionService {
       renewal_period_value: dto.renewal_period_value,
       renewal_period_unit: dto.renewal_period_unit,
       remind_days_before: dto.remind_days_before,
+      reminder_mode: this.normalizeReminderMode(dto.reminder_mode),
       owner_name: this.normalizeNullableText(dto.owner_name),
       owner_user_id: dto.owner_user_id ?? null,
       cc_user_ids: this.stringifyUserIds(dto.cc_user_ids),
@@ -199,6 +200,7 @@ export class SubscriptionService {
     if (dto.renewal_period_value !== undefined) subscription.renewal_period_value = dto.renewal_period_value;
     if (dto.renewal_period_unit !== undefined) subscription.renewal_period_unit = dto.renewal_period_unit;
     if (dto.remind_days_before !== undefined) subscription.remind_days_before = dto.remind_days_before;
+    if (dto.reminder_mode !== undefined) subscription.reminder_mode = this.normalizeReminderMode(dto.reminder_mode);
     if (dto.owner_name !== undefined) subscription.owner_name = this.normalizeNullableText(dto.owner_name);
     if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id ?? null;
     if (dto.cc_user_ids !== undefined) subscription.cc_user_ids = this.stringifyUserIds(dto.cc_user_ids);
@@ -278,7 +280,7 @@ export class SubscriptionService {
     const result: DueSubscription[] = [];
     for (const subscription of subscriptions) {
       const statusInfo = this.getExpiryStatus(subscription.current_expiry_date as any, today, subscription.remind_days_before);
-      if (statusInfo.status === 'normal') {
+      if (!this.shouldPushSubscription(subscription, statusInfo.daysUntilExpiry)) {
         continue;
       }
 
@@ -375,6 +377,13 @@ export class SubscriptionService {
     }
   }
 
+  private shouldPushSubscription(subscription: SubscriptionRecord, daysUntilExpiry: number): boolean {
+    if (subscription.reminder_mode === 'once') {
+      return daysUntilExpiry === subscription.remind_days_before;
+    }
+    return daysUntilExpiry <= subscription.remind_days_before;
+  }
+
   private canOperateRenewal(subscription: SubscriptionRecord, userId: number, isAdmin: boolean): boolean {
     if (isAdmin) {
       return true;
@@ -392,6 +401,10 @@ export class SubscriptionService {
 
   private normalizeRecordStatus(status?: string | null): 'active' | 'inactive' {
     return status === 'inactive' ? 'inactive' : 'active';
+  }
+
+  private normalizeReminderMode(mode?: string | null): 'once' | 'daily' {
+    return mode === 'once' ? 'once' : 'daily';
   }
 
   private stringifyUserIds(ids?: number[] | string | null): string | null {

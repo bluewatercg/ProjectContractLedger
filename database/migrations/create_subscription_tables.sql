@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS subscription_records (
   renewal_period_value INT NOT NULL COMMENT '续费周期数值',
   renewal_period_unit ENUM('day', 'month', 'year') NOT NULL COMMENT '续费周期单位：day-天，month-月，year-年',
   remind_days_before INT NOT NULL DEFAULT 30 COMMENT '提前提醒天数',
+  reminder_mode ENUM('once', 'daily') NOT NULL DEFAULT 'daily' COMMENT '提醒方式：once-仅提醒一次，daily-到期前每日提醒',
   owner_name VARCHAR(100) NULL COMMENT '主负责人名称（非系统用户）',
   owner_user_id INT NULL COMMENT '历史主负责人用户ID，可为空',
   cc_user_ids VARCHAR(500) NULL COMMENT '历史抄送人ID列表，逗号分隔',

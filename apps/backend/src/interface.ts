@@ -1197,6 +1197,9 @@ export class CreateSubscriptionDto {
   @ApiProperty({ description: '提前提醒天数', example: 30, type: 'integer' })
   remind_days_before: number;
 
+  @ApiPropertyOptional({ description: '提醒方式', example: 'daily', enum: ['once', 'daily'] })
+  reminder_mode?: 'once' | 'daily';
+
   @ApiProperty({ description: '主负责人名称', example: '张三', maxLength: 100 })
   owner_name: string;
 
@@ -1246,6 +1249,9 @@ export class UpdateSubscriptionDto {
 
   @ApiPropertyOptional({ description: '提前提醒天数', example: 30, type: 'integer' })
   remind_days_before?: number;
+
+  @ApiPropertyOptional({ description: '提醒方式', example: 'daily', enum: ['once', 'daily'] })
+  reminder_mode?: 'once' | 'daily';
 
   @ApiPropertyOptional({ description: '主负责人名称', example: '张三', maxLength: 100 })
   owner_name?: string;

@@ -117,10 +117,21 @@
           <el-col :span="12"><el-form-item label="事项类型" prop="type_id"><el-select v-model="form.type_id" style="width: 100%"><el-option v-for="type in store.types" :key="type.id" :label="type.name" :value="type.id" /></el-select></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="所属主体" prop="subject"><el-input v-model="form.subject" placeholder="公司名、域名、账号或公众号名称" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="服务商"><el-input v-model="form.provider" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="到期日" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="本次续费时间" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="周期数值" prop="renewal_period_value"><el-input-number v-model="form.renewal_period_value" :min="1" controls-position="right" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="周期单位" prop="renewal_period_unit"><el-select v-model="form.renewal_period_unit" style="width: 100%"><el-option label="天" value="day" /><el-option label="月" value="month" /><el-option label="年" value="year" /></el-select></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="提前提醒天数" prop="remind_days_before"><el-input-number v-model="form.remind_days_before" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="提醒方式"><el-radio-group v-model="form.reminder_mode"><el-radio-button label="daily">每日提醒</el-radio-button><el-radio-button label="once">只提醒一次</el-radio-button></el-radio-group></el-form-item></el-col>
+          <el-col :span="24">
+            <el-card class="reminder-preview" shadow="never">
+              <template #header>近 5 次提醒计划</template>
+              <el-table :data="reminderPreview" size="small" style="width: 100%">
+                <el-table-column prop="index" label="次数" width="70" />
+                <el-table-column prop="expiryText" label="到期日" min-width="150" />
+                <el-table-column prop="reminderText" label="提醒日期" min-width="240" />
+              </el-table>
+            </el-card>
+          </el-col>
           <el-col :span="12"><el-form-item label="主负责人" prop="owner_name"><el-input v-model="form.owner_name" placeholder="手工输入负责人姓名" /></el-form-item></el-col>
           <el-col :span="24"><el-form-item label="其他负责人"><el-input v-model="form.cc_names" placeholder="多个负责人可用顿号、逗号或空格分隔" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="费用"><el-input-number v-model="form.fee" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
@@ -137,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadUserFile } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import type { SubscriptionRecord, CreateSubscriptionDto } from '@/api/types'
@@ -181,6 +192,7 @@ const defaultForm = (): CreateSubscriptionDto => ({
   renewal_period_value: 1,
   renewal_period_unit: 'year',
   remind_days_before: 30,
+  reminder_mode: 'daily',
   owner_name: '',
   owner_user_id: undefined,
   cc_names: '',
@@ -194,9 +206,62 @@ const rules: FormRules = {
   name: [{ required: true, message: '请输入事项名称', trigger: 'blur' }],
   type_id: [{ required: true, message: '请选择事项类型', trigger: 'change' }],
   subject: [{ required: true, message: '请输入主体', trigger: 'blur' }],
-  current_expiry_date: [{ required: true, message: '请选择日期', trigger: 'change' }],
+  current_expiry_date: [{ required: true, message: '请选择本次续费时间', trigger: 'change' }],
   owner_name: [{ required: true, message: '请输入主负责人', trigger: 'blur' }]
 }
+
+const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+const formatWeekDate = (dateText: string) => {
+  const [year, month, day] = dateText.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  return `${dateText} ${weekDays[date.getDay()]}`
+}
+
+const addPeriod = (dateText: string, value: number, unit: 'day' | 'month' | 'year', times = 1) => {
+  if (!dateText || !value) return ''
+  const [year, month, day] = dateText.split('-').map(Number)
+  if (!year || !month || !day) return ''
+  const date = new Date(year, month - 1, day)
+  const amount = value * times
+  if (unit === 'day') {
+    date.setDate(date.getDate() + amount)
+  } else if (unit === 'month') {
+    const targetMonth = month - 1 + amount
+    const lastDay = new Date(year, targetMonth + 1, 0).getDate()
+    date.setFullYear(year, targetMonth, Math.min(day, lastDay))
+  } else {
+    const targetYear = year + amount
+    const lastDay = new Date(targetYear, month, 0).getDate()
+    date.setFullYear(targetYear, month - 1, Math.min(day, lastDay))
+  }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+const addDays = (dateText: string, days: number) => {
+  if (!dateText) return ''
+  const [year, month, day] = dateText.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() + days)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+const nextExpiryDate = computed(() => addPeriod(form.current_expiry_date, form.renewal_period_value, form.renewal_period_unit))
+const reminderPreview = computed(() => {
+  if (!form.current_expiry_date || !form.renewal_period_value) return []
+  return Array.from({ length: 5 }, (_, index) => {
+    const expiryDate = addPeriod(form.current_expiry_date, form.renewal_period_value, form.renewal_period_unit, index + 1)
+    const reminderDate = addDays(expiryDate, -Number(form.remind_days_before || 0))
+    const reminderText = form.reminder_mode === 'once'
+      ? formatWeekDate(reminderDate)
+      : `${formatWeekDate(reminderDate)} 起，每天提醒至 ${formatWeekDate(expiryDate)}`
+    return {
+      index: `第 ${index + 1} 次`,
+      expiryText: formatWeekDate(expiryDate),
+      reminderText
+    }
+  })
+})
 
 const loadData = async () => {
   await store.fetchSubscriptions({ ...filters, expiry_status: filters.expiry_status || undefined })
@@ -205,7 +270,7 @@ const loadData = async () => {
 
 const openCreateDialog = () => {
   editingId.value = null
-  Object.assign(form, defaultForm(), { type_id: store.types[0]?.id || 0 })
+  Object.assign(form, defaultForm(), { type_id: store.types[0]?.id || 0, current_expiry_date: new Date().toISOString().slice(0, 10) })
   dialogVisible.value = true
 }
 
@@ -217,10 +282,11 @@ const editSubscription = (row: SubscriptionRecord) => {
     subject: row.subject,
     provider: row.provider || '',
     renewal_url: row.renewal_url || '',
-    current_expiry_date: String(row.current_expiry_date).split('T')[0],
+    current_expiry_date: new Date().toISOString().slice(0, 10),
     renewal_period_value: row.renewal_period_value,
     renewal_period_unit: row.renewal_period_unit,
     remind_days_before: row.remind_days_before,
+    reminder_mode: row.reminder_mode || 'daily',
     owner_name: row.owner_name || row.owner?.full_name || row.owner?.username || '',
     owner_user_id: row.owner_user_id || undefined,
     cc_names: row.cc_names || '',
@@ -236,7 +302,7 @@ const submitForm = async () => {
   await formRef.value?.validate()
   saving.value = true
   try {
-    const payload = { ...form, status: form.status || 'active' }
+    const payload = { ...form, current_expiry_date: nextExpiryDate.value || form.current_expiry_date, status: form.status || 'active' }
     if (editingId.value) {
       await store.updateSubscription(editingId.value, payload)
       ElMessage.success('更新成功')
@@ -324,5 +390,6 @@ onMounted(async () => {
 .summary-item.warning strong { color: #d97706; }
 .summary-item.danger strong { color: #dc2626; }
 .pagination-container { display: flex; justify-content: flex-end; padding-top: 16px; }
+.reminder-preview { margin-bottom: 16px; }
 @media (max-width: 768px) { .summary-grid { grid-template-columns: 1fr; } }
 </style>
