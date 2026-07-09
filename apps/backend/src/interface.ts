@@ -1110,6 +1110,7 @@ export class MoveNodeDto {
 export interface SubscriptionQuery extends PaginationQuery {
   type_id?: number;
   owner_user_id?: number;
+  owner_name?: string;
   status?: 'active' | 'inactive';
   expiry_status?: 'normal' | 'expiring' | 'overdue';
   search?: string;
@@ -1181,7 +1182,7 @@ export class CreateSubscriptionDto {
   @ApiPropertyOptional({ description: '供应商/服务商', example: '腾讯云', maxLength: 100 })
   provider?: string;
 
-  @ApiPropertyOptional({ description: '续费入口URL', example: 'https://console.cloud.tencent.com/ssl', maxLength: 500 })
+  @ApiPropertyOptional({ description: '续费方式', example: 'https://console.cloud.tencent.com/ssl 或线下转账', maxLength: 500 })
   renewal_url?: string;
 
   @ApiProperty({ description: '当前到期日', example: '2026-12-31', format: 'date' })
@@ -1196,10 +1197,16 @@ export class CreateSubscriptionDto {
   @ApiProperty({ description: '提前提醒天数', example: 30, type: 'integer' })
   remind_days_before: number;
 
-  @ApiProperty({ description: '主责任人ID', example: 1, type: 'integer' })
-  owner_user_id: number;
+  @ApiProperty({ description: '主负责人名称', example: '张三', maxLength: 100 })
+  owner_name: string;
 
-  @ApiPropertyOptional({ description: '抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
+  @ApiPropertyOptional({ description: '历史主负责人用户ID', example: 1, type: 'integer' })
+  owner_user_id?: number;
+
+  @ApiPropertyOptional({ description: '其他负责人名称', example: '李四、王五', maxLength: 500 })
+  cc_names?: string;
+
+  @ApiPropertyOptional({ description: '历史抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
   cc_user_ids?: number[];
 
   @ApiPropertyOptional({ description: '年费/单次费用', example: 1999.0, type: 'number', format: 'decimal' })
@@ -1225,7 +1232,7 @@ export class UpdateSubscriptionDto {
   @ApiPropertyOptional({ description: '供应商/服务商', example: '腾讯云', maxLength: 100 })
   provider?: string;
 
-  @ApiPropertyOptional({ description: '续费入口URL', example: 'https://console.cloud.tencent.com/ssl', maxLength: 500 })
+  @ApiPropertyOptional({ description: '续费方式', example: 'https://console.cloud.tencent.com/ssl 或线下转账', maxLength: 500 })
   renewal_url?: string;
 
   @ApiPropertyOptional({ description: '当前到期日', example: '2026-12-31', format: 'date' })
@@ -1240,10 +1247,16 @@ export class UpdateSubscriptionDto {
   @ApiPropertyOptional({ description: '提前提醒天数', example: 30, type: 'integer' })
   remind_days_before?: number;
 
-  @ApiPropertyOptional({ description: '主责任人ID', example: 1, type: 'integer' })
+  @ApiPropertyOptional({ description: '主负责人名称', example: '张三', maxLength: 100 })
+  owner_name?: string;
+
+  @ApiPropertyOptional({ description: '历史主负责人用户ID', example: 1, type: 'integer' })
   owner_user_id?: number;
 
-  @ApiPropertyOptional({ description: '抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
+  @ApiPropertyOptional({ description: '其他负责人名称', example: '李四、王五', maxLength: 500 })
+  cc_names?: string;
+
+  @ApiPropertyOptional({ description: '历史抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
   cc_user_ids?: number[];
 
   @ApiPropertyOptional({ description: '年费/单次费用', example: 1999.0, type: 'number', format: 'decimal' })

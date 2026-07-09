@@ -56,7 +56,7 @@ describe('SubscriptionService.getExpiryStatus', () => {
 });
 
 describe('SubscriptionService.renewSubscription', () => {
-  it('updates expiry date and creates renewal log when operator is owner', async () => {
+  it('updates expiry date and creates renewal log when operator is admin for text owner', async () => {
     const service = createService();
     const subscription = {
       id: 5,
@@ -64,13 +64,14 @@ describe('SubscriptionService.renewSubscription', () => {
       current_expiry_date: '2024-01-31',
       renewal_period_value: 1,
       renewal_period_unit: 'month',
-      owner_user_id: 9,
-      cc_user_ids: '10,11',
+      owner_name: '张三',
+      owner_user_id: null,
+      cc_user_ids: null,
       status: 'active',
     };
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
 
-    const result = await service.renewSubscription(5, 2, 9, '已续费');
+    const result = await service.renewSubscription(5, 2, 9, '已续费', true);
 
     expect(result.current_expiry_date).toBe('2024-02-29');
     expect((result as any).renewal_log.id).toBe(1);
@@ -92,8 +93,9 @@ describe('SubscriptionService.renewSubscription', () => {
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue({
       id: 5,
       kit_id: 2,
-      owner_user_id: 9,
-      cc_user_ids: '10,11',
+      owner_name: '张三',
+      owner_user_id: null,
+      cc_user_ids: null,
       current_expiry_date: '2024-01-31',
       renewal_period_value: 1,
       renewal_period_unit: 'month',

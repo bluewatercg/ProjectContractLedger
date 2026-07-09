@@ -286,7 +286,7 @@ export class WecomService {
     for (const item of items.slice(0, 10)) {
       const days = item.daysUntilExpiry ?? 0;
       const status = days < 0 ? `<font color="warning">⚠️ 已逾期 ${Math.abs(days)} 天</font>` : `剩余 ${days} 天`;
-      const ownerName = item.owner?.full_name || item.owner?.username || `用户${item.owner_user_id}`;
+      const ownerName = item.owner_name || item.owner?.full_name || item.owner?.username || '未填写';
       const typeName = item.type?.name || '-';
       const renewUrl = item.renewal_url ? ` | [续费入口](${item.renewal_url})` : '';
       lines.push(`- **${item.name}** | ${typeName} | ${item.subject} | 到期日：${this.formatDateText(item.current_expiry_date)} | ${status} | 责任人：<@${ownerName}>${renewUrl}`);

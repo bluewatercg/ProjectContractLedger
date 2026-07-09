@@ -51,11 +51,17 @@ export class SubscriptionRecord {
   @Column({ name: 'remind_days_before', type: 'int', default: 30, comment: '提前提醒天数' })
   remind_days_before: number;
 
-  @Column({ name: 'owner_user_id', comment: '主责任人ID' })
-  owner_user_id: number;
+  @Column({ name: 'owner_name', length: 100, nullable: true, comment: '主负责人名称（非系统用户）' })
+  owner_name: string | null;
 
-  @Column({ name: 'cc_user_ids', length: 500, nullable: true, comment: '抄送人ID列表，逗号分隔' })
+  @Column({ name: 'owner_user_id', nullable: true, comment: '历史主负责人用户ID，可为空' })
+  owner_user_id: number | null;
+
+  @Column({ name: 'cc_user_ids', length: 500, nullable: true, comment: '历史抄送人ID列表，逗号分隔' })
   cc_user_ids: string | null;
+
+  @Column({ name: 'cc_names', length: 500, nullable: true, comment: '其他负责人名称，手工输入' })
+  cc_names: string | null;
 
   @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, comment: '年费/单次费用' })
   fee: number | null;
@@ -91,9 +97,9 @@ export class SubscriptionRecord {
   @JoinColumn({ name: 'type_id' })
   type: SubscriptionType;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'owner_user_id' })
-  owner: User;
+  owner: User | null;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })

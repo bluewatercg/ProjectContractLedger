@@ -54,6 +54,7 @@
     "ci": "yarn run cov",
     "build": "mwtsc --cleanOutDir",
     "db:migrate:subscriptions": "node scripts/run-sql-migration.js ../../database/migrations/create_subscription_tables.sql",
+    "db:migrate:subscription-owners": "node scripts/run-sql-migration.js ../../database/migrations/alter_subscription_owner_names.sql",
     "dev:skip-migration": "cross-env NODE_ENV=local TYPEORM_SYNCHRONIZE=false TYPEORM_MIGRATIONS_RUN=false mwtsc --watch --run @midwayjs/mock/app.js"
   },
   "repository": {

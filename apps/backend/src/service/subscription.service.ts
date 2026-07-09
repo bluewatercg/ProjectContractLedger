@@ -101,6 +101,9 @@ export class SubscriptionService {
     if (query.owner_user_id) {
       queryBuilder.andWhere('subscription.owner_user_id = :ownerUserId', { ownerUserId: query.owner_user_id });
     }
+    if (query.owner_name) {
+      queryBuilder.andWhere('subscription.owner_name LIKE :ownerName', { ownerName: `%${query.owner_name}%` });
+    }
     if (query.status) {
       queryBuilder.andWhere('subscription.status = :status', { status: query.status });
     }
@@ -164,8 +167,10 @@ export class SubscriptionService {
       renewal_period_value: dto.renewal_period_value,
       renewal_period_unit: dto.renewal_period_unit,
       remind_days_before: dto.remind_days_before,
-      owner_user_id: dto.owner_user_id,
+      owner_name: this.normalizeNullableText(dto.owner_name),
+      owner_user_id: dto.owner_user_id ?? null,
       cc_user_ids: this.stringifyUserIds(dto.cc_user_ids),
+      cc_names: this.normalizeNullableText(dto.cc_names),
       fee: dto.fee ?? null,
       notes: dto.notes || null,
       status: dto.status || 'active',
@@ -194,8 +199,10 @@ export class SubscriptionService {
     if (dto.renewal_period_value !== undefined) subscription.renewal_period_value = dto.renewal_period_value;
     if (dto.renewal_period_unit !== undefined) subscription.renewal_period_unit = dto.renewal_period_unit;
     if (dto.remind_days_before !== undefined) subscription.remind_days_before = dto.remind_days_before;
-    if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id;
+    if (dto.owner_name !== undefined) subscription.owner_name = this.normalizeNullableText(dto.owner_name);
+    if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id ?? null;
     if (dto.cc_user_ids !== undefined) subscription.cc_user_ids = this.stringifyUserIds(dto.cc_user_ids);
+    if (dto.cc_names !== undefined) subscription.cc_names = this.normalizeNullableText(dto.cc_names);
     if (dto.fee !== undefined) subscription.fee = dto.fee ?? null;
     if (dto.notes !== undefined) subscription.notes = dto.notes || null;
     if (dto.status !== undefined) subscription.status = dto.status;
@@ -359,6 +366,9 @@ export class SubscriptionService {
     if (dto.remind_days_before !== undefined && dto.remind_days_before < 0) {
       throw new Error('提前提醒天数不能小于0');
     }
+    if (dto.owner_name !== undefined && !this.normalizeNullableText(dto.owner_name)) {
+      throw new Error('请输入主负责人');
+    }
   }
 
   private canOperateRenewal(subscription: SubscriptionRecord, userId: number, isAdmin: boolean): boolean {
@@ -369,6 +379,11 @@ export class SubscriptionService {
       return true;
     }
     return this.parseUserIds(subscription.cc_user_ids).includes(userId);
+  }
+
+  private normalizeNullableText(value?: string | null): string | null {
+    const text = value?.trim();
+    return text || null;
   }
 
   private stringifyUserIds(ids?: number[] | string | null): string | null {

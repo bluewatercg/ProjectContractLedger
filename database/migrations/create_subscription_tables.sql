@@ -34,8 +34,10 @@ CREATE TABLE IF NOT EXISTS subscription_records (
   renewal_period_value INT NOT NULL COMMENT '续费周期数值',
   renewal_period_unit ENUM('day', 'month', 'year') NOT NULL COMMENT '续费周期单位：day-天，month-月，year-年',
   remind_days_before INT NOT NULL DEFAULT 30 COMMENT '提前提醒天数',
-  owner_user_id INT NOT NULL COMMENT '主责任人ID',
-  cc_user_ids VARCHAR(500) NULL COMMENT '抄送人ID列表，逗号分隔',
+  owner_name VARCHAR(100) NULL COMMENT '主负责人名称（非系统用户）',
+  owner_user_id INT NULL COMMENT '历史主负责人用户ID，可为空',
+  cc_user_ids VARCHAR(500) NULL COMMENT '历史抄送人ID列表，逗号分隔',
+  cc_names VARCHAR(500) NULL COMMENT '其他负责人名称，手工输入',
   fee DECIMAL(15,2) NULL COMMENT '年费/单次费用',
   notes TEXT NULL COMMENT '备注',
   status ENUM('active', 'inactive') DEFAULT 'active' COMMENT '状态：active-启用，inactive-停用',
@@ -53,7 +55,8 @@ CREATE TABLE IF NOT EXISTS subscription_records (
   INDEX idx_subscription_records_kit_status (kit_id, status),
   INDEX idx_subscription_records_kit_type (kit_id, type_id),
   INDEX idx_subscription_records_expiry (kit_id, current_expiry_date),
-  INDEX idx_subscription_records_owner (kit_id, owner_user_id)
+  INDEX idx_subscription_records_owner (kit_id, owner_user_id),
+  INDEX idx_subscription_records_owner_name (kit_id, owner_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅台账表';
 
 CREATE TABLE IF NOT EXISTS subscription_renewal_logs (

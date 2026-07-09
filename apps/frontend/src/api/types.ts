@@ -577,8 +577,10 @@ export interface SubscriptionRecord {
   renewal_period_value: number
   renewal_period_unit: 'day' | 'month' | 'year'
   remind_days_before: number
-  owner_user_id: number
+  owner_name?: string | null
+  owner_user_id?: number | null
   cc_user_ids?: string | null
+  cc_names?: string | null
   cc_user_id_list?: number[]
   fee?: number | null
   notes?: string | null
@@ -612,6 +614,7 @@ export interface SubscriptionRenewalLog {
 export interface SubscriptionQuery extends PaginationQuery {
   type_id?: number
   owner_user_id?: number
+  owner_name?: string
   status?: 'active' | 'inactive'
   expiry_status?: 'normal' | 'expiring' | 'overdue'
   search?: string
@@ -640,7 +643,9 @@ export interface CreateSubscriptionDto {
   renewal_period_value: number
   renewal_period_unit: 'day' | 'month' | 'year'
   remind_days_before: number
-  owner_user_id: number
+  owner_name: string
+  owner_user_id?: number
+  cc_names?: string
   cc_user_ids?: number[]
   fee?: number
   notes?: string
