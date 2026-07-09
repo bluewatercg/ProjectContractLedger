@@ -117,11 +117,10 @@
           <el-col :span="12"><el-form-item label="事项类型" prop="type_id"><el-select v-model="form.type_id" style="width: 100%"><el-option v-for="type in store.types" :key="type.id" :label="type.name" :value="type.id" /></el-select></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="所属主体" prop="subject"><el-input v-model="form.subject" placeholder="公司名、域名、账号或公众号名称" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="服务商"><el-input v-model="form.provider" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item :label="editingId ? '本次续费时间' : '到期日'" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="到期日" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="周期数值" prop="renewal_period_value"><el-input-number v-model="form.renewal_period_value" :min="1" controls-position="right" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="周期单位" prop="renewal_period_unit"><el-select v-model="form.renewal_period_unit" style="width: 100%"><el-option label="天" value="day" /><el-option label="月" value="month" /><el-option label="年" value="year" /></el-select></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="提前提醒天数" prop="remind_days_before"><el-input-number v-model="form.remind_days_before" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="24"><el-alert :closable="false" type="info" show-icon><template #title>{{ datePreviewText }}</template></el-alert></el-col>
           <el-col :span="12"><el-form-item label="主负责人" prop="owner_name"><el-input v-model="form.owner_name" placeholder="手工输入负责人姓名" /></el-form-item></el-col>
           <el-col :span="24"><el-form-item label="其他负责人"><el-input v-model="form.cc_names" placeholder="多个负责人可用顿号、逗号或空格分隔" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="费用"><el-input-number v-model="form.fee" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
@@ -138,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadUserFile } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import type { SubscriptionRecord, CreateSubscriptionDto } from '@/api/types'
@@ -199,46 +198,6 @@ const rules: FormRules = {
   owner_name: [{ required: true, message: '请输入主负责人', trigger: 'blur' }]
 }
 
-const addPeriod = (dateText: string, value: number, unit: 'day' | 'month' | 'year') => {
-  if (!dateText || !value) return ''
-  const [year, month, day] = dateText.split('-').map(Number)
-  if (!year || !month || !day) return ''
-  const date = new Date(year, month - 1, day)
-  if (unit === 'day') {
-    date.setDate(date.getDate() + value)
-  } else if (unit === 'month') {
-    const targetMonth = month - 1 + value
-    const lastDay = new Date(year, targetMonth + 1, 0).getDate()
-    date.setFullYear(year, targetMonth, Math.min(day, lastDay))
-  } else {
-    const targetYear = year + value
-    const lastDay = new Date(targetYear, month, 0).getDate()
-    date.setFullYear(targetYear, month - 1, Math.min(day, lastDay))
-  }
-  const nextYear = date.getFullYear()
-  const nextMonth = String(date.getMonth() + 1).padStart(2, '0')
-  const nextDay = String(date.getDate()).padStart(2, '0')
-  return `${nextYear}-${nextMonth}-${nextDay}`
-}
-
-const addDays = (dateText: string, days: number) => {
-  if (!dateText) return ''
-  const [year, month, day] = dateText.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  date.setDate(date.getDate() + days)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-const nextExpiryDate = computed(() => addPeriod(form.current_expiry_date, form.renewal_period_value, form.renewal_period_unit))
-const nextReminderDate = computed(() => nextExpiryDate.value ? addDays(nextExpiryDate.value, -Number(form.remind_days_before || 0)) : '')
-const datePreviewText = computed(() => {
-  if (!form.current_expiry_date) return '请选择日期后预览下次到期和提醒时间'
-  if (!nextExpiryDate.value) return '请填写续费周期后预览下次到期和提醒时间'
-  const baseLabel = editingId.value ? '本次续费时间' : '当前到期日'
-  const saveText = editingId.value ? '，保存后到期日将更新为该日期' : ''
-  return `${baseLabel}：${form.current_expiry_date}；按 ${form.renewal_period_value}${unitLabel[form.renewal_period_unit]} 自动计算，下次到期日：${nextExpiryDate.value}${saveText}，下次提醒时间：${nextReminderDate.value}`
-})
-
 const loadData = async () => {
   await store.fetchSubscriptions({ ...filters, expiry_status: filters.expiry_status || undefined })
 }
@@ -258,7 +217,7 @@ const editSubscription = (row: SubscriptionRecord) => {
     subject: row.subject,
     provider: row.provider || '',
     renewal_url: row.renewal_url || '',
-    current_expiry_date: new Date().toISOString().slice(0, 10),
+    current_expiry_date: String(row.current_expiry_date).split('T')[0],
     renewal_period_value: row.renewal_period_value,
     renewal_period_unit: row.renewal_period_unit,
     remind_days_before: row.remind_days_before,
@@ -277,11 +236,7 @@ const submitForm = async () => {
   await formRef.value?.validate()
   saving.value = true
   try {
-    const payload = {
-      ...form,
-      current_expiry_date: editingId.value ? nextExpiryDate.value : form.current_expiry_date,
-      status: form.status || 'active'
-    }
+    const payload = { ...form, status: form.status || 'active' }
     if (editingId.value) {
       await store.updateSubscription(editingId.value, payload)
       ElMessage.success('更新成功')
