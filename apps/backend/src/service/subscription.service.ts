@@ -216,6 +216,10 @@ export class SubscriptionService {
     return await this.updateSubscription(id, { status: 'inactive' }, kitId, userId, true);
   }
 
+  async enableSubscription(id: number, kitId: number, userId: number): Promise<SubscriptionRecord> {
+    return await this.updateSubscription(id, { status: 'active' }, kitId, userId);
+  }
+
   async renewSubscription(id: number, kitId: number, userId: number, remarks?: string, isAdmin = false): Promise<SubscriptionRecord> {
     const subscription = await this.subscriptionRepository.findOne({ where: { id, kit_id: kitId } as any });
     if (!subscription) {

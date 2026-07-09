@@ -84,6 +84,16 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     return res.data
   }
 
+  const enableSubscription = async (id: number) => {
+    const res = await subscriptionApi.enableSubscription(id)
+    if (res.data) {
+      const index = subscriptions.value.findIndex(item => item.id === id)
+      if (index >= 0) subscriptions.value[index] = res.data
+      currentSubscription.value = res.data
+    }
+    return res.data
+  }
+
   const renewSubscription = async (id: number, data: RenewSubscriptionDto) => {
     const res = await subscriptionApi.renewSubscription(id, data)
     if (res.data) {
@@ -122,6 +132,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     createSubscription,
     updateSubscription,
     disableSubscription,
+    enableSubscription,
     renewSubscription,
     uploadRenewalAttachment,
     fetchRenewalLogs

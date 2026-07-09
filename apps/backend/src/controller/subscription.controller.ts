@@ -133,6 +133,17 @@ export class SubscriptionController {
     }
   }
 
+  @Patch('/:id/enable')
+  @ApiOperation({ summary: '启用订阅事项' })
+  async enableSubscription(@Param('id') id: number): Promise<ApiResponse> {
+    try {
+      const subscription = await this.subscriptionService.enableSubscription(Number(id), this.getKitId(), this.getUserId());
+      return { success: true, data: subscription, message: '启用订阅事项成功' };
+    } catch (error) {
+      return this.error(error, '启用订阅事项失败', 400);
+    }
+  }
+
   @Post('/:id/renew')
   @Validate()
   @ApiOperation({ summary: '确认订阅已续费' })

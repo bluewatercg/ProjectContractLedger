@@ -65,7 +65,8 @@
           <template #default="{ row }">
             <el-button size="small" @click="editSubscription(row)">编辑</el-button>
             <el-button size="small" type="success" :disabled="row.status !== 'active'" @click="openRenewDialog(row)">已续费</el-button>
-            <el-button size="small" type="warning" :disabled="row.status !== 'active'" @click="disable(row)">停用</el-button>
+            <el-button v-if="row.status !== 'active'" size="small" type="primary" @click="enable(row)">启用</el-button>
+            <el-button v-else size="small" type="warning" @click="disable(row)">停用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -331,6 +332,12 @@ const disable = async (row: SubscriptionRecord) => {
   await ElMessageBox.confirm(`确定停用「${row.name}」吗？停用后不再推送提醒。`, '停用订阅', { type: 'warning' })
   await store.disableSubscription(row.id)
   ElMessage.success('已停用')
+  await loadData()
+}
+
+const enable = async (row: SubscriptionRecord) => {
+  await store.enableSubscription(row.id)
+  ElMessage.success('已启用')
   await loadData()
 }
 

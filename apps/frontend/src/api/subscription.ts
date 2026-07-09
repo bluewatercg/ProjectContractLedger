@@ -47,6 +47,10 @@ export const subscriptionApi = {
     return apiClient.patch(`/subscriptions/${id}/disable`).then(res => res.data)
   },
 
+  enableSubscription(id: number): Promise<ApiResponse<SubscriptionRecord>> {
+    return apiClient.patch(`/subscriptions/${id}/enable`).then(res => res.data)
+  },
+
   renewSubscription(id: number, data: RenewSubscriptionDto): Promise<ApiResponse<SubscriptionRecord>> {
     return apiClient.post(`/subscriptions/${id}/renew`, data).then(res => res.data)
   },
