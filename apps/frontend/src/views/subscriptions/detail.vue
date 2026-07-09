@@ -39,10 +39,10 @@
         <el-table-column prop="operated_at" label="操作时间" width="180">
           <template #default="{ row }">{{ formatDateTime(row.operated_at) }}</template>
         </el-table-column>
-        <el-table-column label="上一到期日" width="140">
+        <el-table-column label="续费前到期日" width="140">
           <template #default="{ row }">{{ formatDate(row.previous_expiry_date) }}</template>
         </el-table-column>
-        <el-table-column label="新到期日" width="140">
+        <el-table-column label="续费后到期日" width="140">
           <template #default="{ row }">{{ formatDate(row.new_expiry_date) }}</template>
         </el-table-column>
         <el-table-column label="续费周期" width="120">
