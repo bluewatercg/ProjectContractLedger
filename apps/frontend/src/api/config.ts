@@ -61,6 +61,13 @@ apiClient.interceptors.request.use(
       config.headers['X-Kit-Id'] = String(kitStore.currentKitId)
     }
 
+    // FormData 由浏览器自动生成 multipart/form-data boundary，不能沿用默认 JSON Content-Type
+    if (config.data instanceof FormData) {
+      config.headers = config.headers || {}
+      delete config.headers['Content-Type']
+      delete config.headers['content-type']
+    }
+
     // 添加API版本信息到请求头
     const versionInfo = getVersionInfo()
     config.headers = config.headers || {}

@@ -52,13 +52,19 @@
           <template #default="{ row }">{{ row.operator?.full_name || row.operator?.username || row.operated_by }}</template>
         </el-table-column>
         <el-table-column prop="remarks" label="备注" show-overflow-tooltip />
-        <el-table-column label="附件" width="220">
+        <el-table-column label="附件" width="320">
           <template #default="{ row }">
             <el-space wrap>
               <el-button v-for="attachment in row.attachments || []" :key="attachment.attachment_id" size="small" @click="previewAttachment(attachment)">
                 {{ attachment.attachment_type === 'contract' ? '合同' : '发票' }}
               </el-button>
-              <span v-if="!row.attachments?.length">-</span>
+              <span v-if="!row.attachments?.length">暂无附件</span>
+              <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.jpg,.jpeg,.png" :on-change="file => uploadHistoryAttachment(row.id, 'contract', file)">
+                <el-button size="small" link type="primary">补合同</el-button>
+              </el-upload>
+              <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.jpg,.jpeg,.png" :on-change="file => uploadHistoryAttachment(row.id, 'invoice', file)">
+                <el-button size="small" link type="primary">补发票</el-button>
+              </el-upload>
             </el-space>
           </template>
         </el-table-column>
@@ -72,11 +78,13 @@
         <el-form-item label="续约合同">
           <el-upload v-model:file-list="contractFiles" :auto-upload="false" :limit="1" accept=".pdf,.jpg,.jpeg,.png">
             <el-button>选择合同附件</el-button>
+            <template #tip><div class="el-upload__tip">可选，可后补。支持 PDF、JPG、JPEG、PNG，最大 10MB</div></template>
           </el-upload>
         </el-form-item>
         <el-form-item label="续约发票">
           <el-upload v-model:file-list="invoiceFiles" :auto-upload="false" :limit="1" accept=".pdf,.jpg,.jpeg,.png">
             <el-button>选择发票附件</el-button>
+            <template #tip><div class="el-upload__tip">可选，可等发票拿到后再补传</div></template>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -91,7 +99,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage, type UploadUserFile } from 'element-plus'
+import { ElMessage, type UploadFile, type UploadUserFile } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { subscriptionApi } from '@/api/subscription'
 import type { SubscriptionRecord, SubscriptionRenewalAttachment } from '@/api/types'
@@ -136,6 +144,13 @@ const submitRenewal = async () => {
   } finally {
     renewing.value = false
   }
+}
+
+const uploadHistoryAttachment = async (renewalLogId: number, attachmentType: 'contract' | 'invoice', file: UploadFile) => {
+  if (!file.raw) return
+  await store.uploadRenewalAttachment(renewalLogId, attachmentType, file.raw)
+  await store.fetchRenewalLogs(subscriptionId.value)
+  ElMessage.success(`${attachmentType === 'contract' ? '合同' : '发票'}附件已保存`)
 }
 
 const previewAttachment = async (attachment: SubscriptionRenewalAttachment) => {

@@ -95,12 +95,13 @@
         <el-form-item label="续约合同">
           <el-upload v-model:file-list="contractFiles" :auto-upload="false" :limit="1" accept=".pdf,.jpg,.jpeg,.png">
             <el-button>选择合同附件</el-button>
-            <template #tip><div class="el-upload__tip">支持 PDF、JPG、JPEG、PNG，最大 10MB</div></template>
+            <template #tip><div class="el-upload__tip">可选，可后补。支持 PDF、JPG、JPEG、PNG，最大 10MB</div></template>
           </el-upload>
         </el-form-item>
         <el-form-item label="续约发票">
           <el-upload v-model:file-list="invoiceFiles" :auto-upload="false" :limit="1" accept=".pdf,.jpg,.jpeg,.png">
             <el-button>选择发票附件</el-button>
+            <template #tip><div class="el-upload__tip">可选，可等发票拿到后再补传</div></template>
           </el-upload>
         </el-form-item>
       </el-form>
