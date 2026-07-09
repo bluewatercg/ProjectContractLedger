@@ -70,9 +70,7 @@ export const subscriptionApi = {
   ): Promise<ApiResponse<SubscriptionRenewalAttachment>> {
     const formData = new FormData()
     formData.append('file', file)
-    return apiClient.post(`/subscriptions/renewal-logs/${renewalLogId}/attachments/${attachmentType}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    }).then(res => res.data)
+    return apiClient.post(`/subscriptions/renewal-logs/${renewalLogId}/attachments/${attachmentType}`, formData).then(res => res.data)
   },
 
   downloadRenewalAttachment(attachmentId: number): Promise<Blob> {

@@ -251,6 +251,7 @@ export class SubscriptionService {
     }));
 
     subscription.current_expiry_date = newExpiryDate as any;
+    subscription.status = 'active';
     subscription.updated_by = userId;
     const savedSubscription = await this.subscriptionRepository.save(subscription);
     return Object.assign(savedSubscription, { renewal_log: renewalLog });

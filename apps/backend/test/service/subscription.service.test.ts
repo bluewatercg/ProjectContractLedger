@@ -146,7 +146,7 @@ describe('SubscriptionService.updateSubscription', () => {
 });
 
 describe('SubscriptionService.renewSubscription', () => {
-  it('updates expiry date and creates renewal log when operator is admin for text owner', async () => {
+  it('updates expiry date, reactivates subscription, and creates renewal log when operator is admin for text owner', async () => {
     const service = createService();
     const subscription = {
       id: 5,
@@ -157,13 +157,14 @@ describe('SubscriptionService.renewSubscription', () => {
       owner_name: '张三',
       owner_user_id: null,
       cc_user_ids: null,
-      status: 'active',
+      status: 'inactive',
     };
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
 
     const result = await service.renewSubscription(5, 2, 9, '已续费', true);
 
     expect(result.current_expiry_date).toBe('2024-02-29');
+    expect(result.status).toBe('active');
     expect((result as any).renewal_log.id).toBe(1);
     expect(service.renewalLogRepository.create).toHaveBeenCalledWith({
       subscription_id: 5,

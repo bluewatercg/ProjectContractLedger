@@ -64,7 +64,7 @@
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="editSubscription(row)">编辑</el-button>
-            <el-button size="small" type="success" :disabled="row.status !== 'active'" @click="openRenewDialog(row)">已续费</el-button>
+            <el-button size="small" type="success" @click="openRenewDialog(row)">已续费</el-button>
             <el-button v-if="row.status !== 'active'" size="small" type="primary" @click="enable(row)">启用</el-button>
             <el-button v-else size="small" type="warning" @click="disable(row)">停用</el-button>
           </template>
