@@ -15,7 +15,7 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="事项名称">{{ subscription.name }}</el-descriptions-item>
         <el-descriptions-item label="事项类型">{{ subscription.type?.name || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="主体">{{ subscription.subject }}</el-descriptions-item>
+        <el-descriptions-item label="所属主体">{{ subscription.subject }}</el-descriptions-item>
         <el-descriptions-item label="服务商">{{ subscription.provider || '-' }}</el-descriptions-item>
         <el-descriptions-item label="当前到期日">{{ formatDate(subscription.current_expiry_date) }}</el-descriptions-item>
         <el-descriptions-item label="到期状态">
@@ -23,9 +23,9 @@
         </el-descriptions-item>
         <el-descriptions-item label="续费周期">{{ subscription.renewal_period_value }}{{ unitLabel[subscription.renewal_period_unit] }}</el-descriptions-item>
         <el-descriptions-item label="提前提醒">提前 {{ subscription.remind_days_before }} 天</el-descriptions-item>
-        <el-descriptions-item label="主责任人">{{ subscription.owner?.full_name || subscription.owner?.username || subscription.owner_user_id }}</el-descriptions-item>
+        <el-descriptions-item label="主负责人">{{ subscription.owner?.full_name || subscription.owner?.username || subscription.owner_user_id }}</el-descriptions-item>
         <el-descriptions-item label="费用">{{ subscription.fee ? `¥${Number(subscription.fee).toFixed(2)}` : '-' }}</el-descriptions-item>
-        <el-descriptions-item label="续费入口" :span="2">
+        <el-descriptions-item label="续费方式" :span="2">
           <el-link v-if="subscription.renewal_url" type="primary" :href="subscription.renewal_url" target="_blank">{{ subscription.renewal_url }}</el-link>
           <span v-else>-</span>
         </el-descriptions-item>

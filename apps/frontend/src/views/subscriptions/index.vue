@@ -44,7 +44,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="type.name" label="类型" width="120" />
-        <el-table-column prop="subject" label="主体" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="subject" label="所属主体" min-width="160" show-overflow-tooltip />
         <el-table-column prop="provider" label="服务商" width="120" show-overflow-tooltip />
         <el-table-column prop="current_expiry_date" label="到期日" width="130" sortable="custom" />
         <el-table-column label="状态" width="120">
@@ -114,18 +114,18 @@
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑订阅' : '新增订阅'" width="720px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
         <el-row :gutter="16">
-          <el-col :span="12"><el-form-item label="事项名称" prop="name"><el-input v-model="form.name" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="事项名称" prop="name"><el-input v-model="form.name" placeholder="例如：企业微信认证、阿里云服务器" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="事项类型" prop="type_id"><el-select v-model="form.type_id" style="width: 100%"><el-option v-for="type in store.types" :key="type.id" :label="type.name" :value="type.id" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="主体" prop="subject"><el-input v-model="form.subject" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="所属主体" prop="subject"><el-input v-model="form.subject" placeholder="公司名、域名、账号或公众号名称" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="服务商"><el-input v-model="form.provider" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="到期日" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="周期数值" prop="renewal_period_value"><el-input-number v-model="form.renewal_period_value" :min="1" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="周期单位" prop="renewal_period_unit"><el-select v-model="form.renewal_period_unit" style="width: 100%"><el-option label="天" value="day" /><el-option label="月" value="month" /><el-option label="年" value="year" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="提前提醒天数" prop="remind_days_before"><el-input-number v-model="form.remind_days_before" :min="0" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="主责任人" prop="owner_user_id"><el-select v-model="form.owner_user_id" filterable style="width: 100%"><el-option v-for="user in users" :key="user.id" :label="user.full_name || user.username" :value="user.id" /></el-select></el-form-item></el-col>
-          <el-col :span="24"><el-form-item label="抄送人"><el-select v-model="form.cc_user_ids" multiple filterable style="width: 100%"><el-option v-for="user in users" :key="user.id" :label="user.full_name || user.username" :value="user.id" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="费用"><el-input-number v-model="form.fee" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="续费入口"><el-input v-model="form.renewal_url" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="周期数值" prop="renewal_period_value"><el-input-number v-model="form.renewal_period_value" :min="1" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="周期单位" prop="renewal_period_unit"><el-select v-model="form.renewal_period_unit" style="width: 100%"><el-option label="天" value="day" /><el-option label="月" value="month" /><el-option label="年" value="year" /></el-select></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="提前提醒天数" prop="remind_days_before"><el-input-number v-model="form.remind_days_before" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="主负责人" prop="owner_user_id"><el-select v-model="form.owner_user_id" filterable style="width: 100%"><el-option v-for="user in users" :key="user.id" :label="user.full_name || user.username" :value="user.id" /></el-select></el-form-item></el-col>
+          <el-col :span="24"><el-form-item label="负责人"><el-input v-model="ccUserIdsText" placeholder="手工输入其他负责人用户 ID，多个用逗号分隔，例如：2,3" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="费用"><el-input-number v-model="form.fee" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="续费方式"><el-input v-model="form.renewal_url" placeholder="续费链接、线下转账、服务商后台等" /></el-form-item></el-col>
           <el-col :span="24"><el-form-item label="备注"><el-input v-model="form.notes" type="textarea" :rows="3" /></el-form-item></el-col>
         </el-row>
       </el-form>
@@ -156,6 +156,7 @@ const renewingRow = ref<SubscriptionRecord | null>(null)
 const contractFiles = ref<UploadUserFile[]>([])
 const invoiceFiles = ref<UploadUserFile[]>([])
 const renewalForm = reactive({ remarks: '' })
+const ccUserIdsText = ref('')
 
 const filters = reactive({
   search: '',
@@ -196,7 +197,7 @@ const rules: FormRules = {
   type_id: [{ required: true, message: '请选择事项类型', trigger: 'change' }],
   subject: [{ required: true, message: '请输入主体', trigger: 'blur' }],
   current_expiry_date: [{ required: true, message: '请选择到期日', trigger: 'change' }],
-  owner_user_id: [{ required: true, message: '请选择主责任人', trigger: 'change' }]
+  owner_user_id: [{ required: true, message: '请选择主负责人', trigger: 'change' }]
 }
 
 const loadData = async () => {
@@ -211,11 +212,13 @@ const loadUsers = async () => {
 const openCreateDialog = () => {
   editingId.value = null
   Object.assign(form, defaultForm(), { type_id: store.types[0]?.id || 0, owner_user_id: users.value[0]?.id || 0 })
+  ccUserIdsText.value = ''
   dialogVisible.value = true
 }
 
 const editSubscription = (row: SubscriptionRecord) => {
   editingId.value = row.id
+  const ccUserIds = row.cc_user_id_list || parseCcUserIds(row.cc_user_ids)
   Object.assign(form, {
     type_id: row.type_id,
     name: row.name,
@@ -227,11 +230,12 @@ const editSubscription = (row: SubscriptionRecord) => {
     renewal_period_unit: row.renewal_period_unit,
     remind_days_before: row.remind_days_before,
     owner_user_id: row.owner_user_id,
-    cc_user_ids: row.cc_user_id_list || parseCcUserIds(row.cc_user_ids),
+    cc_user_ids: ccUserIds,
     fee: row.fee || undefined,
     notes: row.notes || '',
     status: row.status
   })
+  ccUserIdsText.value = ccUserIds.join(',')
   dialogVisible.value = true
 }
 
@@ -239,11 +243,15 @@ const submitForm = async () => {
   await formRef.value?.validate()
   saving.value = true
   try {
+    const payload = {
+      ...form,
+      cc_user_ids: parseCcUserIds(ccUserIdsText.value)
+    }
     if (editingId.value) {
-      await store.updateSubscription(editingId.value, form)
+      await store.updateSubscription(editingId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      await store.createSubscription(form)
+      await store.createSubscription(payload)
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
