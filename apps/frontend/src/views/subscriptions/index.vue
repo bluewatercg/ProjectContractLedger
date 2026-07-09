@@ -56,17 +56,17 @@
         <el-table-column label="负责人" width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.owner_name || row.owner?.full_name || row.owner?.username || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="启用状态" width="100">
+        <el-table-column prop="status" label="当前状态" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'">{{ row.status === 'active' ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="row.status === 'active' ? 'success' : 'info'">{{ row.status === 'active' ? '已启用' : '已停用' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="editSubscription(row)">编辑</el-button>
             <el-button size="small" type="success" @click="openRenewDialog(row)">已续费</el-button>
-            <el-button v-if="row.status !== 'active'" size="small" type="primary" @click="enable(row)">启用</el-button>
-            <el-button v-else size="small" type="warning" @click="disable(row)">停用</el-button>
+            <el-button v-if="row.status !== 'active'" size="small" type="primary" @click="enable(row)">恢复启用</el-button>
+            <el-button v-else size="small" type="warning" @click="disable(row)">停用此项</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -350,7 +350,7 @@ const submitRenewal = async () => {
 }
 
 const disable = async (row: SubscriptionRecord) => {
-  await ElMessageBox.confirm(`确定停用「${row.name}」吗？停用后不再推送提醒。`, '停用订阅', { type: 'warning' })
+  await ElMessageBox.confirm(`确定停用「${row.name}」吗？停用后不再推送提醒。`, '停用此项', { type: 'warning' })
   await store.disableSubscription(row.id)
   ElMessage.success('已停用')
   await loadData()
