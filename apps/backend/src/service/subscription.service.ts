@@ -173,7 +173,7 @@ export class SubscriptionService {
       cc_names: this.normalizeNullableText(dto.cc_names),
       fee: dto.fee ?? null,
       notes: dto.notes || null,
-      status: dto.status || 'active',
+      status: this.normalizeRecordStatus(dto.status),
       created_by: userId,
       updated_by: null,
     });
@@ -205,7 +205,7 @@ export class SubscriptionService {
     if (dto.cc_names !== undefined) subscription.cc_names = this.normalizeNullableText(dto.cc_names);
     if (dto.fee !== undefined) subscription.fee = dto.fee ?? null;
     if (dto.notes !== undefined) subscription.notes = dto.notes || null;
-    if (dto.status !== undefined) subscription.status = dto.status;
+    if (dto.status !== undefined) subscription.status = this.normalizeRecordStatus(dto.status);
     subscription.updated_by = userId;
 
     this.validateSubscriptionDto(subscription as any);
@@ -384,6 +384,10 @@ export class SubscriptionService {
   private normalizeNullableText(value?: string | null): string | null {
     const text = value?.trim();
     return text || null;
+  }
+
+  private normalizeRecordStatus(status?: string | null): 'active' | 'inactive' {
+    return status === 'inactive' ? 'inactive' : 'active';
   }
 
   private stringifyUserIds(ids?: number[] | string | null): string | null {

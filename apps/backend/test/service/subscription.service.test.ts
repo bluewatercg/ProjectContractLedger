@@ -55,6 +55,30 @@ describe('SubscriptionService.getExpiryStatus', () => {
   });
 });
 
+describe('SubscriptionService.updateSubscription', () => {
+  it('defaults blank status to active before saving', async () => {
+    const service = createService();
+    const subscription = {
+      id: 5,
+      kit_id: 2,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2024-01-31',
+      renewal_period_value: 1,
+      renewal_period_unit: 'year',
+      remind_days_before: 30,
+      owner_name: '张三',
+      status: 'active',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+
+    await service.updateSubscription(5, { status: '' as any }, 2, 9);
+
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
+  });
+});
+
 describe('SubscriptionService.renewSubscription', () => {
   it('updates expiry date and creates renewal log when operator is admin for text owner', async () => {
     const service = createService();
