@@ -77,6 +77,28 @@ describe('SubscriptionService.updateSubscription', () => {
 
     expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
   });
+  it('reactivates inactive subscription when a normal update omits status', async () => {
+    const service = createService();
+    const subscription = {
+      id: 5,
+      kit_id: 2,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2024-01-31',
+      renewal_period_value: 1,
+      renewal_period_unit: 'year',
+      remind_days_before: 30,
+      owner_name: '张三',
+      status: 'inactive',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+
+    await service.updateSubscription(5, { notes: '已重新续费' }, 2, 9);
+
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
+  });
+
 });
 
 describe('SubscriptionService.renewSubscription', () => {

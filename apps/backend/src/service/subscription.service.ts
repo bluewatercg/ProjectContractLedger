@@ -181,7 +181,7 @@ export class SubscriptionService {
     return await this.subscriptionRepository.save(subscription);
   }
 
-  async updateSubscription(id: number, dto: UpdateSubscriptionDto, kitId: number, userId: number): Promise<SubscriptionRecord> {
+  async updateSubscription(id: number, dto: UpdateSubscriptionDto, kitId: number, userId: number, keepInactive = false): Promise<SubscriptionRecord> {
     const subscription = await this.subscriptionRepository.findOne({ where: { id, kit_id: kitId } as any });
     if (!subscription) {
       throw new Error('订阅事项不存在');
@@ -205,7 +205,7 @@ export class SubscriptionService {
     if (dto.cc_names !== undefined) subscription.cc_names = this.normalizeNullableText(dto.cc_names);
     if (dto.fee !== undefined) subscription.fee = dto.fee ?? null;
     if (dto.notes !== undefined) subscription.notes = dto.notes || null;
-    if (dto.status !== undefined) subscription.status = this.normalizeRecordStatus(dto.status);
+    subscription.status = keepInactive ? this.normalizeRecordStatus(dto.status ?? subscription.status) : this.normalizeRecordStatus(dto.status);
     subscription.updated_by = userId;
 
     this.validateSubscriptionDto(subscription as any);
@@ -213,7 +213,7 @@ export class SubscriptionService {
   }
 
   async disableSubscription(id: number, kitId: number, userId: number): Promise<SubscriptionRecord> {
-    return await this.updateSubscription(id, { status: 'inactive' }, kitId, userId);
+    return await this.updateSubscription(id, { status: 'inactive' }, kitId, userId, true);
   }
 
   async renewSubscription(id: number, kitId: number, userId: number, remarks?: string, isAdmin = false): Promise<SubscriptionRecord> {
