@@ -1,45 +1,40 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { subscriptionApi } from '@/api/subscription'
-import type {
-  SubscriptionRecord,
-  SubscriptionType,
+import { 
+  Subscription, 
+  SubscriptionType, 
+  PaginationQuery, 
+  PaginationResult,
   SubscriptionRenewalLog,
-  SubscriptionQuery,
-  CreateSubscriptionDto,
-  UpdateSubscriptionDto,
-  RenewSubscriptionDto
+  SubscriptionRenewalAttachment
 } from '@/api/types'
 
 export const useSubscriptionStore = defineStore('subscription', () => {
-  const subscriptions = ref<SubscriptionRecord[]>([])
-  const types = ref<SubscriptionType[]>([])
-  const currentSubscription = ref<SubscriptionRecord | null>(null)
+  const subscriptions = ref<Subscription[]>([])
+  const subscriptionTypes = ref<SubscriptionType[]>([])
+  const currentSubscription = ref<Subscription | null>(null)
   const renewalLogs = ref<SubscriptionRenewalLog[]>([])
   const loading = ref(false)
-  const total = ref(0)
-  const page = ref(1)
-  const limit = ref(20)
 
-  const expiringCount = computed(() => subscriptions.value.filter(item => item.expiryStatus === 'expiring').length)
-  const overdueCount = computed(() => subscriptions.value.filter(item => item.expiryStatus === 'overdue').length)
+  const pagination = ref({
+    page: 1,
+    limit: 20,
+    total: 0
+  })
 
-  const fetchTypes = async () => {
-    const res = await subscriptionApi.getTypes('active')
-    types.value = res.data || []
-    return types.value
-  }
-
-  const fetchSubscriptions = async (query: SubscriptionQuery = {}) => {
+  const fetchSubscriptions = async (params: PaginationQuery & { search?: string, status?: string, typeId?: number } = {}) => {
     loading.value = true
     try {
-      const res = await subscriptionApi.getSubscriptions({ page: page.value, limit: limit.value, ...query })
-      const data = res.data
-      subscriptions.value = data?.items || []
-      total.value = data?.total || 0
-      page.value = data?.page || page.value
-      limit.value = data?.limit || limit.value
-      return data
+      const response = await subscriptionApi.getSubscriptions({
+        page: pagination.value.page,
+        limit: pagination.value.limit,
+        ...params
+      })
+      if (response.success && response.data) {
+        subscriptions.value = response.data.items
+        pagination.value.total = response.data.total
+      }
     } finally {
       loading.value = false
     }
@@ -48,105 +43,110 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   const fetchSubscription = async (id: number) => {
     loading.value = true
     try {
-      const res = await subscriptionApi.getSubscriptionById(id)
-      currentSubscription.value = res.data || null
-      return currentSubscription.value
+      const response = await subscriptionApi.getSubscription(id)
+      if (response.success && response.data) {
+        currentSubscription.value = response.data
+      }
     } finally {
       loading.value = false
     }
   }
 
-  const createSubscription = async (data: CreateSubscriptionDto) => {
-    const res = await subscriptionApi.createSubscription(data)
-    if (res.data) {
-      subscriptions.value.unshift(res.data)
+  const createSubscription = async (data: Omit<Subscription, 'id'>) => {
+    const response = await subscriptionApi.createSubscription(data)
+    if (response.success && response.data) {
+      subscriptions.value.unshift(response.data)
     }
-    return res.data
+    return response
   }
 
-  const updateSubscription = async (id: number, data: UpdateSubscriptionDto) => {
-    const res = await subscriptionApi.updateSubscription(id, data)
-    if (res.data) {
-      const index = subscriptions.value.findIndex(item => item.id === id)
-      if (index >= 0) subscriptions.value[index] = res.data
-      currentSubscription.value = res.data
+  const updateSubscription = async (id: number, data: Partial<Subscription>) => {
+    const response = await subscriptionApi.updateSubscription(id, data)
+    if (response.success && response.data) {
+      const index = subscriptions.value.findIndex(s => s.id === id)
+      if (index !== -1) {
+        subscriptions.value[index] = response.data
+      }
+      if (currentSubscription.value?.id === id) {
+        currentSubscription.value = response.data
+      }
     }
-    return res.data
+    return response
   }
 
   const disableSubscription = async (id: number) => {
-    const res = await subscriptionApi.disableSubscription(id)
-    if (res.data) {
-      const index = subscriptions.value.findIndex(item => item.id === id)
-      if (index >= 0) subscriptions.value[index] = res.data
-      currentSubscription.value = res.data
+    const response = await subscriptionApi.disableSubscription(id)
+    if (response.success) {
+      const subscription = subscriptions.value.find(s => s.id === id)
+      if (subscription) {
+        subscription.status = 'inactive'
+      }
+      if (currentSubscription.value?.id === id) {
+        currentSubscription.value.status = 'inactive'
+      }
     }
-    return res.data
+    return response
   }
 
   const enableSubscription = async (id: number) => {
-    const res = await subscriptionApi.enableSubscription(id)
-    if (res.data) {
-      const index = subscriptions.value.findIndex(item => item.id === id)
-      if (index >= 0) subscriptions.value[index] = res.data
-      currentSubscription.value = res.data
+    const response = await subscriptionApi.enableSubscription(id)
+    if (response.success) {
+      const subscription = subscriptions.value.find(s => s.id === id)
+      if (subscription) {
+        subscription.status = 'active'
+      }
+      if (currentSubscription.value?.id === id) {
+        currentSubscription.value.status = 'active'
+      }
     }
-    return res.data
-  }
-
-  const renewSubscription = async (id: number, data: RenewSubscriptionDto) => {
-    const res = await subscriptionApi.renewSubscription(id, data)
-    if (res.data) {
-      const index = subscriptions.value.findIndex(item => item.id === id)
-      if (index >= 0) subscriptions.value[index] = res.data
-      currentSubscription.value = res.data
-    }
-    return res.data
-  }
-
-  const uploadRenewalAttachment = async (renewalLogId: number, attachmentType: 'contract' | 'invoice', file: File) => {
-    const res = await subscriptionApi.uploadRenewalAttachment(renewalLogId, attachmentType, file)
-    return res.data
-  }
-
-  const deleteRenewalAttachment = async (attachmentId: number) => {
-    const res = await subscriptionApi.deleteRenewalAttachment(attachmentId)
-    return res
-  }
-
-  const deleteRenewalLog = async (id: number, renewalLogId: number) => {
-    const res = await subscriptionApi.deleteRenewalLog(id, renewalLogId)
-    return res
+    return response
   }
 
   const fetchRenewalLogs = async (id: number) => {
-    const res = await subscriptionApi.getRenewalLogs(id)
-    renewalLogs.value = res.data || []
-    return renewalLogs.value
+    loading.value = true
+    try {
+      const response = await subscriptionApi.getRenewalLogs(id)
+      if (response.success && response.data) {
+        renewalLogs.value = response.data
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const deleteRenewalLog = async (id: number, renewalLogId: number) => {
+    const response = await subscriptionApi.deleteRenewalLog(id, renewalLogId)
+    if (response.success) {
+      renewalLogs.value = renewalLogs.value.filter(log => log.id !== renewalLogId)
+    }
+    return response
+  }
+
+  const deleteRenewalAttachment = async (attachmentId: number) => {
+    const response = await subscriptionApi.deleteRenewalAttachment(attachmentId)
+    return response
+  }
+
+  const fetchSubscriptionTypes = async () => {
+    // 这里应该调用API获取订阅类型，如果有的话
   }
 
   return {
     subscriptions,
-    types,
+    subscriptionTypes,
     currentSubscription,
     renewalLogs,
     loading,
-    total,
-    page,
-    limit,
-    expiringCount,
-    overdueCount,
-    fetchTypes,
+    pagination,
     fetchSubscriptions,
     fetchSubscription,
     createSubscription,
     updateSubscription,
     disableSubscription,
     enableSubscription,
-    renewSubscription,
-    uploadRenewalAttachment,
-    deleteRenewalAttachment,
+    fetchRenewalLogs,
     deleteRenewalLog,
-    fetchRenewalLogs
+    deleteRenewalAttachment,
+    fetchSubscriptionTypes
   }
 })

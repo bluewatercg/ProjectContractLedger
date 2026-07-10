@@ -1285,3 +1285,49 @@ export class RenewSubscriptionDto {
   @ApiPropertyOptional({ description: '续费备注', example: '已完成续费', maxLength: 500 })
   remarks?: string;
 }
+
+
+// 续费记录相关接口
+export interface CreateSubscriptionRenewalRecordDto {
+  renewal_date?: string;
+  next_reminder_date?: string;
+  remind_days_before?: number;
+  reminder_mode?: 'daily' | 'once';
+  fee?: number;
+  renewal_method?: string;
+  remarks?: string;
+  status?: 'active' | 'completed' | 'voided';
+}
+
+export interface UpdateSubscriptionRenewalRecordDto {
+  renewal_date?: string;
+  next_reminder_date?: string;
+  remind_days_before?: number;
+  reminder_mode?: 'daily' | 'once';
+  fee?: number;
+  renewal_method?: string;
+  remarks?: string;
+  status?: 'active' | 'completed' | 'voided';
+}
+
+export interface SubscriptionRenewalRecordResponse {
+  id: number;
+  subscription_id: number;
+  kit_id: number;
+  renewal_date: string | null;
+  next_reminder_date: string | null;
+  remind_days_before: number;
+  reminder_mode: 'daily' | 'once';
+  fee: number | null;
+  renewal_method: string | null;
+  status: 'active' | 'completed' | 'voided';
+  remarks: string | null;
+  operated_by: number | null;
+  created_at: string;
+  updated_at: string;
+  operator?: {
+    id: number;
+    username: string;
+  };
+}
+

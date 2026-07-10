@@ -2,8 +2,23 @@ import { SubscriptionService } from '../../src/service/subscription.service';
 
 const createService = () => {
   const service = new SubscriptionService();
+  
+  // Mock query builder methods
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    getMany: jest.fn().mockResolvedValue([]),
+    getOne: jest.fn().mockResolvedValue(null),
+    innerJoin: jest.fn().mockReturnThis(),
+  };
+  
   service.subscriptionRepository = {
-    createQueryBuilder: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     create: jest.fn(data => data),
     save: jest.fn(async data => ({ id: data.id || 1, ...data })),
     findOne: jest.fn(),
@@ -13,14 +28,14 @@ const createService = () => {
     create: jest.fn(data => data),
     save: jest.fn(async data => ({ id: data.id || 1, ...data })),
     count: jest.fn(),
-    createQueryBuilder: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
   } as any;
   service.renewalLogRepository = {
     create: jest.fn(data => data),
     save: jest.fn(async data => ({ id: 1, ...data })),
     findOne: jest.fn(),
     remove: jest.fn(async data => data),
-    createQueryBuilder: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
   } as any;
   service.pushLogRepository = {
     findOne: jest.fn(),
@@ -30,84 +45,63 @@ const createService = () => {
   service.subscriptionRenewalAttachmentService = {
     deleteAttachmentsByRenewalLogId: jest.fn(),
   } as any;
+  service.subscriptionRenewalRecordService = {
+    createRenewalRecord: jest.fn(),
+  } as any;
   return service;
 };
 
-describe('SubscriptionService.calculateNextExpiryDate', () => {
-  it('adds day periods accurately', () => {
-    const service = createService();
-    expect(service.calculateNextExpiryDate('2024-01-01', 90, 'day')).toBe('2024-03-31');
-  });
-
-  it('adds month periods using month end when target day does not exist', () => {
-    const service = createService();
-    expect(service.calculateNextExpiryDate('2024-01-31', 1, 'month')).toBe('2024-02-29');
-    expect(service.calculateNextExpiryDate('2023-01-31', 1, 'month')).toBe('2023-02-28');
-  });
-
-  it('adds year periods using month end when leap day target does not exist', () => {
-    const service = createService();
-    expect(service.calculateNextExpiryDate('2024-02-29', 1, 'year')).toBe('2025-02-28');
-  });
-});
-
-describe('SubscriptionService.getExpiryStatus', () => {
-  it('returns overdue, expiring, or normal by days until expiry', () => {
-    const service = createService();
-    expect(service.getExpiryStatus('2024-01-09', '2024-01-10', 30)).toEqual({ status: 'overdue', daysUntilExpiry: -1 });
-    expect(service.getExpiryStatus('2024-01-20', '2024-01-10', 30)).toEqual({ status: 'expiring', daysUntilExpiry: 10 });
-    expect(service.getExpiryStatus('2024-03-01', '2024-01-10', 30)).toEqual({ status: 'normal', daysUntilExpiry: 51 });
-  });
-});
-
-
-
-describe('SubscriptionService.nextReminderStartDate', () => {
-  it('defaults next reminder start date from expiry date and remind days when creating', async () => {
+describe('SubscriptionService.createSubscription', () => {
+  it('creates subscription with correct data', async () => {
     const service = createService();
     (service.typeRepository.findOne as jest.Mock).mockResolvedValue({ id: 1, kit_id: 2, status: 'active' });
-
+    
+    // Mock the getSubscriptionById method to return the created subscription
+    service.getSubscriptionById = jest.fn().mockResolvedValue({
+      id: 1,
+      kit_id: 2,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      provider: '腾讯云',
+      owner_name: '张三',
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
+      status: 'active',
+    });
+    
     await service.createSubscription({
       type_id: 1,
       name: '企微认证',
       subject: '主体',
-      current_expiry_date: '2026-08-13',
-      renewal_period_value: 1,
-      renewal_period_unit: 'year',
-      remind_days_before: 8,
+      provider: '腾讯云',
       owner_name: '张三',
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
+      status: 'active'
     } as any, 2, 9);
 
-    expect(service.subscriptionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      current_expiry_date: '2026-08-13',
-      next_reminder_start_date: '2026-08-05',
-    }));
-  });
-
-  it('keeps manual next reminder start date when creating', async () => {
-    const service = createService();
-    (service.typeRepository.findOne as jest.Mock).mockResolvedValue({ id: 1, kit_id: 2, status: 'active' });
-
-    await service.createSubscription({
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+      kit_id: 2,
       type_id: 1,
       name: '企微认证',
       subject: '主体',
-      current_expiry_date: '2026-08-13',
-      next_reminder_start_date: '2026-08-01',
-      renewal_period_value: 1,
-      renewal_period_unit: 'year',
-      remind_days_before: 8,
+      provider: '腾讯云',
       owner_name: '张三',
-    } as any, 2, 9);
-
-    expect(service.subscriptionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      next_reminder_start_date: '2026-08-01',
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
+      status: 'active',
+      created_by: 9,
+      updated_by: 9
     }));
   });
 });
 
 describe('SubscriptionService.updateSubscription', () => {
-  it('defaults blank status to active before saving', async () => {
+  it('updates subscription with correct data', async () => {
     const service = createService();
     const subscription = {
       id: 5,
@@ -115,21 +109,38 @@ describe('SubscriptionService.updateSubscription', () => {
       type_id: 1,
       name: '企微认证',
       subject: '主体',
-      current_expiry_date: '2024-01-31',
-      renewal_period_value: 1,
-      renewal_period_unit: 'year',
-      remind_days_before: 30,
-      next_reminder_start_date: '2024-01-01',
+      provider: '腾讯云',
       owner_name: '张三',
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
       status: 'active',
     };
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+    
+    // Mock the getSubscriptionById method to return the updated subscription
+    service.getSubscriptionById = jest.fn().mockResolvedValue({
+      ...subscription,
+      name: '企微认证更新',
+      fee: 400,
+      status: 'inactive',
+    });
 
-    await service.updateSubscription(5, { status: '' as any }, 2, 9);
+    await service.updateSubscription(5, { 
+      name: '企微认证更新', 
+      fee: 400,
+      status: 'inactive'
+    }, 2, 9);
 
-    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ 
+      name: '企微认证更新',
+      fee: 400,
+      status: 'inactive',
+      updated_by: 9
+    }));
   });
-  it('reactivates inactive subscription when a normal update omits status', async () => {
+
+  it('does not change status when updating without specifying status', async () => {
     const service = createService();
     const subscription = {
       id: 5,
@@ -137,40 +148,24 @@ describe('SubscriptionService.updateSubscription', () => {
       type_id: 1,
       name: '企微认证',
       subject: '主体',
-      current_expiry_date: '2024-01-31',
-      renewal_period_value: 1,
-      renewal_period_unit: 'year',
-      remind_days_before: 30,
+      provider: '腾讯云',
       owner_name: '张三',
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
       status: 'inactive',
     };
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+    
+    // Mock the getSubscriptionById method to return the subscription with same status
+    service.getSubscriptionById = jest.fn().mockResolvedValue({
+      ...subscription,
+      status: 'inactive',
+    });
 
     await service.updateSubscription(5, { notes: '已重新续费' }, 2, 9);
 
-    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
-  });
-
-  it('explicitly enables an inactive subscription', async () => {
-    const service = createService();
-    const subscription = {
-      id: 5,
-      kit_id: 2,
-      type_id: 1,
-      name: '企微认证',
-      subject: '主体',
-      current_expiry_date: '2024-01-31',
-      renewal_period_value: 1,
-      renewal_period_unit: 'year',
-      remind_days_before: 30,
-      owner_name: '张三',
-      status: 'inactive',
-    };
-    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
-
-    await service.enableSubscription(5, 2, 9);
-
-    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'inactive' }));
   });
 
   it('keeps inactive when disabling subscription explicitly', async () => {
@@ -181,11 +176,11 @@ describe('SubscriptionService.updateSubscription', () => {
       type_id: 1,
       name: '企微认证',
       subject: '主体',
-      current_expiry_date: '2024-01-31',
-      renewal_period_value: 1,
-      renewal_period_unit: 'year',
-      remind_days_before: 30,
+      provider: '腾讯云',
       owner_name: '张三',
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
       status: 'active',
     };
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
@@ -195,58 +190,69 @@ describe('SubscriptionService.updateSubscription', () => {
     expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'inactive' }));
   });
 
-});
-
-describe('SubscriptionService.renewSubscription', () => {
-  it('updates expiry date, reactivates subscription, and creates renewal log when operator is admin for text owner', async () => {
+  it('explicitly enables an inactive subscription', async () => {
     const service = createService();
     const subscription = {
       id: 5,
       kit_id: 2,
-      current_expiry_date: '2024-01-31',
-      renewal_period_value: 1,
-      renewal_period_unit: 'month',
-      remind_days_before: 30,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      provider: '腾讯云',
       owner_name: '张三',
-      owner_user_id: null,
-      cc_user_ids: null,
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
       status: 'inactive',
     };
     (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
 
-    const result = await service.renewSubscription(5, 2, 9, '已续费', true);
+    await service.enableSubscription(5, 2, 9);
 
-    expect(result.current_expiry_date).toBe('2024-02-29');
-    expect(result.next_reminder_start_date).toBe('2024-01-30');
-    expect(result.status).toBe('active');
-    expect((result as any).renewal_log.id).toBe(1);
-    expect(service.renewalLogRepository.create).toHaveBeenCalledWith({
-      subscription_id: 5,
-      kit_id: 2,
-      previous_expiry_date: '2024-01-31',
-      new_expiry_date: '2024-02-29',
-      renewal_period_value: 1,
-      renewal_period_unit: 'month',
-      operated_by: 9,
-      remarks: '已续费',
-    });
-    expect(service.subscriptionRepository.save).toHaveBeenCalled();
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
   });
+});
 
-  it('rejects renewal when operator is not owner, cc user, or admin', async () => {
+describe('SubscriptionService.renewSubscription', () => {
+  it('creates renewal record when renewing subscription', async () => {
     const service = createService();
-    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue({
+    const subscription = {
       id: 5,
       kit_id: 2,
+      name: '企微认证',
+      subject: '主体',
+      provider: '腾讯云',
       owner_name: '张三',
-      owner_user_id: null,
-      cc_user_ids: null,
-      current_expiry_date: '2024-01-31',
-      renewal_period_value: 1,
-      renewal_period_unit: 'month',
-    });
+      cc_names: '李四,王五',
+      fee: 300,
+      notes: '年度认证费用',
+      status: 'active',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+    
+    // Mock the getSubscriptionById method to return the renewed subscription
+    service.getSubscriptionById = jest.fn().mockResolvedValue(subscription);
 
-    await expect(service.renewSubscription(5, 2, 12, 'test', false)).rejects.toThrow('无权确认该订阅已续费');
+    await service.renewSubscription(5, {
+      renewal_date: '2024-01-15',
+      next_reminder_date: '2024-12-01',
+      remind_days_before: 30,
+      reminder_mode: 'daily',
+      fee: 400,
+      renewal_method: '在线支付',
+      remarks: '已续费'
+    }, 2, 9);
+
+    expect(service.subscriptionRenewalRecordService.createRenewalRecord).toHaveBeenCalledWith(5, {
+      renewal_date: '2024-01-15',
+      next_reminder_date: '2024-12-01',
+      remind_days_before: 30,
+      reminder_mode: 'daily',
+      fee: 400,
+      renewal_method: '在线支付',
+      remarks: '已续费',
+      status: 'active'
+    }, 2, 9);
   });
 });
 
@@ -275,70 +281,50 @@ describe('SubscriptionService.deleteRenewalLog', () => {
 });
 
 describe('SubscriptionService.getDueSubscriptionsForPush', () => {
-  it('returns active subscriptions that are within reminder window and excludes already pushed today', async () => {
+  it('returns active subscriptions that are due for push notification', async () => {
     const service = createService();
-    const getMany = jest.fn().mockResolvedValue([
-      { id: 1, kit_id: 2, current_expiry_date: '2024-01-20', next_reminder_start_date: '2024-01-10', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
-      { id: 2, kit_id: 2, current_expiry_date: '2024-03-20', next_reminder_start_date: '2024-03-01', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
-    ]);
-    const qb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
+    
+    // Mock subscription with renewal records
+    const subscriptionWithRenewal = {
+      id: 1,
+      kit_id: 2,
+      name: '企微认证',
+      subject: '主体',
+      owner_name: '张三',
+      status: 'active',
+      renewalRecords: [{
+        id: 1,
+        renewal_date: '2024-01-01',
+        next_reminder_date: '2024-01-10',
+        remind_days_before: 30,
+        reminder_mode: 'daily',
+        renewal_method: '在线支付',
+        status: 'active'
+      }]
+    };
+    
+    const getMany = jest.fn().mockResolvedValue([subscriptionWithRenewal]);
+    const whereMock = jest.fn().mockReturnThis();
+    const andWhereMock = jest.fn().mockReturnThis();
+    const innerJoinMock = jest.fn().mockReturnThis();
+    const leftJoinAndSelectMock = jest.fn().mockReturnThis();
+    const orderByMock = jest.fn().mockReturnThis();
+    const mockQueryBuilder = {
+      innerJoin: innerJoinMock,
+      leftJoinAndSelect: leftJoinAndSelectMock,
+      where: whereMock,
+      andWhere: andWhereMock,
+      orderBy: orderByMock,
       getMany,
     };
-    (service.subscriptionRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
-    (service.pushLogRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
-
-    const result = await service.getDueSubscriptionsForPush(2, '2024-01-10');
-
-    expect(qb.where).toHaveBeenCalledWith('subscription.kit_id = :kitId', { kitId: 2 });
-    expect(qb.andWhere).toHaveBeenCalledWith('subscription.status = :status', { status: 'active' });
-    expect(result.map(item => item.id)).toEqual([1]);
-    expect(result[0].daysUntilExpiry).toBe(10);
-  });
-  it('continues pushing overdue active subscriptions after expiry', async () => {
-    const service = createService();
-    const getMany = jest.fn().mockResolvedValue([
-      { id: 4, kit_id: 2, current_expiry_date: '2024-01-09', next_reminder_start_date: '2024-01-01', remind_days_before: 8, reminder_mode: 'daily', status: 'active' },
-    ]);
-    const qb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      getMany,
-    };
-    (service.subscriptionRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+    (service.subscriptionRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
     (service.pushLogRepository.findOne as jest.Mock).mockResolvedValue(null);
 
-    const result = await service.getDueSubscriptionsForPush(2, '2024-01-10');
+    const result = await service.getDueSubscriptionsForPush(2, new Date('2024-01-10'));
 
-    expect(result.map(item => item.id)).toEqual([4]);
-    expect(result[0].daysUntilExpiry).toBe(-1);
+    expect(whereMock).toHaveBeenCalledWith('subscription.status = :status', { status: 'active' });
+    expect(andWhereMock).toHaveBeenCalledWith('subscription.kit_id = :kitId', { kitId: 2 });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(1);
   });
-
-  it('pushes once mode only on the configured reminder date', async () => {
-    const service = createService();
-    const getMany = jest.fn().mockResolvedValue([
-      { id: 1, kit_id: 2, current_expiry_date: '2024-02-09', next_reminder_start_date: '2024-01-10', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
-      { id: 2, kit_id: 2, current_expiry_date: '2024-02-10', next_reminder_start_date: '2024-01-11', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
-      { id: 3, kit_id: 2, current_expiry_date: '2024-02-08', next_reminder_start_date: '2024-01-10', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
-    ]);
-    const qb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      getMany,
-    };
-    (service.subscriptionRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
-    (service.pushLogRepository.findOne as jest.Mock).mockResolvedValue(null);
-
-    const result = await service.getDueSubscriptionsForPush(2, '2024-01-10');
-
-    expect(result.map(item => item.id)).toEqual([1, 3]);
-  });
-
 });

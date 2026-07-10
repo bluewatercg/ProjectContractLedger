@@ -675,3 +675,25 @@ export interface SubscriptionRenewalAttachment {
   uploaded_by?: number | null
   uploaded_at: string
 }
+
+
+export interface SubscriptionRenewalRecord {
+  id: number
+  subscription_id: number
+  kit_id: number
+  renewal_date: string | null
+  next_reminder_date: string | null
+  remind_days_before: number
+  reminder_mode: 'daily' | 'once'
+  fee: number | null
+  renewal_method: string | null
+  status: 'active' | 'completed' | 'voided'
+  remarks: string | null
+  operated_by: number | null
+  created_at: string
+  updated_at: string
+  operator?: {
+    id: number
+    username: string
+  }
+}

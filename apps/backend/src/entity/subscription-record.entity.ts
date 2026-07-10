@@ -6,15 +6,20 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Kit } from './kit.entity';
 import { User } from './user.entity';
 import { SubscriptionType } from './subscription-type.entity';
+import { SubscriptionRenewalRecord } from './subscription-renewal-record.entity';
 
 @Entity('subscription_records')
 export class SubscriptionRecord {
   @PrimaryGeneratedColumn({ comment: '主键ID' })
   id: number;
+
+  @Column({ name: 'active_renewal_record_id', nullable: true, comment: '当前活跃续费记录ID' })
+  active_renewal_record_id: number | null;
 
   @Column({ name: 'kit_id', comment: '套账ID' })
   kit_id: number;
@@ -30,38 +35,6 @@ export class SubscriptionRecord {
 
   @Column({ length: 100, nullable: true, comment: '供应商/服务商' })
   provider: string | null;
-
-  @Column({ name: 'renewal_url', length: 500, nullable: true, comment: '续费入口URL' })
-  renewal_url: string | null;
-
-  @Column({ name: 'current_expiry_date', type: 'date', comment: '当前到期日' })
-  current_expiry_date: Date;
-
-  @Column({ name: 'next_reminder_start_date', type: 'date', nullable: true, comment: '下次提醒开始日' })
-  next_reminder_start_date: Date | null;
-
-  @Column({ name: 'renewal_period_value', type: 'int', comment: '续费周期数值' })
-  renewal_period_value: number;
-
-  @Column({
-    name: 'renewal_period_unit',
-    type: 'enum',
-    enum: ['day', 'month', 'year'],
-    comment: '续费周期单位：day-天，month-月，year-年',
-  })
-  renewal_period_unit: 'day' | 'month' | 'year';
-
-  @Column({ name: 'remind_days_before', type: 'int', default: 30, comment: '提前提醒天数' })
-  remind_days_before: number;
-
-  @Column({
-    name: 'reminder_mode',
-    type: 'enum',
-    enum: ['once', 'daily'],
-    default: 'daily',
-    comment: '提醒方式：once-仅提醒一次，daily-到期前每日提醒',
-  })
-  reminder_mode: 'once' | 'daily';
 
   @Column({ name: 'owner_name', length: 100, nullable: true, comment: '主负责人名称（非系统用户）' })
   owner_name: string | null;
@@ -120,4 +93,11 @@ export class SubscriptionRecord {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'updated_by' })
   updater: User;
+
+  @OneToMany(() => SubscriptionRenewalRecord, record => record.subscription)
+  renewalRecords: SubscriptionRenewalRecord[];
+
+  @ManyToOne(() => SubscriptionRenewalRecord)
+  @JoinColumn({ name: 'active_renewal_record_id', referencedColumnName: 'id' })
+  activeRenewalRecord: SubscriptionRenewalRecord;
 }

@@ -30,6 +30,7 @@ export class WecomService {
 
   private cronJob: any = null;
   private lastSubscriptionItems: DueSubscription[] = [];
+  private lastSubscriptionKitId: number = 1;
   private isPushing = false;
 
   /**
@@ -142,6 +143,7 @@ export class WecomService {
     ]);
 
     this.lastSubscriptionItems = subscriptionReminders || [];
+    this.lastSubscriptionKitId = targetKitId;
 
     const lines: string[] = [];
 
@@ -301,8 +303,9 @@ export class WecomService {
       return;
     }
     const subscriptionService = await this.app.getApplicationContext().getAsync<SubscriptionService>('subscriptionService');
-    await subscriptionService.markSubscriptionsPushed(this.lastSubscriptionItems);
+    await subscriptionService.markSubscriptionsPushed(this.lastSubscriptionItems, this.lastSubscriptionKitId);
     this.lastSubscriptionItems = [];
+    this.lastSubscriptionKitId = 1; // 重置为默认值
   }
 
   private formatDateText(value: Date | string): string {

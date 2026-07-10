@@ -6,23 +6,32 @@ import { SubscriptionType } from '../entity/subscription-type.entity';
 import { SubscriptionRenewalLog } from '../entity/subscription-renewal-log.entity';
 import { SubscriptionRenewalAttachmentService } from './subscription-renewal-attachment.service';
 import { SubscriptionPushLog } from '../entity/subscription-push-log.entity';
+import { SubscriptionRenewalRecordService } from './subscription-renewal-record.service';
 import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,
-  CreateSubscriptionTypeDto,
-  UpdateSubscriptionTypeDto,
   SubscriptionQuery,
   PaginationResult,
 } from '../interface';
 
-export interface SubscriptionStatusInfo {
-  status: 'normal' | 'expiring' | 'overdue';
-  daysUntilExpiry: number;
-}
-
-export interface DueSubscription extends SubscriptionRecord {
-  expiryStatus?: 'normal' | 'expiring' | 'overdue';
+export interface DueSubscription {
+  id: number;
+  name: string;
+  subject: string;
+  owner_name?: string;
+  renewal_url?: string;
+  current_expiry_date?: string;
+  type?: {
+    id: number;
+    name: string;
+  };
+  owner?: {
+    id: number;
+    username: string;
+    full_name: string;
+  };
   daysUntilExpiry?: number;
+  renewalRecord?: any;
 }
 
 @Provide()
@@ -42,100 +51,43 @@ export class SubscriptionService {
   @Inject()
   subscriptionRenewalAttachmentService: SubscriptionRenewalAttachmentService;
 
-  async getTypes(kitId: number, status?: 'active' | 'disabled'): Promise<SubscriptionType[]> {
-    const queryBuilder = this.typeRepository
-      .createQueryBuilder('type')
-      .where('type.kit_id = :kitId', { kitId })
-      .orderBy('type.sort_order', 'ASC')
-      .addOrderBy('type.id', 'ASC');
-
-    if (status) {
-      queryBuilder.andWhere('type.status = :status', { status });
-    }
-
-    return await queryBuilder.getMany();
-  }
-
-  async createType(dto: CreateSubscriptionTypeDto, kitId: number, userId: number): Promise<SubscriptionType> {
-    const exists = await this.typeRepository.findOne({ where: { kit_id: kitId, code: dto.code } as any });
-    if (exists) {
-      throw new Error('事项类型编码已存在');
-    }
-
-    const count = await this.typeRepository.count({ where: { kit_id: kitId } as any });
-    const type = this.typeRepository.create({
-      kit_id: kitId,
-      name: dto.name,
-      code: dto.code,
-      sort_order: dto.sort_order ?? (count + 1) * 10,
-      status: dto.status || 'active',
-      is_default: false,
-      created_by: userId,
-    });
-
-    return await this.typeRepository.save(type);
-  }
-
-  async updateType(id: number, dto: UpdateSubscriptionTypeDto, kitId: number): Promise<SubscriptionType> {
-    const type = await this.typeRepository.findOne({ where: { id, kit_id: kitId } as any });
-    if (!type) {
-      throw new Error('事项类型不存在');
-    }
-
-    if (dto.name !== undefined) type.name = dto.name;
-    if (dto.status !== undefined) type.status = dto.status;
-    if (dto.sort_order !== undefined) type.sort_order = dto.sort_order;
-
-    return await this.typeRepository.save(type);
-  }
+  @Inject()
+  subscriptionRenewalRecordService: SubscriptionRenewalRecordService;
 
   async getSubscriptions(query: SubscriptionQuery, kitId: number): Promise<PaginationResult<SubscriptionRecord>> {
-    const page = Math.max(Number(query.page || 1), 1);
-    const limit = Math.min(Math.max(Number(query.limit || 20), 1), 100);
-
-    const queryBuilder = this.subscriptionRepository
+    const qb = this.subscriptionRepository
       .createQueryBuilder('subscription')
       .leftJoinAndSelect('subscription.type', 'type')
+      .leftJoinAndSelect('subscription.creator', 'creator')
+      .leftJoinAndSelect('subscription.updater', 'updater')
       .leftJoinAndSelect('subscription.owner', 'owner')
       .where('subscription.kit_id = :kitId', { kitId });
 
-    if (query.type_id) {
-      queryBuilder.andWhere('subscription.type_id = :typeId', { typeId: query.type_id });
-    }
-    if (query.owner_user_id) {
-      queryBuilder.andWhere('subscription.owner_user_id = :ownerUserId', { ownerUserId: query.owner_user_id });
-    }
-    if (query.owner_name) {
-      queryBuilder.andWhere('subscription.owner_name LIKE :ownerName', { ownerName: `%${query.owner_name}%` });
-    }
-    if (query.status) {
-      queryBuilder.andWhere('subscription.status = :status', { status: query.status });
-    }
     if (query.search) {
-      queryBuilder.andWhere('(subscription.name LIKE :search OR subscription.subject LIKE :search OR subscription.provider LIKE :search)', {
+      qb.andWhere('(subscription.name LIKE :search OR subscription.subject LIKE :search OR subscription.notes LIKE :search)', {
         search: `%${query.search}%`,
       });
     }
 
-    const sortBy = query.sortBy || 'current_expiry_date';
-    const sortOrder = query.sortOrder || 'ASC';
-    const safeSortBy = ['current_expiry_date', 'name', 'created_at', 'updated_at'].includes(sortBy) ? sortBy : 'current_expiry_date';
-
-    queryBuilder
-      .orderBy(`subscription.${safeSortBy}`, sortOrder)
-      .skip((page - 1) * limit)
-      .take(limit);
-
-    let [items, total] = await queryBuilder.getManyAndCount();
-
-    if (query.expiry_status) {
-      const today = this.formatDate(new Date());
-      items = items.filter(item => this.getExpiryStatus(item.current_expiry_date as any, today, item.remind_days_before).status === query.expiry_status);
-      total = items.length;
+    if (query.status) {
+      qb.andWhere('subscription.status = :status', { status: query.status });
     }
 
+    if (query.type_id) {
+      qb.andWhere('subscription.type_id = :typeId', { typeId: query.type_id });
+    }
+
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+
+    const [items, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('subscription.created_at', 'DESC')
+      .getManyAndCount();
+
     return {
-      items: items.map(item => this.decorateSubscription(item)) as SubscriptionRecord[],
+      items,
       total,
       page,
       limit,
@@ -144,130 +96,125 @@ export class SubscriptionService {
   }
 
   async getSubscriptionById(id: number, kitId: number): Promise<SubscriptionRecord> {
-    const subscription = await this.subscriptionRepository.findOne({
-      where: { id, kit_id: kitId } as any,
-      relations: ['type', 'owner', 'creator', 'updater'],
-    });
+    const subscription = await this.subscriptionRepository
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.type', 'type')
+      .leftJoinAndSelect('subscription.creator', 'creator')
+      .leftJoinAndSelect('subscription.updater', 'updater')
+      .leftJoinAndSelect('subscription.owner', 'owner')
+      .leftJoinAndSelect('subscription.kit', 'kit')
+      .where('subscription.id = :id', { id })
+      .andWhere('subscription.kit_id = :kitId', { kitId })
+      .getOne();
 
     if (!subscription) {
-      throw new Error('订阅事项不存在');
+      throw new Error('订阅不存在');
     }
 
-    return this.decorateSubscription(subscription) as SubscriptionRecord;
+    return subscription;
   }
 
   async createSubscription(dto: CreateSubscriptionDto, kitId: number, userId: number): Promise<SubscriptionRecord> {
-    await this.validateType(dto.type_id, kitId);
-    this.validateSubscriptionDto(dto);
+    const subscription = new SubscriptionRecord();
+    subscription.kit_id = kitId;
+    subscription.type_id = dto.type_id;
+    subscription.name = dto.name;
+    subscription.subject = dto.subject;
+    subscription.provider = dto.provider || null;
+    subscription.owner_name = dto.owner_name || null;
+    subscription.owner_user_id = dto.owner_user_id || null;
+    subscription.cc_user_ids = dto.cc_user_ids ? (Array.isArray(dto.cc_user_ids) ? dto.cc_user_ids.join(",") : dto.cc_user_ids) : null;
+    subscription.cc_names = dto.cc_names || null;
+    subscription.fee = dto.fee || null;
+    subscription.notes = dto.notes || null;
+    subscription.status = dto.status || 'active';
+    subscription.created_by = userId;
+    subscription.updated_by = userId;
 
-    const subscription = this.subscriptionRepository.create({
-      kit_id: kitId,
-      type_id: dto.type_id,
-      name: dto.name,
-      subject: dto.subject,
-      provider: dto.provider || null,
-      renewal_url: dto.renewal_url || null,
-      current_expiry_date: dto.current_expiry_date as any,
-      next_reminder_start_date: this.resolveNextReminderStartDate(dto.current_expiry_date, dto.remind_days_before, dto.next_reminder_start_date) as any,
-      renewal_period_value: dto.renewal_period_value,
-      renewal_period_unit: dto.renewal_period_unit,
-      remind_days_before: dto.remind_days_before,
-      reminder_mode: this.normalizeReminderMode(dto.reminder_mode),
-      owner_name: this.normalizeNullableText(dto.owner_name),
-      owner_user_id: dto.owner_user_id ?? null,
-      cc_user_ids: this.stringifyUserIds(dto.cc_user_ids),
-      cc_names: this.normalizeNullableText(dto.cc_names),
-      fee: dto.fee ?? null,
-      notes: dto.notes || null,
-      status: this.normalizeRecordStatus(dto.status),
-      created_by: userId,
-      updated_by: null,
+    const saved = await this.subscriptionRepository.save(subscription);
+    return await this.getSubscriptionById(saved.id, kitId);
+  }
+
+  async updateSubscription(id: number, dto: UpdateSubscriptionDto, kitId: number, userId: number): Promise<SubscriptionRecord> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id, kit_id: kitId } as any,
     });
 
-    return await this.subscriptionRepository.save(subscription);
-  }
-
-  async updateSubscription(id: number, dto: UpdateSubscriptionDto, kitId: number, userId: number, keepInactive = false): Promise<SubscriptionRecord> {
-    const subscription = await this.subscriptionRepository.findOne({ where: { id, kit_id: kitId } as any });
     if (!subscription) {
-      throw new Error('订阅事项不存在');
+      throw new Error('订阅不存在');
     }
 
-    if (dto.type_id !== undefined) {
-      await this.validateType(dto.type_id, kitId);
-      subscription.type_id = dto.type_id;
-    }
+    if (dto.type_id !== undefined) subscription.type_id = dto.type_id;
     if (dto.name !== undefined) subscription.name = dto.name;
     if (dto.subject !== undefined) subscription.subject = dto.subject;
-    if (dto.provider !== undefined) subscription.provider = dto.provider || null;
-    if (dto.renewal_url !== undefined) subscription.renewal_url = dto.renewal_url || null;
-    if (dto.current_expiry_date !== undefined) subscription.current_expiry_date = dto.current_expiry_date as any;
-    if (dto.next_reminder_start_date !== undefined) subscription.next_reminder_start_date = dto.next_reminder_start_date as any;
-    if (dto.renewal_period_value !== undefined) subscription.renewal_period_value = dto.renewal_period_value;
-    if (dto.renewal_period_unit !== undefined) subscription.renewal_period_unit = dto.renewal_period_unit;
-    if (dto.remind_days_before !== undefined) subscription.remind_days_before = dto.remind_days_before;
-    if (!subscription.next_reminder_start_date && subscription.current_expiry_date && subscription.remind_days_before !== undefined) {
-      subscription.next_reminder_start_date = this.resolveNextReminderStartDate(
-        subscription.current_expiry_date as any,
-        subscription.remind_days_before
-      ) as any;
-    }
-    if (dto.reminder_mode !== undefined) subscription.reminder_mode = this.normalizeReminderMode(dto.reminder_mode);
-    if (dto.owner_name !== undefined) subscription.owner_name = this.normalizeNullableText(dto.owner_name);
-    if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id ?? null;
-    if (dto.cc_user_ids !== undefined) subscription.cc_user_ids = this.stringifyUserIds(dto.cc_user_ids);
-    if (dto.cc_names !== undefined) subscription.cc_names = this.normalizeNullableText(dto.cc_names);
-    if (dto.fee !== undefined) subscription.fee = dto.fee ?? null;
-    if (dto.notes !== undefined) subscription.notes = dto.notes || null;
-    subscription.status = keepInactive ? this.normalizeRecordStatus(dto.status ?? subscription.status) : this.normalizeRecordStatus(dto.status);
+    if (dto.provider !== undefined) subscription.provider = dto.provider;
+    if (dto.owner_name !== undefined) subscription.owner_name = dto.owner_name;
+    if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id;
+    if (dto.cc_user_ids !== undefined) subscription.cc_user_ids = dto.cc_user_ids ? (Array.isArray(dto.cc_user_ids) ? dto.cc_user_ids.join(",") : dto.cc_user_ids) : null;
+    if (dto.cc_names !== undefined) subscription.cc_names = dto.cc_names;
+    if (dto.fee !== undefined) subscription.fee = dto.fee;
+    if (dto.notes !== undefined) subscription.notes = dto.notes;
+    if (dto.status !== undefined) subscription.status = dto.status;
     subscription.updated_by = userId;
 
-    this.validateSubscriptionDto(subscription as any);
-    return await this.subscriptionRepository.save(subscription);
+    const updated = await this.subscriptionRepository.save(subscription);
+    return await this.getSubscriptionById(updated.id, kitId);
   }
 
-  async disableSubscription(id: number, kitId: number, userId: number): Promise<SubscriptionRecord> {
-    return await this.updateSubscription(id, { status: 'inactive' }, kitId, userId, true);
-  }
+  async disableSubscription(id: number, kitId: number, userId: number): Promise<boolean> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id, kit_id: kitId } as any,
+    });
 
-  async enableSubscription(id: number, kitId: number, userId: number): Promise<SubscriptionRecord> {
-    return await this.updateSubscription(id, { status: 'active' }, kitId, userId);
-  }
-
-  async renewSubscription(id: number, kitId: number, userId: number, remarks?: string, isAdmin = false): Promise<SubscriptionRecord> {
-    const subscription = await this.subscriptionRepository.findOne({ where: { id, kit_id: kitId } as any });
     if (!subscription) {
-      throw new Error('订阅事项不存在');
+      return false;
     }
 
-    if (!this.canOperateRenewal(subscription, userId, isAdmin)) {
-      throw new Error('无权确认该订阅已续费');
+    subscription.status = 'inactive';
+    subscription.updated_by = userId;
+    await this.subscriptionRepository.save(subscription);
+    return true;
+  }
+
+  async enableSubscription(id: number, kitId: number, userId: number): Promise<boolean> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id, kit_id: kitId } as any,
+    });
+
+    if (!subscription) {
+      return false;
     }
 
-    const previousExpiryDate = this.normalizeDateString(subscription.current_expiry_date as any);
-    const newExpiryDate = this.calculateNextExpiryDate(
-      previousExpiryDate,
-      subscription.renewal_period_value,
-      subscription.renewal_period_unit
-    );
-
-    const renewalLog = await this.renewalLogRepository.save(this.renewalLogRepository.create({
-      subscription_id: subscription.id,
-      kit_id: subscription.kit_id,
-      previous_expiry_date: previousExpiryDate as any,
-      new_expiry_date: newExpiryDate as any,
-      renewal_period_value: subscription.renewal_period_value,
-      renewal_period_unit: subscription.renewal_period_unit,
-      operated_by: userId,
-      remarks: remarks || null,
-    }));
-
-    subscription.current_expiry_date = newExpiryDate as any;
-    subscription.next_reminder_start_date = this.resolveNextReminderStartDate(newExpiryDate, subscription.remind_days_before) as any;
     subscription.status = 'active';
     subscription.updated_by = userId;
-    const savedSubscription = await this.subscriptionRepository.save(subscription);
-    return Object.assign(savedSubscription, { renewal_log: renewalLog });
+    await this.subscriptionRepository.save(subscription);
+    return true;
+  }
+
+  async renewSubscription(id: number, data: any, kitId: number, userId: number): Promise<SubscriptionRecord> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id, kit_id: kitId } as any,
+    });
+
+    if (!subscription) {
+      throw new Error('订阅不存在');
+    }
+
+    // 创建续费记录
+    const renewalRecordData = {
+      renewal_date: data.renewal_date || new Date().toISOString().split('T')[0],
+      next_reminder_date: data.next_reminder_date,
+      remind_days_before: data.remind_days_before || 0,
+      reminder_mode: data.reminder_mode || 'daily',
+      fee: data.fee || null,
+      renewal_method: data.renewal_method || null,
+      remarks: data.remarks || null,
+      status: 'active' as 'active' | 'completed' | 'voided',
+    };
+
+    await this.subscriptionRenewalRecordService.createRenewalRecord(id, renewalRecordData, kitId, userId);
+
+    return await this.getSubscriptionById(id, kitId);
   }
 
   async getRenewalLogs(subscriptionId: number, kitId: number): Promise<SubscriptionRenewalLog[]> {
@@ -294,199 +241,84 @@ export class SubscriptionService {
     return true;
   }
 
-  async getDueSubscriptionsForPush(kitId: number, today = this.formatDate(new Date())): Promise<DueSubscription[]> {
-    const subscriptions = await this.subscriptionRepository
-      .createQueryBuilder('subscription')
+  async getDueSubscriptionsForPush(kitId: number, today: Date = new Date()): Promise<DueSubscription[]> {
+    // 查询启用状态的订阅事项和它们的生效中续费记录
+    const queryBuilder = this.subscriptionRepository.createQueryBuilder('subscription')
+      .innerJoin('subscription.renewalRecords', 'renewal_record', 'renewal_record.status = :activeStatus', { activeStatus: 'active' })
       .leftJoinAndSelect('subscription.type', 'type')
       .leftJoinAndSelect('subscription.owner', 'owner')
-      .where('subscription.kit_id = :kitId', { kitId })
-      .andWhere('subscription.status = :status', { status: 'active' })
-      .orderBy('subscription.current_expiry_date', 'ASC')
-      .getMany();
+      .where('subscription.status = :status', { status: 'active' })
+      .andWhere('subscription.kit_id = :kitId', { kitId });
+
+    const subscriptions = await queryBuilder.getMany();
 
     const result: DueSubscription[] = [];
     for (const subscription of subscriptions) {
-      const statusInfo = this.getExpiryStatus(subscription.current_expiry_date as any, today, subscription.remind_days_before);
-      if (!this.shouldPushSubscription(subscription, today, statusInfo.daysUntilExpiry)) {
-        continue;
+      const renewalRecord = subscription.renewalRecords.find(rr => rr.status === 'active');
+      if (!renewalRecord) continue;
+
+      // 计算距离到期日的天数
+      const expiryDate = renewalRecord.next_reminder_date ? new Date(renewalRecord.next_reminder_date) : today;
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // 检查今天是否已经推送过
+      const pushDateKey = today.toISOString().split('T')[0];
+      const hasPushedToday = await this.hasPushedToday(subscription.id, pushDateKey);
+
+      // 根据提醒模式判断是否推送
+      let shouldPush = false;
+      if (renewalRecord.reminder_mode === 'daily') {
+        // 每日提醒：从提醒日期开始到到期日期结束
+        const reminderDate = new Date(renewalRecord.next_reminder_date);
+        const daysUntilReminder = Math.ceil((reminderDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        shouldPush = daysUntilReminder <= 0 && daysUntilExpiry >= 0;
+        // 或者已逾期
+        shouldPush = shouldPush || daysUntilExpiry < 0;
+      } else if (renewalRecord.reminder_mode === 'once') {
+        // 一次性提醒：仅在提醒日期当天
+        const reminderDate = new Date(renewalRecord.next_reminder_date);
+        const daysUntilReminder = Math.ceil((reminderDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        shouldPush = daysUntilReminder === 0;
       }
 
-      const alreadyPushed = await this.pushLogRepository.findOne({
-        where: { subscription_id: subscription.id, push_date: today as any } as any,
-      });
-      if (alreadyPushed) {
-        continue;
+      if (shouldPush && !hasPushedToday) {
+        result.push({
+          id: subscription.id,
+          name: subscription.name,
+          subject: subscription.subject,
+          owner_name: subscription.owner_name,
+          type: subscription.type,
+          owner: subscription.owner,
+          daysUntilExpiry,
+          renewalRecord: {
+            next_reminder_date: renewalRecord.next_reminder_date,
+            reminder_mode: renewalRecord.reminder_mode,
+            renewal_method: renewalRecord.renewal_method
+          }
+        });
       }
-
-      result.push({
-        ...subscription,
-        expiryStatus: statusInfo.status,
-        daysUntilExpiry: statusInfo.daysUntilExpiry,
-      });
     }
 
     return result;
   }
 
-  async markSubscriptionsPushed(items: DueSubscription[], today = this.formatDate(new Date())): Promise<void> {
-    for (const item of items) {
-      await this.pushLogRepository.save(this.pushLogRepository.create({
-        subscription_id: item.id,
-        kit_id: item.kit_id,
-        push_date: today as any,
-        push_type: (item.daysUntilExpiry || 0) < 0 ? 'overdue' : 'reminder',
-        days_until_expiry: item.daysUntilExpiry ?? null,
-      }));
-    }
-  }
-
-  calculateNextExpiryDate(expiryDate: string | Date, periodValue: number, periodUnit: 'day' | 'month' | 'year'): string {
-    const base = this.parseDateOnly(expiryDate);
-    if (periodValue <= 0) {
-      throw new Error('续费周期必须大于0');
-    }
-
-    if (periodUnit === 'day') {
-      base.setUTCDate(base.getUTCDate() + periodValue);
-      return this.formatDate(base);
-    }
-
-    const year = base.getUTCFullYear();
-    const month = base.getUTCMonth();
-    const day = base.getUTCDate();
-    const targetMonthIndex = periodUnit === 'month' ? month + periodValue : month;
-    const targetYear = periodUnit === 'year' ? year + periodValue : year + Math.floor(targetMonthIndex / 12);
-    const normalizedTargetMonth = periodUnit === 'year' ? month : ((targetMonthIndex % 12) + 12) % 12;
-    const lastDay = this.daysInMonth(targetYear, normalizedTargetMonth);
-    const targetDay = Math.min(day, lastDay);
-
-    return this.formatDate(new Date(Date.UTC(targetYear, normalizedTargetMonth, targetDay)));
-  }
-
-  getExpiryStatus(expiryDate: string | Date, today: string | Date, remindDaysBefore: number): SubscriptionStatusInfo {
-    const daysUntilExpiry = this.diffDays(today, expiryDate);
-    if (daysUntilExpiry < 0) {
-      return { status: 'overdue', daysUntilExpiry };
-    }
-    if (daysUntilExpiry <= remindDaysBefore) {
-      return { status: 'expiring', daysUntilExpiry };
-    }
-    return { status: 'normal', daysUntilExpiry };
-  }
-
-  private decorateSubscription(subscription: SubscriptionRecord): SubscriptionRecord & SubscriptionStatusInfo {
-    const statusInfo = this.getExpiryStatus(
-      subscription.current_expiry_date as any,
-      this.formatDate(new Date()),
-      subscription.remind_days_before
-    );
-    return Object.assign(subscription, statusInfo, {
-      cc_user_id_list: this.parseUserIds(subscription.cc_user_ids),
+  private async hasPushedToday(subscriptionId: number, pushDate: string): Promise<boolean> {
+    const existingLog = await this.pushLogRepository.findOne({
+      where: {
+        subscription_id: subscriptionId,
+        push_date: pushDate,
+      } as any,
     });
+    return !!existingLog;
   }
 
-  private async validateType(typeId: number, kitId: number): Promise<void> {
-    const type = await this.typeRepository.findOne({ where: { id: typeId, kit_id: kitId, status: 'active' } as any });
-    if (!type) {
-      throw new Error('事项类型不存在或已停用');
+  async markSubscriptionsPushed(items: DueSubscription[], kitId: number): Promise<void> {
+    for (const item of items) {
+      const pushLog = new SubscriptionPushLog();
+      pushLog.subscription_id = item.id;
+      pushLog.push_date = new Date();
+      pushLog.kit_id = kitId;
+      await this.pushLogRepository.save(pushLog);
     }
-  }
-
-  private validateSubscriptionDto(dto: Partial<CreateSubscriptionDto>): void {
-    if (dto.renewal_period_value !== undefined && dto.renewal_period_value <= 0) {
-      throw new Error('续费周期必须大于0');
-    }
-    if (dto.remind_days_before !== undefined && dto.remind_days_before < 0) {
-      throw new Error('提前提醒天数不能小于0');
-    }
-    if (dto.owner_name !== undefined && !this.normalizeNullableText(dto.owner_name)) {
-      throw new Error('请输入主负责人');
-    }
-  }
-
-  private shouldPushSubscription(subscription: SubscriptionRecord, today: string, daysUntilExpiry: number): boolean {
-    const reminderStart = subscription.next_reminder_start_date
-      ? this.normalizeDateString(subscription.next_reminder_start_date as any)
-      : this.resolveNextReminderStartDate(subscription.current_expiry_date as any, subscription.remind_days_before);
-    if (daysUntilExpiry < 0) {
-      return true;
-    }
-    if (subscription.reminder_mode === 'once') {
-      return today === reminderStart;
-    }
-    return today >= reminderStart && daysUntilExpiry >= 0;
-  }
-
-  private resolveNextReminderStartDate(expiryDate: string | Date, remindDaysBefore: number, explicitDate?: string | Date | null): string {
-    if (explicitDate) {
-      return this.normalizeDateString(explicitDate);
-    }
-    return this.addDays(expiryDate, -Number(remindDaysBefore || 0));
-  }
-
-  private addDays(date: string | Date, days: number): string {
-    const base = this.parseDateOnly(date);
-    base.setUTCDate(base.getUTCDate() + days);
-    return this.formatDate(base);
-  }
-
-  private canOperateRenewal(subscription: SubscriptionRecord, userId: number, isAdmin: boolean): boolean {
-    if (isAdmin) {
-      return true;
-    }
-    if (subscription.owner_user_id === userId) {
-      return true;
-    }
-    return this.parseUserIds(subscription.cc_user_ids).includes(userId);
-  }
-
-  private normalizeNullableText(value?: string | null): string | null {
-    const text = value?.trim();
-    return text || null;
-  }
-
-  private normalizeRecordStatus(status?: string | null): 'active' | 'inactive' {
-    return status === 'inactive' ? 'inactive' : 'active';
-  }
-
-  private normalizeReminderMode(mode?: string | null): 'once' | 'daily' {
-    return mode === 'once' ? 'once' : 'daily';
-  }
-
-  private stringifyUserIds(ids?: number[] | string | null): string | null {
-    if (!ids) return null;
-    if (typeof ids === 'string') return ids || null;
-    return ids.length > 0 ? ids.join(',') : null;
-  }
-
-  private parseUserIds(ids?: string | null): number[] {
-    if (!ids) return [];
-    return ids.split(',').map(id => Number(id.trim())).filter(id => !Number.isNaN(id));
-  }
-
-  private diffDays(fromDate: string | Date, toDate: string | Date): number {
-    const from = this.parseDateOnly(fromDate);
-    const to = this.parseDateOnly(toDate);
-    return Math.round((to.getTime() - from.getTime()) / 86400000);
-  }
-
-  private parseDateOnly(value: string | Date): Date {
-    if (value instanceof Date) {
-      return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-    }
-    const [year, month, day] = value.split('T')[0].split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
-  }
-
-  private normalizeDateString(value: string | Date): string {
-    return this.formatDate(this.parseDateOnly(value));
-  }
-
-  private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
-
-  private daysInMonth(year: number, monthIndex: number): number {
-    return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
   }
 }
