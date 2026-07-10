@@ -152,6 +152,45 @@
       </el-table>
     </el-card>
 
+    <!-- 编辑订阅对话框 -->
+    <el-dialog title="编辑订阅" v-model="subscriptionDialogVisible" width="600px" destroy-on-close>
+      <el-form :model="subscriptionForm" :rules="subscriptionRules" ref="subscriptionFormRef" label-width="100px" :disabled="subscriptionSubmitting">
+        <el-form-item label="事项名称" prop="name">
+          <el-input v-model="subscriptionForm.name" placeholder="请输入事项名称" />
+        </el-form-item>
+        <el-form-item label="事项类型" prop="type_id">
+          <el-select v-model="subscriptionForm.type_id" placeholder="请选择事项类型" style="width: 100%">
+            <el-option v-for="type in store.subscriptionTypes" :key="type.id" :label="type.name" :value="type.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="所属主体" prop="subject">
+          <el-input v-model="subscriptionForm.subject" placeholder="请输入所属主体" />
+        </el-form-item>
+        <el-form-item label="服务商">
+          <el-input v-model="subscriptionForm.provider" placeholder="请输入服务商" />
+        </el-form-item>
+        <el-form-item label="主负责人">
+          <el-input v-model="subscriptionForm.owner_name" placeholder="请输入主负责人姓名" />
+        </el-form-item>
+        <el-form-item label="其他负责人">
+          <el-input v-model="subscriptionForm.cc_names" type="textarea" :rows="2" placeholder="请输入其他负责人姓名，多个用逗号分隔" />
+        </el-form-item>
+        <el-form-item label="费用">
+          <el-input-number v-model="subscriptionForm.fee" :precision="2" :step="100" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="subscriptionForm.notes" type="textarea" :rows="3" placeholder="请输入备注信息" />
+        </el-form-item>
+        <el-form-item label="启用状态">
+          <el-switch v-model="subscriptionForm.status" :active-value="'active'" :inactive-value="'inactive'" active-text="启用" inactive-text="停用" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="subscriptionDialogVisible = false" :disabled="subscriptionSubmitting">取消</el-button>
+        <el-button type="primary" @click="submitSubscriptionForm" :loading="subscriptionSubmitting">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 登记续费对话框 -->
     <el-dialog 
       :title="editingRenewalRecord ? '编辑续费记录' : '登记续费'" 
@@ -285,7 +324,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { subscriptionApi } from '@/api/subscription'
-import type { Subscription, SubscriptionRenewalLog, SubscriptionRenewalAttachment } from '@/api/types'
+import type { Subscription, SubscriptionRenewalRecord, SubscriptionRenewalAttachment } from '@/api/types'
 
 const router = useRouter()
 const route = useRoute()
@@ -299,10 +338,26 @@ const renewalLogs = computed(() => store.renewalLogs)
 const renewalDialogVisible = ref(false)
 const renewalSubmitting = ref(false)
 const editingRenewalRecord = ref(false)
+const editingRenewalRecordId = ref<number | null>(null)
 const renewalFormRef = ref()
 const expandedRowId = ref<number | null>(null)
 const attachmentsLoading = ref(false)
 const expandedAttachments = ref<SubscriptionRenewalAttachment[]>([])
+
+const subscriptionDialogVisible = ref(false)
+const subscriptionSubmitting = ref(false)
+const subscriptionFormRef = ref()
+const subscriptionForm = reactive<Partial<Subscription>>({
+  type_id: undefined,
+  name: '',
+  subject: '',
+  provider: null,
+  owner_name: null,
+  cc_names: null,
+  fee: null,
+  notes: null,
+  status: 'active'
+})
 
 const renewalForm = reactive({
   renewal_date: null as string | null,
@@ -322,13 +377,49 @@ const renewalRules = {
   next_reminder_date: [{ required: true, message: '请选择下次提醒时间', trigger: 'change' }]
 }
 
+const subscriptionRules = {
+  name: [{ required: true, message: '请输入事项名称', trigger: 'blur' }],
+  type_id: [{ required: true, message: '请选择事项类型', trigger: 'change' }],
+  subject: [{ required: true, message: '请输入所属主体', trigger: 'blur' }]
+}
+
 const goBack = () => {
   router.push('/subscriptions')
 }
 
 const editSubscription = () => {
-  if (subscription.value) {
-    router.push(`/subscriptions/${subscription.value.id}/edit`)
+  if (!subscription.value) return
+  Object.assign(subscriptionForm, {
+    type_id: subscription.value.type_id,
+    name: subscription.value.name,
+    subject: subscription.value.subject,
+    provider: subscription.value.provider,
+    owner_name: subscription.value.owner_name,
+    cc_names: subscription.value.cc_names,
+    fee: subscription.value.fee,
+    notes: subscription.value.notes,
+    status: subscription.value.status
+  })
+  subscriptionDialogVisible.value = true
+}
+
+const submitSubscriptionForm = async () => {
+  await subscriptionFormRef.value.validate()
+  subscriptionSubmitting.value = true
+  try {
+    const response = await store.updateSubscription(subscriptionId.value, { ...subscriptionForm })
+    if (response.success) {
+      ElMessage.success('订阅更新成功')
+      subscriptionDialogVisible.value = false
+      await store.fetchSubscription(subscriptionId.value)
+      await store.fetchRenewalLogs(subscriptionId.value)
+    } else {
+      ElMessage.error(response.message || '订阅更新失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '订阅更新失败')
+  } finally {
+    subscriptionSubmitting.value = false
   }
 }
 
@@ -345,6 +436,7 @@ const toggleStatus = async () => {
 
 const showRenewalDialog = () => {
   editingRenewalRecord.value = false
+  editingRenewalRecordId.value = null
   Object.assign(renewalForm, {
     renewal_date: null,
     next_reminder_date: null,
@@ -360,8 +452,9 @@ const showRenewalDialog = () => {
   renewalDialogVisible.value = true
 }
 
-const editRenewalRecord = (row: SubscriptionRenewalLog) => {
+const editRenewalRecord = (row: SubscriptionRenewalRecord) => {
   editingRenewalRecord.value = true
+  editingRenewalRecordId.value = row.id
   Object.assign(renewalForm, {
     renewal_date: row.renewal_date,
     next_reminder_date: row.next_reminder_date,
@@ -384,7 +477,10 @@ const submitRenewalForm = async () => {
   try {
     let response
     if (editingRenewalRecord.value) {
-      response = await subscriptionApi.updateRenewalRecord(expandedRowId.value!, { ...renewalForm })
+      if (!editingRenewalRecordId.value) {
+        throw new Error('缺少正在编辑的续费记录ID')
+      }
+      response = await subscriptionApi.updateRenewalRecord(editingRenewalRecordId.value, { ...renewalForm })
     } else {
       response = await subscriptionApi.createRenewalRecord(subscriptionId.value, { ...renewalForm })
     }
@@ -393,22 +489,18 @@ const submitRenewalForm = async () => {
       ElMessage.success(editingRenewalRecord.value ? '更新续费记录成功' : '登记续费成功')
       renewalDialogVisible.value = false
       
-      // 上传附件
-      if (contractFile.value || invoiceFile.value) {
-        const formData = new FormData()
-        if (contractFile.value) {
-          formData.append('file', contractFile.value)
-          formData.append('attachment_type', 'contract')
-        }
-        if (invoiceFile.value) {
-          formData.append('file', invoiceFile.value)
-          formData.append('attachment_type', 'invoice')
-        }
-        
-        // 这里需要更新附件上传逻辑，但现在先跳过
+      const recordId = editingRenewalRecord.value ? editingRenewalRecordId.value! : response.data!.id
+      if (contractFile.value) {
+        await uploadRenewalAttachment(recordId, 'contract', contractFile.value)
+      }
+      if (invoiceFile.value) {
+        await uploadRenewalAttachment(recordId, 'invoice', invoiceFile.value)
       }
       
       await store.fetchRenewalLogs(subscriptionId.value)
+      if (expandedRowId.value === recordId) {
+        await loadAttachments(recordId)
+      }
     } else {
       ElMessage.error(response.message || (editingRenewalRecord.value ? '更新续费记录失败' : '登记续费失败'))
     }
@@ -419,7 +511,7 @@ const submitRenewalForm = async () => {
   }
 }
 
-const deleteRenewalRecord = async (row: SubscriptionRenewalLog) => {
+const deleteRenewalRecord = async (row: SubscriptionRenewalRecord) => {
   await ElMessageBox.confirm('确定删除这条续费记录吗？其名下合同/发票附件也会一并删除，但不会自动回滚当前订阅到期日。', '删除续费记录', { type: 'warning' })
   const response = await subscriptionApi.deleteRenewalRecord(row.id)
   if (response.success) {
@@ -430,33 +522,39 @@ const deleteRenewalRecord = async (row: SubscriptionRenewalLog) => {
   }
 }
 
-const expandRow = async (row: SubscriptionRenewalLog) => {
-  if (expandedRowId.value === row.id) {
-    // 收起
-    expandedRowId.value = null
-    expandedAttachments.value = []
-  } else {
-    // 展开
-    expandedRowId.value = row.id
-    attachmentsLoading.value = true
-    try {
-      // 这里应该获取该续费记录的附件，但现在续费记录没有直接关联附件
-      // 需要在后端添加相关接口
-      expandedAttachments.value = row.attachments || []
-    } catch (error) {
-      console.error('获取附件失败:', error)
-      expandedAttachments.value = []
-    } finally {
-      attachmentsLoading.value = false
+const loadAttachments = async (recordId: number) => {
+  attachmentsLoading.value = true
+  try {
+    const response = await subscriptionApi.getRenewalRecordAttachments(recordId)
+    expandedAttachments.value = response.data || []
+    const row = store.renewalLogs.find(log => log.id === recordId)
+    if (row) {
+      row.attachments = expandedAttachments.value
     }
+  } catch (error) {
+    console.error('获取附件失败:', error)
+    expandedAttachments.value = []
+  } finally {
+    attachmentsLoading.value = false
   }
 }
 
-const getAttachmentCount = (row: SubscriptionRenewalLog) => {
+const expandRow = async (row: SubscriptionRenewalRecord) => {
+  if (expandedRowId.value === row.id) {
+    expandedRowId.value = null
+    expandedAttachments.value = []
+    return
+  }
+
+  expandedRowId.value = row.id
+  await loadAttachments(row.id)
+}
+
+const getAttachmentCount = (row: SubscriptionRenewalRecord) => {
   return (row.attachments?.length || 0)
 }
 
-const tableRowClassName = ({ row }: { row: SubscriptionRenewalLog }) => {
+const tableRowClassName = ({ row }: { row: SubscriptionRenewalRecord }) => {
   if (row.status === 'active') {
     return 'active-row'
   }
@@ -506,6 +604,15 @@ const removeFile = (type: 'contract' | 'invoice') => {
   }
 }
 
+const uploadRenewalAttachment = async (recordId: number, attachmentType: 'contract' | 'invoice', file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await subscriptionApi.uploadAttachment(recordId, attachmentType, formData)
+  if (!response.success) {
+    throw new Error(response.message || '附件上传失败')
+  }
+}
+
 const previewAttachment = (attachment: SubscriptionRenewalAttachment) => {
   window.open(`/api/v1/subscriptions/attachments/${attachment.attachment_id}/preview`, '_blank')
 }
@@ -522,9 +629,8 @@ const deleteAttachment = async (attachment: SubscriptionRenewalAttachment) => {
   const response = await store.deleteRenewalAttachment(attachment.attachment_id)
   if (response.success) {
     ElMessage.success('附件已删除')
-    // 重新加载附件列表
     if (expandedRowId.value) {
-      expandRow(store.renewalLogs.find(log => log.id === expandedRowId.value)!)
+      await loadAttachments(expandedRowId.value)
     }
   } else {
     ElMessage.error(response.message || '删除失败')
@@ -532,6 +638,7 @@ const deleteAttachment = async (attachment: SubscriptionRenewalAttachment) => {
 }
 
 onMounted(async () => {
+  await store.fetchSubscriptionTypes()
   await store.fetchSubscription(subscriptionId.value)
   await store.fetchRenewalLogs(subscriptionId.value)
 })

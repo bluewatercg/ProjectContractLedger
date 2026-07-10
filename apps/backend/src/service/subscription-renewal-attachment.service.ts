@@ -3,12 +3,14 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { SubscriptionRenewalAttachment } from '../entity/subscription-renewal-attachment.entity';
 import { SubscriptionRenewalLog } from '../entity/subscription-renewal-log.entity';
+import { SubscriptionRenewalRecord } from '../entity/subscription-renewal-record.entity';
 import { CreateAttachmentDto, AttachmentResponse } from '../interface';
 import * as fs from 'fs';
 import * as path from 'path';
 
 export interface SubscriptionRenewalAttachmentResponse extends AttachmentResponse {
-  renewal_log_id: number;
+  renewal_log_id: number | null;
+  renewal_record_id: number | null;
   subscription_id: number;
   kit_id: number;
   attachment_type: 'contract' | 'invoice';
@@ -22,6 +24,9 @@ export class SubscriptionRenewalAttachmentService {
 
   @InjectEntityModel(SubscriptionRenewalLog)
   renewalLogRepository: Repository<SubscriptionRenewalLog>;
+
+  @InjectEntityModel(SubscriptionRenewalRecord)
+  renewalRecordRepository: Repository<SubscriptionRenewalRecord>;
 
   @Config('upload')
   uploadConfig: any;
@@ -43,7 +48,36 @@ export class SubscriptionRenewalAttachmentService {
 
     const attachment = this.attachmentRepository.create({
       renewal_log_id: renewalLogId,
+      renewal_record_id: null,
       subscription_id: log.subscription_id,
+      kit_id: kitId,
+      attachment_type: attachmentType,
+      uploaded_by: uploadedBy,
+      ...attachmentData,
+    });
+
+    return this.toResponse(await this.attachmentRepository.save(attachment));
+  }
+
+  async createAttachmentByRenewalRecordId(
+    renewalRecordId: number,
+    kitId: number,
+    attachmentType: 'contract' | 'invoice',
+    uploadedBy: number,
+    attachmentData: CreateAttachmentDto
+  ): Promise<SubscriptionRenewalAttachmentResponse> {
+    const record = await this.renewalRecordRepository.findOne({
+      where: { id: renewalRecordId, kit_id: kitId } as any,
+    });
+
+    if (!record) {
+      throw new Error('续费记录不存在');
+    }
+
+    const attachment = this.attachmentRepository.create({
+      renewal_log_id: null,
+      renewal_record_id: renewalRecordId,
+      subscription_id: record.subscription_id,
       kit_id: kitId,
       attachment_type: attachmentType,
       uploaded_by: uploadedBy,
@@ -59,6 +93,18 @@ export class SubscriptionRenewalAttachmentService {
   ): Promise<SubscriptionRenewalAttachmentResponse[]> {
     const attachments = await this.attachmentRepository.find({
       where: { renewal_log_id: renewalLogId, kit_id: kitId } as any,
+      order: { uploaded_at: 'DESC' },
+    });
+
+    return attachments.map(item => this.toResponse(item));
+  }
+
+  async getAttachmentsByRenewalRecordId(
+    renewalRecordId: number,
+    kitId: number
+  ): Promise<SubscriptionRenewalAttachmentResponse[]> {
+    const attachments = await this.attachmentRepository.find({
+      where: { renewal_record_id: renewalRecordId, kit_id: kitId } as any,
       order: { uploaded_at: 'DESC' },
     });
 
@@ -113,9 +159,23 @@ export class SubscriptionRenewalAttachmentService {
     }
   }
 
-  generateFilePath(renewalLogId: number, attachmentType: 'contract' | 'invoice', originalName: string): string {
+  async deleteAttachmentsByRenewalRecordId(renewalRecordId: number, kitId: number): Promise<void> {
+    const attachments = await this.attachmentRepository.find({
+      where: { renewal_record_id: renewalRecordId, kit_id: kitId } as any,
+    });
+
+    for (const attachment of attachments) {
+      await this.removeAttachmentFile(attachment);
+    }
+
+    if (attachments.length > 0) {
+      await this.attachmentRepository.remove(attachments);
+    }
+  }
+
+  generateFilePath(renewalRefId: number, attachmentType: 'contract' | 'invoice', originalName: string): string {
     const baseUploadDir = this.uploadConfig?.uploadDir || '/app/uploads';
-    const uploadDir = path.join(baseUploadDir, 'subscriptions', renewalLogId.toString(), attachmentType);
+    const uploadDir = path.join(baseUploadDir, 'subscriptions', renewalRefId.toString(), attachmentType);
 
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -150,6 +210,7 @@ export class SubscriptionRenewalAttachmentService {
     return {
       attachment_id: attachment.attachment_id,
       renewal_log_id: attachment.renewal_log_id,
+      renewal_record_id: attachment.renewal_record_id,
       subscription_id: attachment.subscription_id,
       kit_id: attachment.kit_id,
       attachment_type: attachment.attachment_type,

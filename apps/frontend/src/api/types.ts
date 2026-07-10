@@ -598,6 +598,8 @@ export interface SubscriptionRecord {
   expiryStatus?: 'normal' | 'expiring' | 'overdue'
 }
 
+export type Subscription = SubscriptionRecord
+
 export interface SubscriptionRenewalLog {
   id: number
   subscription_id: number
@@ -664,7 +666,8 @@ export interface RenewSubscriptionDto {
 
 export interface SubscriptionRenewalAttachment {
   attachment_id: number
-  renewal_log_id: number
+  renewal_log_id: number | null
+  renewal_record_id?: number | null
   subscription_id: number
   kit_id: number
   attachment_type: 'contract' | 'invoice'
@@ -696,4 +699,5 @@ export interface SubscriptionRenewalRecord {
     id: number
     username: string
   }
+  attachments?: SubscriptionRenewalAttachment[]
 }

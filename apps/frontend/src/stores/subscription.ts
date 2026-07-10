@@ -6,7 +6,7 @@ import {
   SubscriptionType, 
   PaginationQuery, 
   PaginationResult,
-  SubscriptionRenewalLog,
+  SubscriptionRenewalRecord,
   SubscriptionRenewalAttachment
 } from '@/api/types'
 
@@ -14,7 +14,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   const subscriptions = ref<Subscription[]>([])
   const subscriptionTypes = ref<SubscriptionType[]>([])
   const currentSubscription = ref<Subscription | null>(null)
-  const renewalLogs = ref<SubscriptionRenewalLog[]>([])
+  const renewalLogs = ref<SubscriptionRenewalRecord[]>([])
   const loading = ref(false)
 
   const pagination = ref({

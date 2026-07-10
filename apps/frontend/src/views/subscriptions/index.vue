@@ -72,7 +72,6 @@
       class="pagination"
     />
 
-    <!-- 新增/编辑对话框 -->
     <el-dialog 
       :title="isEditing ? '编辑订阅' : '新增订阅'" 
       v-model="dialogVisible" 
@@ -150,7 +149,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import type { Subscription } from '@/api/types'
 
@@ -159,6 +158,7 @@ const store = useSubscriptionStore()
 
 const dialogVisible = ref(false)
 const isEditing = ref(false)
+const editingSubscriptionId = ref<number | null>(null)
 const formSubmitting = ref(false)
 const formRef = ref()
 
@@ -188,6 +188,7 @@ const searchForm = reactive({
 })
 
 const handleSearch = () => {
+  store.pagination.page = 1
   store.fetchSubscriptions(searchForm)
 }
 
@@ -195,7 +196,7 @@ const resetSearch = () => {
   searchForm.search = ''
   searchForm.status = ''
   store.pagination.page = 1
-  handleSearch()
+  store.fetchSubscriptions(searchForm)
 }
 
 const handleSizeChange = (size: number) => {
@@ -208,8 +209,7 @@ const handleCurrentChange = (page: number) => {
   store.fetchSubscriptions(searchForm)
 }
 
-const showCreateDialog = () => {
-  isEditing.value = false
+const resetForm = () => {
   Object.assign(form, {
     type_id: undefined,
     name: '',
@@ -223,11 +223,18 @@ const showCreateDialog = () => {
     notes: null,
     status: 'active'
   })
+}
+
+const showCreateDialog = () => {
+  isEditing.value = false
+  editingSubscriptionId.value = null
+  resetForm()
   dialogVisible.value = true
 }
 
 const showEditDialog = (row: Subscription) => {
   isEditing.value = true
+  editingSubscriptionId.value = row.id
   Object.assign(form, { ...row })
   dialogVisible.value = true
 }
@@ -239,7 +246,10 @@ const submitForm = async () => {
   try {
     let response
     if (isEditing.value) {
-      response = await store.updateSubscription(store.currentSubscription!.id, { ...form })
+      if (!editingSubscriptionId.value) {
+        throw new Error('缺少正在编辑的订阅ID')
+      }
+      response = await store.updateSubscription(editingSubscriptionId.value, { ...form })
     } else {
       response = await store.createSubscription({ ...form })
     }
@@ -247,6 +257,7 @@ const submitForm = async () => {
     if (response.success) {
       ElMessage.success(isEditing.value ? '更新成功' : '创建成功')
       dialogVisible.value = false
+      editingSubscriptionId.value = null
       store.fetchSubscriptions(searchForm)
     } else {
       ElMessage.error(response.message || (isEditing.value ? '更新失败' : '创建失败'))

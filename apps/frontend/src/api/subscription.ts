@@ -6,7 +6,8 @@ import {
   PaginationQuery, 
   PaginationResult,
   SubscriptionRenewalLog,
-  SubscriptionRenewalAttachment
+  SubscriptionRenewalAttachment,
+  SubscriptionRenewalRecord
 } from './types'
 
 export const subscriptionApi = {
@@ -38,28 +39,28 @@ export const subscriptionApi = {
     return apiClient.put(`/subscriptions/${id}/enable`).then(res => res.data)
   },
 
-  getRenewalRecords(id: number): Promise<ApiResponse<SubscriptionRenewalLog[]>> {
+  getRenewalRecords(id: number): Promise<ApiResponse<SubscriptionRenewalRecord[]>> {
     return apiClient.get(`/subscriptions/${id}/renewal-records`).then(res => res.data)
   },
 
-  getRenewalRecord(recordId: number): Promise<ApiResponse<SubscriptionRenewalLog>> {
-    return apiClient.get(`/renewal-records/${recordId}`).then(res => res.data)
+  getRenewalRecord(recordId: number): Promise<ApiResponse<SubscriptionRenewalRecord>> {
+    return apiClient.get(`/subscriptions/renewal-records/${recordId}`).then(res => res.data)
   },
 
-  createRenewalRecord(id: number, data: any): Promise<ApiResponse<SubscriptionRenewalLog>> {
+  createRenewalRecord(id: number, data: any): Promise<ApiResponse<SubscriptionRenewalRecord>> {
     return apiClient.post(`/subscriptions/${id}/renewal-records`, data).then(res => res.data)
   },
 
-  updateRenewalRecord(recordId: number, data: any): Promise<ApiResponse<SubscriptionRenewalLog>> {
-    return apiClient.put(`/renewal-records/${recordId}`, data).then(res => res.data)
+  updateRenewalRecord(recordId: number, data: any): Promise<ApiResponse<SubscriptionRenewalRecord>> {
+    return apiClient.put(`/subscriptions/renewal-records/${recordId}`, data).then(res => res.data)
   },
 
   deleteRenewalRecord(recordId: number): Promise<ApiResponse> {
-    return apiClient.delete(`/renewal-records/${recordId}`).then(res => res.data)
+    return apiClient.delete(`/subscriptions/renewal-records/${recordId}`).then(res => res.data)
   },
 
-  getRenewalLogs(id: number): Promise<ApiResponse<SubscriptionRenewalLog[]>> {
-    return apiClient.get(`/subscriptions/${id}/renewal-logs`).then(res => res.data)
+  getRenewalLogs(id: number): Promise<ApiResponse<SubscriptionRenewalRecord[]>> {
+    return apiClient.get(`/subscriptions/${id}/renewal-records`).then(res => res.data)
   },
 
   deleteRenewalLog(id: number, renewalLogId: number): Promise<ApiResponse> {
@@ -70,8 +71,14 @@ export const subscriptionApi = {
     return apiClient.post(`/subscriptions/${id}/renew`, data).then(res => res.data)
   },
 
-  uploadAttachment(formData: FormData, renewalLogId?: number, renewalRecordId?: number): Promise<ApiResponse<SubscriptionRenewalAttachment>> {
-    return apiClient.post('/subscriptions/attachments/upload', formData).then(res => res.data)
+  getRenewalRecordAttachments(recordId: number): Promise<ApiResponse<SubscriptionRenewalAttachment[]>> {
+    return apiClient.get(`/subscriptions/renewal-records/${recordId}/attachments`).then(res => res.data)
+  },
+
+  uploadAttachment(recordId: number, attachmentType: 'contract' | 'invoice', formData: FormData): Promise<ApiResponse<SubscriptionRenewalAttachment>> {
+    return apiClient.post(`/subscriptions/renewal-records/${recordId}/attachments`, formData, {
+      params: { attachment_type: attachmentType }
+    }).then(res => res.data)
   },
 
   previewAttachment(attachmentId: number): Promise<any> {
