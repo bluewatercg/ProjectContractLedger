@@ -175,6 +175,20 @@ export class SubscriptionController {
     }
   }
 
+  @Del('/:id/renewal-logs/:renewalLogId')
+  @ApiOperation({ summary: '删除订阅续费历史' })
+  async deleteRenewalLog(@Param('id') id: number, @Param('renewalLogId') renewalLogId: number): Promise<ApiResponse> {
+    try {
+      const deleted = await this.subscriptionService.deleteRenewalLog(Number(id), Number(renewalLogId), this.getKitId());
+      if (!deleted) {
+        return { success: false, message: '续费历史不存在', code: 404 };
+      }
+      return { success: true, message: '续费历史删除成功' };
+    } catch (error) {
+      return this.error(error, '删除续费历史失败', 500);
+    }
+  }
+
   @Get('/renewal-logs/:renewalLogId/attachments')
   @ApiOperation({ summary: '获取订阅续费附件' })
   async getRenewalAttachments(@Param('renewalLogId') renewalLogId: number): Promise<ApiResponse> {

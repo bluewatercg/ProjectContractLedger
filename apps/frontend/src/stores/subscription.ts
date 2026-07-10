@@ -114,6 +114,11 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     return res
   }
 
+  const deleteRenewalLog = async (id: number, renewalLogId: number) => {
+    const res = await subscriptionApi.deleteRenewalLog(id, renewalLogId)
+    return res
+  }
+
   const fetchRenewalLogs = async (id: number) => {
     const res = await subscriptionApi.getRenewalLogs(id)
     renewalLogs.value = res.data || []
@@ -141,6 +146,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     renewSubscription,
     uploadRenewalAttachment,
     deleteRenewalAttachment,
+    deleteRenewalLog,
     fetchRenewalLogs
   }
 })

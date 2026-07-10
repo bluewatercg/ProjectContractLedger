@@ -59,6 +59,10 @@ export const subscriptionApi = {
     return apiClient.get(`/subscriptions/${id}/renewal-logs`).then(res => res.data)
   },
 
+  deleteRenewalLog(id: number, renewalLogId: number): Promise<ApiResponse> {
+    return apiClient.delete(`/subscriptions/${id}/renewal-logs/${renewalLogId}`).then(res => res.data)
+  },
+
   getRenewalAttachments(renewalLogId: number): Promise<ApiResponse<SubscriptionRenewalAttachment[]>> {
     return apiClient.get(`/subscriptions/renewal-logs/${renewalLogId}/attachments`).then(res => res.data)
   },

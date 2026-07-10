@@ -94,16 +94,23 @@ export class SubscriptionRenewalAttachmentService {
       return false;
     }
 
-    try {
-      if (fs.existsSync(attachment.file_path)) {
-        fs.unlinkSync(attachment.file_path);
-      }
-    } catch (error) {
-      console.error('删除订阅续费附件失败:', error);
-    }
-
+    await this.removeAttachmentFile(attachment);
     await this.attachmentRepository.remove(attachment);
     return true;
+  }
+
+  async deleteAttachmentsByRenewalLogId(renewalLogId: number, kitId: number): Promise<void> {
+    const attachments = await this.attachmentRepository.find({
+      where: { renewal_log_id: renewalLogId, kit_id: kitId } as any,
+    });
+
+    for (const attachment of attachments) {
+      await this.removeAttachmentFile(attachment);
+    }
+
+    if (attachments.length > 0) {
+      await this.attachmentRepository.remove(attachments);
+    }
   }
 
   generateFilePath(renewalLogId: number, attachmentType: 'contract' | 'invoice', originalName: string): string {
@@ -127,6 +134,16 @@ export class SubscriptionRenewalAttachmentService {
 
   validateFileSize(fileSize: number): boolean {
     return fileSize <= 10 * 1024 * 1024;
+  }
+
+  private async removeAttachmentFile(attachment: SubscriptionRenewalAttachment): Promise<void> {
+    try {
+      if (fs.existsSync(attachment.file_path)) {
+        fs.unlinkSync(attachment.file_path);
+      }
+    } catch (error) {
+      console.error('删除订阅续费附件失败:', error);
+    }
   }
 
   private toResponse(attachment: SubscriptionRenewalAttachment): SubscriptionRenewalAttachmentResponse {

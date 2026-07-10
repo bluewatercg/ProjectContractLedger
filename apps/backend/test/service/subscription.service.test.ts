@@ -18,12 +18,17 @@ const createService = () => {
   service.renewalLogRepository = {
     create: jest.fn(data => data),
     save: jest.fn(async data => ({ id: 1, ...data })),
+    findOne: jest.fn(),
+    remove: jest.fn(async data => data),
     createQueryBuilder: jest.fn(),
   } as any;
   service.pushLogRepository = {
     findOne: jest.fn(),
     create: jest.fn(data => data),
     save: jest.fn(async data => ({ id: 1, ...data })),
+  } as any;
+  service.subscriptionRenewalAttachmentService = {
+    deleteAttachmentsByRenewalLogId: jest.fn(),
   } as any;
   return service;
 };
@@ -242,6 +247,30 @@ describe('SubscriptionService.renewSubscription', () => {
     });
 
     await expect(service.renewSubscription(5, 2, 12, 'test', false)).rejects.toThrow('无权确认该订阅已续费');
+  });
+});
+
+describe('SubscriptionService.deleteRenewalLog', () => {
+  it('deletes renewal attachments before removing the renewal log', async () => {
+    const service = createService();
+    const log = { id: 7, subscription_id: 3, kit_id: 2 };
+    (service.renewalLogRepository.findOne as jest.Mock).mockResolvedValue(log);
+
+    const result = await service.deleteRenewalLog(3, 7, 2);
+
+    expect(result).toBe(true);
+    expect(service.subscriptionRenewalAttachmentService.deleteAttachmentsByRenewalLogId).toHaveBeenCalledWith(7, 2);
+    expect(service.renewalLogRepository.remove).toHaveBeenCalledWith(log);
+  });
+
+  it('returns false when deleting a missing renewal log', async () => {
+    const service = createService();
+    (service.renewalLogRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+    const result = await service.deleteRenewalLog(3, 7, 2);
+
+    expect(result).toBe(false);
+    expect(service.subscriptionRenewalAttachmentService.deleteAttachmentsByRenewalLogId).not.toHaveBeenCalled();
   });
 });
 

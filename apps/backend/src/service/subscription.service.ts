@@ -1,9 +1,10 @@
-import { Provide } from '@midwayjs/core';
+import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { SubscriptionRecord } from '../entity/subscription-record.entity';
 import { SubscriptionType } from '../entity/subscription-type.entity';
 import { SubscriptionRenewalLog } from '../entity/subscription-renewal-log.entity';
+import { SubscriptionRenewalAttachmentService } from './subscription-renewal-attachment.service';
 import { SubscriptionPushLog } from '../entity/subscription-push-log.entity';
 import {
   CreateSubscriptionDto,
@@ -37,6 +38,9 @@ export class SubscriptionService {
 
   @InjectEntityModel(SubscriptionPushLog)
   pushLogRepository: Repository<SubscriptionPushLog>;
+
+  @Inject()
+  subscriptionRenewalAttachmentService: SubscriptionRenewalAttachmentService;
 
   async getTypes(kitId: number, status?: 'active' | 'disabled'): Promise<SubscriptionType[]> {
     const queryBuilder = this.typeRepository
@@ -275,6 +279,19 @@ export class SubscriptionService {
       .andWhere('log.kit_id = :kitId', { kitId })
       .orderBy('log.operated_at', 'DESC')
       .getMany();
+  }
+
+  async deleteRenewalLog(subscriptionId: number, renewalLogId: number, kitId: number): Promise<boolean> {
+    const log = await this.renewalLogRepository.findOne({
+      where: { id: renewalLogId, subscription_id: subscriptionId, kit_id: kitId } as any,
+    });
+    if (!log) {
+      return false;
+    }
+
+    await this.subscriptionRenewalAttachmentService.deleteAttachmentsByRenewalLogId(renewalLogId, kitId);
+    await this.renewalLogRepository.remove(log);
+    return true;
   }
 
   async getDueSubscriptionsForPush(kitId: number, today = this.formatDate(new Date())): Promise<DueSubscription[]> {

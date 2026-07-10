@@ -28,8 +28,8 @@
         <el-descriptions-item label="主负责人">{{ subscription.owner_name || subscription.owner?.full_name || subscription.owner?.username || '-' }}</el-descriptions-item>
         <el-descriptions-item label="费用">{{ subscription.fee ? `¥${Number(subscription.fee).toFixed(2)}` : '-' }}</el-descriptions-item>
         <el-descriptions-item label="续费方式" :span="2">
-          <el-link v-if="subscription.renewal_url" type="primary" :href="subscription.renewal_url" target="_blank">{{ subscription.renewal_url }}</el-link>
-          <span v-else>-</span>
+          <el-link v-if="isHttpUrl(subscription.renewal_url)" type="primary" :href="subscription.renewal_url || ''" target="_blank">{{ subscription.renewal_url }}</el-link>
+          <span v-else>{{ subscription.renewal_url || '-' }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ subscription.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -94,6 +94,11 @@
           <template #default="{ row }">{{ row.operator?.full_name || row.operator?.username || row.operated_by }}</template>
         </el-table-column>
         <el-table-column prop="remarks" label="备注" show-overflow-tooltip />
+        <el-table-column label="操作" width="90" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" link type="danger" @click="deleteRenewalLog(row)">删除</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
     <el-dialog v-model="renewalDialogVisible" title="确认续费" width="560px" destroy-on-close>
@@ -189,6 +194,13 @@ const downloadAttachment = async (attachment: SubscriptionRenewalAttachment) => 
   URL.revokeObjectURL(url)
 }
 
+const deleteRenewalLog = async (row: { id: number; operated_at?: string }) => {
+  await ElMessageBox.confirm('确定删除这条续费历史吗？其名下合同/发票附件也会一并删除，但不会自动回滚当前订阅到期日。', '删除续费历史', { type: 'warning' })
+  await store.deleteRenewalLog(subscriptionId.value, row.id)
+  await store.fetchRenewalLogs(subscriptionId.value)
+  ElMessage.success('续费历史已删除')
+}
+
 const deleteAttachment = async (attachment: SubscriptionRenewalAttachment) => {
   await ElMessageBox.confirm(`确定删除附件「${attachment.file_name}」吗？`, '删除附件', { type: 'warning' })
   await store.deleteRenewalAttachment(attachment.attachment_id)
@@ -209,6 +221,7 @@ const previewAttachment = async (attachment: SubscriptionRenewalAttachment) => {
 }
 
 const formatDate = (value?: string) => value ? String(value).split('T')[0] : '-'
+const isHttpUrl = (value?: string | null) => /^https?:\/\//i.test(value || '')
 const formatDateTime = (value?: string) => value ? new Date(value).toLocaleString('zh-CN') : '-'
 const formatFileSize = (size?: number | null) => {
   if (!size) return '-'
