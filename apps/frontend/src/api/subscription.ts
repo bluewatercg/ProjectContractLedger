@@ -85,5 +85,9 @@ export const subscriptionApi = {
 
   getRenewalAttachmentBase64(attachmentId: number): Promise<ApiResponse<{ base64: string; contentType: string; size: number; fileName: string }>> {
     return apiClient.get(`/subscriptions/attachments/${attachmentId}/base64`).then(res => res.data)
+  },
+
+  deleteRenewalAttachment(attachmentId: number): Promise<ApiResponse> {
+    return apiClient.delete(`/subscriptions/attachments/${attachmentId}`).then(res => res.data)
   }
 }

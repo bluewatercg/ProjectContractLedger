@@ -118,7 +118,8 @@
           <el-col :span="12"><el-form-item label="事项类型" prop="type_id"><el-select v-model="form.type_id" style="width: 100%"><el-option v-for="type in store.types" :key="type.id" :label="type.name" :value="type.id" /></el-select></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="所属主体" prop="subject"><el-input v-model="form.subject" placeholder="公司名、域名、账号或公众号名称" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="服务商"><el-input v-model="form.provider" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="下次提醒开始日" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="当前到期日" prop="current_expiry_date"><el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="下次提醒开始日"><el-date-picker v-model="form.next_reminder_start_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="周期数值" prop="renewal_period_value"><el-input-number v-model="form.renewal_period_value" :min="1" controls-position="right" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="周期单位" prop="renewal_period_unit"><el-select v-model="form.renewal_period_unit" style="width: 100%"><el-option label="天" value="day" /><el-option label="月" value="month" /><el-option label="年" value="year" /></el-select></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="提前提醒天数" prop="remind_days_before"><el-input-number v-model="form.remind_days_before" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
@@ -190,6 +191,7 @@ const defaultForm = (): CreateSubscriptionDto => ({
   provider: '',
   renewal_url: '',
   current_expiry_date: '',
+  next_reminder_start_date: '',
   renewal_period_value: 1,
   renewal_period_unit: 'year',
   remind_days_before: 30,
@@ -207,7 +209,7 @@ const rules: FormRules = {
   name: [{ required: true, message: '请输入事项名称', trigger: 'blur' }],
   type_id: [{ required: true, message: '请选择事项类型', trigger: 'change' }],
   subject: [{ required: true, message: '请输入主体', trigger: 'blur' }],
-  current_expiry_date: [{ required: true, message: '请选择下次提醒开始日', trigger: 'change' }],
+  current_expiry_date: [{ required: true, message: '请选择当前到期日', trigger: 'change' }],
   owner_name: [{ required: true, message: '请输入主负责人', trigger: 'blur' }]
 }
 
@@ -247,14 +249,12 @@ const addDays = (dateText: string, days: number) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const nextExpiryDate = computed(() => addDays(form.current_expiry_date, Number(form.remind_days_before || 0)))
+const defaultReminderStartDate = computed(() => addDays(form.current_expiry_date, -Number(form.remind_days_before || 0)))
 const reminderPreview = computed(() => {
   if (!form.current_expiry_date || !form.renewal_period_value) return []
-  const firstExpiryDate = nextExpiryDate.value
-  if (!firstExpiryDate) return []
   return Array.from({ length: 5 }, (_, index) => {
-    const expiryDate = index === 0 ? firstExpiryDate : addPeriod(firstExpiryDate, form.renewal_period_value, form.renewal_period_unit, index)
-    const reminderDate = index === 0 ? form.current_expiry_date : addDays(expiryDate, -Number(form.remind_days_before || 0))
+    const expiryDate = index === 0 ? form.current_expiry_date : addPeriod(form.current_expiry_date, form.renewal_period_value, form.renewal_period_unit, index)
+    const reminderDate = index === 0 ? (form.next_reminder_start_date || defaultReminderStartDate.value) : addDays(expiryDate, -Number(form.remind_days_before || 0))
     const reminderText = form.reminder_mode === 'once'
       ? formatWeekDate(reminderDate)
       : `${formatWeekDate(reminderDate)} 起，每天提醒至 ${formatWeekDate(expiryDate)}`
@@ -273,7 +273,7 @@ const loadData = async () => {
 
 const openCreateDialog = () => {
   editingId.value = null
-  Object.assign(form, defaultForm(), { type_id: store.types[0]?.id || 0, current_expiry_date: new Date().toISOString().slice(0, 10) })
+  Object.assign(form, defaultForm(), { type_id: store.types[0]?.id || 0, current_expiry_date: new Date().toISOString().slice(0, 10), next_reminder_start_date: new Date().toISOString().slice(0, 10) })
   dialogVisible.value = true
 }
 
@@ -285,7 +285,8 @@ const editSubscription = (row: SubscriptionRecord) => {
     subject: row.subject,
     provider: row.provider || '',
     renewal_url: row.renewal_url || '',
-    current_expiry_date: addDays(String(row.current_expiry_date).split('T')[0], -Number(row.remind_days_before || 0)),
+    current_expiry_date: String(row.current_expiry_date).split('T')[0],
+    next_reminder_start_date: row.next_reminder_start_date ? String(row.next_reminder_start_date).split('T')[0] : addDays(String(row.current_expiry_date).split('T')[0], -Number(row.remind_days_before || 0)),
     renewal_period_value: row.renewal_period_value,
     renewal_period_unit: row.renewal_period_unit,
     remind_days_before: row.remind_days_before,
@@ -305,7 +306,7 @@ const submitForm = async () => {
   await formRef.value?.validate()
   saving.value = true
   try {
-    const payload = { ...form, current_expiry_date: nextExpiryDate.value || form.current_expiry_date, status: form.status || 'active' }
+    const payload = { ...form, next_reminder_start_date: form.next_reminder_start_date || defaultReminderStartDate.value, status: form.status || 'active' }
     if (editingId.value) {
       await store.updateSubscription(editingId.value, payload)
       ElMessage.success('更新成功')

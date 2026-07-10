@@ -37,6 +37,9 @@ export class SubscriptionRecord {
   @Column({ name: 'current_expiry_date', type: 'date', comment: '当前到期日' })
   current_expiry_date: Date;
 
+  @Column({ name: 'next_reminder_start_date', type: 'date', nullable: true, comment: '下次提醒开始日' })
+  next_reminder_start_date: Date | null;
+
   @Column({ name: 'renewal_period_value', type: 'int', comment: '续费周期数值' })
   renewal_period_value: number;
 

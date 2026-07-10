@@ -574,6 +574,7 @@ export interface SubscriptionRecord {
   provider?: string | null
   renewal_url?: string | null
   current_expiry_date: string
+  next_reminder_start_date?: string | null
   renewal_period_value: number
   renewal_period_unit: 'day' | 'month' | 'year'
   remind_days_before: number
@@ -641,6 +642,7 @@ export interface CreateSubscriptionDto {
   provider?: string
   renewal_url?: string
   current_expiry_date: string
+  next_reminder_start_date?: string | null
   renewal_period_value: number
   renewal_period_unit: 'day' | 'month' | 'year'
   remind_days_before: number

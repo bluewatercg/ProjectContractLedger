@@ -22,7 +22,9 @@
           <el-tag :type="getExpiryTagType(subscription)">{{ getExpiryText(subscription) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="续费周期">{{ subscription.renewal_period_value }}{{ unitLabel[subscription.renewal_period_unit] }}</el-descriptions-item>
+        <el-descriptions-item label="下次提醒开始日">{{ formatDate(subscription.next_reminder_start_date || undefined) }}</el-descriptions-item>
         <el-descriptions-item label="提前提醒">提前 {{ subscription.remind_days_before }} 天</el-descriptions-item>
+        <el-descriptions-item label="提醒方式">{{ subscription.reminder_mode === 'once' ? '只提醒一次' : '每日提醒' }}</el-descriptions-item>
         <el-descriptions-item label="主负责人">{{ subscription.owner_name || subscription.owner?.full_name || subscription.owner?.username || '-' }}</el-descriptions-item>
         <el-descriptions-item label="费用">{{ subscription.fee ? `¥${Number(subscription.fee).toFixed(2)}` : '-' }}</el-descriptions-item>
         <el-descriptions-item label="续费方式" :span="2">
@@ -36,6 +38,43 @@
     <el-card class="history-card" shadow="never">
       <template #header>续费历史</template>
       <el-table :data="store.renewalLogs" style="width: 100%">
+        <el-table-column type="expand">
+          <template #default="{ row }">
+            <div class="attachment-panel">
+              <div class="attachment-actions">
+                <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.jpg,.jpeg,.png" :on-change="file => uploadHistoryAttachment(row.id, 'contract', file)">
+                  <el-button size="small" type="primary">上传合同</el-button>
+                </el-upload>
+                <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.jpg,.jpeg,.png" :on-change="file => uploadHistoryAttachment(row.id, 'invoice', file)">
+                  <el-button size="small" type="primary">上传发票</el-button>
+                </el-upload>
+              </div>
+              <el-table :data="row.attachments || []" size="small" empty-text="暂无附件" style="width: 100%">
+                <el-table-column label="类型" width="90">
+                  <template #default="{ row: attachment }">
+                    <el-tag size="small" :type="attachment.attachment_type === 'contract' ? 'primary' : 'success'">
+                      {{ attachment.attachment_type === 'contract' ? '合同' : '发票' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="file_name" label="文件名" min-width="220" show-overflow-tooltip />
+                <el-table-column label="大小" width="110">
+                  <template #default="{ row: attachment }">{{ formatFileSize(attachment.file_size) }}</template>
+                </el-table-column>
+                <el-table-column label="上传时间" width="170">
+                  <template #default="{ row: attachment }">{{ formatDateTime(attachment.uploaded_at) }}</template>
+                </el-table-column>
+                <el-table-column label="操作" width="210">
+                  <template #default="{ row: attachment }">
+                    <el-button size="small" link type="primary" @click="previewAttachment(attachment)">查看</el-button>
+                    <el-button size="small" link type="primary" @click="downloadAttachment(attachment)">下载</el-button>
+                    <el-button size="small" link type="danger" @click="deleteAttachment(attachment)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="operated_at" label="操作时间" width="180">
           <template #default="{ row }">{{ formatDateTime(row.operated_at) }}</template>
         </el-table-column>
@@ -48,26 +87,13 @@
         <el-table-column label="续费周期" width="120">
           <template #default="{ row }">{{ row.renewal_period_value }}{{ unitLabel[row.renewal_period_unit] }}</template>
         </el-table-column>
+        <el-table-column label="附件数" width="90">
+          <template #default="{ row }">{{ row.attachments?.length || 0 }}</template>
+        </el-table-column>
         <el-table-column label="操作人" width="120">
           <template #default="{ row }">{{ row.operator?.full_name || row.operator?.username || row.operated_by }}</template>
         </el-table-column>
         <el-table-column prop="remarks" label="备注" show-overflow-tooltip />
-        <el-table-column label="附件" width="320">
-          <template #default="{ row }">
-            <el-space wrap>
-              <el-button v-for="attachment in row.attachments || []" :key="attachment.attachment_id" size="small" @click="previewAttachment(attachment)">
-                {{ attachment.attachment_type === 'contract' ? '合同' : '发票' }}
-              </el-button>
-              <span v-if="!row.attachments?.length">暂无附件</span>
-              <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.jpg,.jpeg,.png" :on-change="file => uploadHistoryAttachment(row.id, 'contract', file)">
-                <el-button size="small" link type="primary">补合同</el-button>
-              </el-upload>
-              <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.jpg,.jpeg,.png" :on-change="file => uploadHistoryAttachment(row.id, 'invoice', file)">
-                <el-button size="small" link type="primary">补发票</el-button>
-              </el-upload>
-            </el-space>
-          </template>
-        </el-table-column>
       </el-table>
     </el-card>
     <el-dialog v-model="renewalDialogVisible" title="确认续费" width="560px" destroy-on-close>
@@ -99,7 +125,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage, type UploadFile, type UploadUserFile } from 'element-plus'
+import { ElMessage, ElMessageBox, type UploadFile, type UploadUserFile } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { subscriptionApi } from '@/api/subscription'
 import type { SubscriptionRecord, SubscriptionRenewalAttachment } from '@/api/types'
@@ -138,7 +164,7 @@ const submitRenewal = async () => {
       if (contractFile) await store.uploadRenewalAttachment(renewalLogId, 'contract', contractFile)
       if (invoiceFile) await store.uploadRenewalAttachment(renewalLogId, 'invoice', invoiceFile)
     }
-    await store.fetchRenewalLogs(subscriptionId.value)
+    await loadData()
     renewalDialogVisible.value = false
     ElMessage.success('已续费，续约附件已保存')
   } finally {
@@ -151,6 +177,23 @@ const uploadHistoryAttachment = async (renewalLogId: number, attachmentType: 'co
   await store.uploadRenewalAttachment(renewalLogId, attachmentType, file.raw)
   await store.fetchRenewalLogs(subscriptionId.value)
   ElMessage.success(`${attachmentType === 'contract' ? '合同' : '发票'}附件已保存`)
+}
+
+const downloadAttachment = async (attachment: SubscriptionRenewalAttachment) => {
+  const blob = await subscriptionApi.downloadRenewalAttachment(attachment.attachment_id)
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = attachment.file_name
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+const deleteAttachment = async (attachment: SubscriptionRenewalAttachment) => {
+  await ElMessageBox.confirm(`确定删除附件「${attachment.file_name}」吗？`, '删除附件', { type: 'warning' })
+  await store.deleteRenewalAttachment(attachment.attachment_id)
+  await store.fetchRenewalLogs(subscriptionId.value)
+  ElMessage.success('附件已删除')
 }
 
 const previewAttachment = async (attachment: SubscriptionRenewalAttachment) => {
@@ -167,6 +210,12 @@ const previewAttachment = async (attachment: SubscriptionRenewalAttachment) => {
 
 const formatDate = (value?: string) => value ? String(value).split('T')[0] : '-'
 const formatDateTime = (value?: string) => value ? new Date(value).toLocaleString('zh-CN') : '-'
+const formatFileSize = (size?: number | null) => {
+  if (!size) return '-'
+  if (size < 1024) return `${size}B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`
+  return `${(size / 1024 / 1024).toFixed(1)}MB`
+}
 const getExpiryTagType = (row: SubscriptionRecord) => row.expiryStatus === 'overdue' ? 'danger' : row.expiryStatus === 'expiring' ? 'warning' : 'success'
 const getExpiryText = (row: SubscriptionRecord) => {
   if (row.expiryStatus === 'overdue') return `已逾期 ${Math.abs(row.daysUntilExpiry || 0)} 天`
@@ -180,4 +229,6 @@ onMounted(loadData)
 <style scoped>
 .page-subtitle { color: #64748b; margin: 4px 0 0; }
 .history-card { margin-top: 16px; }
+.attachment-panel { padding: 12px 24px; background: #f8fafc; }
+.attachment-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 </style>

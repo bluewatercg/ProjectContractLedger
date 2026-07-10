@@ -55,6 +55,52 @@ describe('SubscriptionService.getExpiryStatus', () => {
   });
 });
 
+
+
+describe('SubscriptionService.nextReminderStartDate', () => {
+  it('defaults next reminder start date from expiry date and remind days when creating', async () => {
+    const service = createService();
+    (service.typeRepository.findOne as jest.Mock).mockResolvedValue({ id: 1, kit_id: 2, status: 'active' });
+
+    await service.createSubscription({
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2026-08-13',
+      renewal_period_value: 1,
+      renewal_period_unit: 'year',
+      remind_days_before: 8,
+      owner_name: '张三',
+    } as any, 2, 9);
+
+    expect(service.subscriptionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      current_expiry_date: '2026-08-13',
+      next_reminder_start_date: '2026-08-05',
+    }));
+  });
+
+  it('keeps manual next reminder start date when creating', async () => {
+    const service = createService();
+    (service.typeRepository.findOne as jest.Mock).mockResolvedValue({ id: 1, kit_id: 2, status: 'active' });
+
+    await service.createSubscription({
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2026-08-13',
+      next_reminder_start_date: '2026-08-01',
+      renewal_period_value: 1,
+      renewal_period_unit: 'year',
+      remind_days_before: 8,
+      owner_name: '张三',
+    } as any, 2, 9);
+
+    expect(service.subscriptionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      next_reminder_start_date: '2026-08-01',
+    }));
+  });
+});
+
 describe('SubscriptionService.updateSubscription', () => {
   it('defaults blank status to active before saving', async () => {
     const service = createService();
@@ -68,6 +114,7 @@ describe('SubscriptionService.updateSubscription', () => {
       renewal_period_value: 1,
       renewal_period_unit: 'year',
       remind_days_before: 30,
+      next_reminder_start_date: '2024-01-01',
       owner_name: '张三',
       status: 'active',
     };
@@ -154,6 +201,7 @@ describe('SubscriptionService.renewSubscription', () => {
       current_expiry_date: '2024-01-31',
       renewal_period_value: 1,
       renewal_period_unit: 'month',
+      remind_days_before: 30,
       owner_name: '张三',
       owner_user_id: null,
       cc_user_ids: null,
@@ -164,6 +212,7 @@ describe('SubscriptionService.renewSubscription', () => {
     const result = await service.renewSubscription(5, 2, 9, '已续费', true);
 
     expect(result.current_expiry_date).toBe('2024-02-29');
+    expect(result.next_reminder_start_date).toBe('2024-01-30');
     expect(result.status).toBe('active');
     expect((result as any).renewal_log.id).toBe(1);
     expect(service.renewalLogRepository.create).toHaveBeenCalledWith({
@@ -200,8 +249,8 @@ describe('SubscriptionService.getDueSubscriptionsForPush', () => {
   it('returns active subscriptions that are within reminder window and excludes already pushed today', async () => {
     const service = createService();
     const getMany = jest.fn().mockResolvedValue([
-      { id: 1, kit_id: 2, current_expiry_date: '2024-01-20', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
-      { id: 2, kit_id: 2, current_expiry_date: '2024-03-20', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
+      { id: 1, kit_id: 2, current_expiry_date: '2024-01-20', next_reminder_start_date: '2024-01-10', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
+      { id: 2, kit_id: 2, current_expiry_date: '2024-03-20', next_reminder_start_date: '2024-03-01', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
     ]);
     const qb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -220,12 +269,33 @@ describe('SubscriptionService.getDueSubscriptionsForPush', () => {
     expect(result.map(item => item.id)).toEqual([1]);
     expect(result[0].daysUntilExpiry).toBe(10);
   });
+  it('continues pushing overdue active subscriptions after expiry', async () => {
+    const service = createService();
+    const getMany = jest.fn().mockResolvedValue([
+      { id: 4, kit_id: 2, current_expiry_date: '2024-01-09', next_reminder_start_date: '2024-01-01', remind_days_before: 8, reminder_mode: 'daily', status: 'active' },
+    ]);
+    const qb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany,
+    };
+    (service.subscriptionRepository.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+    (service.pushLogRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+    const result = await service.getDueSubscriptionsForPush(2, '2024-01-10');
+
+    expect(result.map(item => item.id)).toEqual([4]);
+    expect(result[0].daysUntilExpiry).toBe(-1);
+  });
+
   it('pushes once mode only on the configured reminder date', async () => {
     const service = createService();
     const getMany = jest.fn().mockResolvedValue([
-      { id: 1, kit_id: 2, current_expiry_date: '2024-02-09', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
-      { id: 2, kit_id: 2, current_expiry_date: '2024-02-10', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
-      { id: 3, kit_id: 2, current_expiry_date: '2024-02-08', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
+      { id: 1, kit_id: 2, current_expiry_date: '2024-02-09', next_reminder_start_date: '2024-01-10', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
+      { id: 2, kit_id: 2, current_expiry_date: '2024-02-10', next_reminder_start_date: '2024-01-11', remind_days_before: 30, reminder_mode: 'once', status: 'active' },
+      { id: 3, kit_id: 2, current_expiry_date: '2024-02-08', next_reminder_start_date: '2024-01-10', remind_days_before: 30, reminder_mode: 'daily', status: 'active' },
     ]);
     const qb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),

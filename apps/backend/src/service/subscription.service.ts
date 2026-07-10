@@ -164,6 +164,7 @@ export class SubscriptionService {
       provider: dto.provider || null,
       renewal_url: dto.renewal_url || null,
       current_expiry_date: dto.current_expiry_date as any,
+      next_reminder_start_date: this.resolveNextReminderStartDate(dto.current_expiry_date, dto.remind_days_before, dto.next_reminder_start_date) as any,
       renewal_period_value: dto.renewal_period_value,
       renewal_period_unit: dto.renewal_period_unit,
       remind_days_before: dto.remind_days_before,
@@ -197,9 +198,16 @@ export class SubscriptionService {
     if (dto.provider !== undefined) subscription.provider = dto.provider || null;
     if (dto.renewal_url !== undefined) subscription.renewal_url = dto.renewal_url || null;
     if (dto.current_expiry_date !== undefined) subscription.current_expiry_date = dto.current_expiry_date as any;
+    if (dto.next_reminder_start_date !== undefined) subscription.next_reminder_start_date = dto.next_reminder_start_date as any;
     if (dto.renewal_period_value !== undefined) subscription.renewal_period_value = dto.renewal_period_value;
     if (dto.renewal_period_unit !== undefined) subscription.renewal_period_unit = dto.renewal_period_unit;
     if (dto.remind_days_before !== undefined) subscription.remind_days_before = dto.remind_days_before;
+    if (!subscription.next_reminder_start_date && subscription.current_expiry_date && subscription.remind_days_before !== undefined) {
+      subscription.next_reminder_start_date = this.resolveNextReminderStartDate(
+        subscription.current_expiry_date as any,
+        subscription.remind_days_before
+      ) as any;
+    }
     if (dto.reminder_mode !== undefined) subscription.reminder_mode = this.normalizeReminderMode(dto.reminder_mode);
     if (dto.owner_name !== undefined) subscription.owner_name = this.normalizeNullableText(dto.owner_name);
     if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id ?? null;
@@ -251,6 +259,7 @@ export class SubscriptionService {
     }));
 
     subscription.current_expiry_date = newExpiryDate as any;
+    subscription.next_reminder_start_date = this.resolveNextReminderStartDate(newExpiryDate, subscription.remind_days_before) as any;
     subscription.status = 'active';
     subscription.updated_by = userId;
     const savedSubscription = await this.subscriptionRepository.save(subscription);
@@ -281,7 +290,7 @@ export class SubscriptionService {
     const result: DueSubscription[] = [];
     for (const subscription of subscriptions) {
       const statusInfo = this.getExpiryStatus(subscription.current_expiry_date as any, today, subscription.remind_days_before);
-      if (!this.shouldPushSubscription(subscription, statusInfo.daysUntilExpiry)) {
+      if (!this.shouldPushSubscription(subscription, today, statusInfo.daysUntilExpiry)) {
         continue;
       }
 
@@ -378,11 +387,30 @@ export class SubscriptionService {
     }
   }
 
-  private shouldPushSubscription(subscription: SubscriptionRecord, daysUntilExpiry: number): boolean {
-    if (subscription.reminder_mode === 'once') {
-      return daysUntilExpiry === subscription.remind_days_before;
+  private shouldPushSubscription(subscription: SubscriptionRecord, today: string, daysUntilExpiry: number): boolean {
+    const reminderStart = subscription.next_reminder_start_date
+      ? this.normalizeDateString(subscription.next_reminder_start_date as any)
+      : this.resolveNextReminderStartDate(subscription.current_expiry_date as any, subscription.remind_days_before);
+    if (daysUntilExpiry < 0) {
+      return true;
     }
-    return daysUntilExpiry <= subscription.remind_days_before;
+    if (subscription.reminder_mode === 'once') {
+      return today === reminderStart;
+    }
+    return today >= reminderStart && daysUntilExpiry >= 0;
+  }
+
+  private resolveNextReminderStartDate(expiryDate: string | Date, remindDaysBefore: number, explicitDate?: string | Date | null): string {
+    if (explicitDate) {
+      return this.normalizeDateString(explicitDate);
+    }
+    return this.addDays(expiryDate, -Number(remindDaysBefore || 0));
+  }
+
+  private addDays(date: string | Date, days: number): string {
+    const base = this.parseDateOnly(date);
+    base.setUTCDate(base.getUTCDate() + days);
+    return this.formatDate(base);
   }
 
   private canOperateRenewal(subscription: SubscriptionRecord, userId: number, isAdmin: boolean): boolean {

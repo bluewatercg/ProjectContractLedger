@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Patch,
+  Del,
   Body,
   Param,
   Query,
@@ -264,6 +265,20 @@ export class SubscriptionController {
     } catch (error) {
       this.ctx.status = 500;
       this.ctx.body = { success: false, message: error.message || '下载文件失败' };
+    }
+  }
+
+  @Del('/attachments/:attachmentId')
+  @ApiOperation({ summary: '删除订阅续费附件' })
+  async deleteRenewalAttachment(@Param('attachmentId') attachmentId: number): Promise<ApiResponse> {
+    try {
+      const deleted = await this.subscriptionRenewalAttachmentService.deleteAttachment(Number(attachmentId), this.getKitId());
+      if (!deleted) {
+        return { success: false, message: '附件不存在', code: 404 };
+      }
+      return { success: true, message: '附件删除成功' };
+    } catch (error) {
+      return this.error(error, '附件删除失败', 500);
     }
   }
 

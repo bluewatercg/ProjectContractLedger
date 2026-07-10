@@ -1188,6 +1188,9 @@ export class CreateSubscriptionDto {
   @ApiProperty({ description: '当前到期日', example: '2026-12-31', format: 'date' })
   current_expiry_date: string;
 
+  @ApiPropertyOptional({ description: '下次提醒开始日，不填时按当前到期日和提前提醒天数自动计算', example: '2026-12-01', format: 'date' })
+  next_reminder_start_date?: string;
+
   @ApiProperty({ description: '续费周期数值', example: 1, type: 'integer' })
   renewal_period_value: number;
 
@@ -1240,6 +1243,9 @@ export class UpdateSubscriptionDto {
 
   @ApiPropertyOptional({ description: '当前到期日', example: '2026-12-31', format: 'date' })
   current_expiry_date?: string;
+
+  @ApiPropertyOptional({ description: '下次提醒开始日，不填时按当前到期日和提前提醒天数自动计算', example: '2026-12-01', format: 'date' })
+  next_reminder_start_date?: string;
 
   @ApiPropertyOptional({ description: '续费周期数值', example: 1, type: 'integer' })
   renewal_period_value?: number;
