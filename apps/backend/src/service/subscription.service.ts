@@ -244,7 +244,7 @@ export class SubscriptionService {
   async getDueSubscriptionsForPush(kitId: number, today: Date = new Date()): Promise<DueSubscription[]> {
     // 查询启用状态的订阅事项和它们的生效中续费记录
     const queryBuilder = this.subscriptionRepository.createQueryBuilder('subscription')
-      .innerJoin('subscription.renewalRecords', 'renewal_record', 'renewal_record.status = :activeStatus', { activeStatus: 'active' })
+      .innerJoinAndSelect('subscription.renewalRecords', 'renewal_record', 'renewal_record.status = :activeStatus', { activeStatus: 'active' })
       .leftJoinAndSelect('subscription.type', 'type')
       .leftJoinAndSelect('subscription.owner', 'owner')
       .where('subscription.status = :status', { status: 'active' })
