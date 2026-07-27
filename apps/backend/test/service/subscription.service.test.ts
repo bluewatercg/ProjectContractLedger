@@ -15,6 +15,7 @@ const createService = () => {
     getMany: jest.fn().mockResolvedValue([]),
     getOne: jest.fn().mockResolvedValue(null),
     innerJoin: jest.fn().mockReturnThis(),
+    innerJoinAndSelect: jest.fn().mockReturnThis(),
   };
   
   service.subscriptionRepository = {
@@ -307,10 +308,12 @@ describe('SubscriptionService.getDueSubscriptionsForPush', () => {
     const whereMock = jest.fn().mockReturnThis();
     const andWhereMock = jest.fn().mockReturnThis();
     const innerJoinMock = jest.fn().mockReturnThis();
+    const innerJoinAndSelectMock = jest.fn().mockReturnThis();
     const leftJoinAndSelectMock = jest.fn().mockReturnThis();
     const orderByMock = jest.fn().mockReturnThis();
     const mockQueryBuilder = {
       innerJoin: innerJoinMock,
+      innerJoinAndSelect: innerJoinAndSelectMock,
       leftJoinAndSelect: leftJoinAndSelectMock,
       where: whereMock,
       andWhere: andWhereMock,
