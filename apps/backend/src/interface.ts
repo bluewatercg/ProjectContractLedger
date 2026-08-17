@@ -1185,6 +1185,9 @@ export class CreateSubscriptionDto {
   @ApiPropertyOptional({ description: '续费方式', example: 'https://console.cloud.tencent.com/ssl 或线下转账', maxLength: 500 })
   renewal_url?: string;
 
+  @ApiPropertyOptional({ description: '订阅起始日期', example: '2026-09-13', format: 'date', nullable: true })
+  start_date?: string | null;
+
   @ApiProperty({ description: '当前到期日', example: '2026-12-31', format: 'date' })
   current_expiry_date: string;
 
@@ -1240,6 +1243,9 @@ export class UpdateSubscriptionDto {
 
   @ApiPropertyOptional({ description: '续费方式', example: 'https://console.cloud.tencent.com/ssl 或线下转账', maxLength: 500 })
   renewal_url?: string;
+
+  @ApiPropertyOptional({ description: '订阅起始日期', example: '2026-09-13', format: 'date', nullable: true })
+  start_date?: string | null;
 
   @ApiPropertyOptional({ description: '当前到期日', example: '2026-12-31', format: 'date' })
   current_expiry_date?: string;

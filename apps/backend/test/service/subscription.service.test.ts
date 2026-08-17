@@ -171,6 +171,62 @@ describe('SubscriptionService.updateSubscription', () => {
       renewal_period_unit: 'month',
     }));
   });
+  it('saves a nullable subscription start date', async () => {
+    const service = createService();
+    const subscription = {
+      id: 5,
+      kit_id: 2,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2026-10-13',
+      start_date: null,
+      status: 'active',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+    service.getSubscriptionById = jest.fn().mockResolvedValue(subscription);
+
+    await service.updateSubscription(5, { start_date: '2026-09-13' }, 2, 9);
+
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+      start_date: new Date('2026-09-13'),
+    }));
+  });
+
+  it('preserves a null start date for legacy subscriptions', async () => {
+    const service = createService();
+    const subscription = {
+      id: 5,
+      kit_id: 2,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2026-10-13',
+      start_date: null,
+      status: 'active',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+    service.getSubscriptionById = jest.fn().mockResolvedValue(subscription);
+
+    await service.updateSubscription(5, { notes: '旧订阅' }, 2, 9);
+
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({ start_date: null }));
+  });
+  it('rejects a start date later than the expiry date', async () => {
+    const service = createService();
+    const subscription = {
+      id: 5,
+      kit_id: 2,
+      current_expiry_date: new Date('2026-10-13'),
+      start_date: null,
+      status: 'active',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+
+    await expect(service.updateSubscription(5, { start_date: '2026-11-13' }, 2, 9))
+      .rejects.toThrow('订阅起始日期不能晚于当前到期日');
+    expect(service.subscriptionRepository.save).not.toHaveBeenCalled();
+  });
 
   it('does not change status when updating without specifying status', async () => {
     const service = createService();

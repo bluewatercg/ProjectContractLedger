@@ -570,9 +570,9 @@ export interface SubscriptionRecord {
   kit_id: number
   type_id: number
   name: string
-  subject: string
   provider?: string | null
   renewal_url?: string | null
+  start_date?: string | null
   current_expiry_date: string
   next_reminder_start_date?: string | null
   renewal_period_value: number
@@ -643,6 +643,7 @@ export interface CreateSubscriptionDto {
   subject: string
   provider?: string
   renewal_url?: string
+  start_date?: string | null
   current_expiry_date: string
   next_reminder_start_date?: string | null
   renewal_period_value: number

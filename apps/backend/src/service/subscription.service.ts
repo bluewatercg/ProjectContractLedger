@@ -115,6 +115,7 @@ export class SubscriptionService {
   }
 
   async createSubscription(dto: CreateSubscriptionDto, kitId: number, userId: number): Promise<SubscriptionRecord> {
+    this.validateSubscriptionDateRange(dto.start_date, dto.current_expiry_date);
     const subscription = new SubscriptionRecord();
     subscription.kit_id = kitId;
     subscription.type_id = dto.type_id;
@@ -122,6 +123,7 @@ export class SubscriptionService {
     subscription.subject = dto.subject;
     subscription.provider = dto.provider || null;
     subscription.renewal_url = dto.renewal_url || null;
+    subscription.start_date = dto.start_date ? new Date(dto.start_date) : null;
     subscription.current_expiry_date = dto.current_expiry_date ? new Date(dto.current_expiry_date) : null;
     subscription.next_reminder_start_date = dto.next_reminder_start_date ? new Date(dto.next_reminder_start_date) : null;
     subscription.renewal_period_value = dto.renewal_period_value ?? null;
@@ -130,7 +132,7 @@ export class SubscriptionService {
     subscription.reminder_mode = dto.reminder_mode ?? 'daily';
     subscription.owner_name = dto.owner_name || null;
     subscription.owner_user_id = dto.owner_user_id || null;
-    subscription.cc_user_ids = dto.cc_user_ids ? (Array.isArray(dto.cc_user_ids) ? dto.cc_user_ids.join(",") : dto.cc_user_ids) : null;
+    subscription.cc_user_ids = dto.cc_user_ids ? (Array.isArray(dto.cc_user_ids) ? dto.cc_user_ids.join(',') : dto.cc_user_ids) : null;
     subscription.cc_names = dto.cc_names || null;
     subscription.fee = dto.fee || null;
     subscription.notes = dto.notes || null;
@@ -151,11 +153,16 @@ export class SubscriptionService {
       throw new Error('订阅不存在');
     }
 
+    const startDate = dto.start_date !== undefined ? dto.start_date : subscription.start_date;
+    const expiryDate = dto.current_expiry_date !== undefined ? dto.current_expiry_date : subscription.current_expiry_date;
+    this.validateSubscriptionDateRange(startDate, expiryDate);
+
     if (dto.type_id !== undefined) subscription.type_id = dto.type_id;
     if (dto.name !== undefined) subscription.name = dto.name;
     if (dto.subject !== undefined) subscription.subject = dto.subject;
     if (dto.provider !== undefined) subscription.provider = dto.provider || null;
     if (dto.renewal_url !== undefined) subscription.renewal_url = dto.renewal_url || null;
+    if (dto.start_date !== undefined) subscription.start_date = dto.start_date ? new Date(dto.start_date) : null;
     if (dto.current_expiry_date !== undefined) subscription.current_expiry_date = dto.current_expiry_date ? new Date(dto.current_expiry_date) : null;
     if (dto.next_reminder_start_date !== undefined) subscription.next_reminder_start_date = dto.next_reminder_start_date ? new Date(dto.next_reminder_start_date) : null;
     if (dto.renewal_period_value !== undefined) subscription.renewal_period_value = dto.renewal_period_value;
@@ -164,7 +171,7 @@ export class SubscriptionService {
     if (dto.reminder_mode !== undefined) subscription.reminder_mode = dto.reminder_mode;
     if (dto.owner_name !== undefined) subscription.owner_name = dto.owner_name || null;
     if (dto.owner_user_id !== undefined) subscription.owner_user_id = dto.owner_user_id || null;
-    if (dto.cc_user_ids !== undefined) subscription.cc_user_ids = dto.cc_user_ids ? (Array.isArray(dto.cc_user_ids) ? dto.cc_user_ids.join(",") : dto.cc_user_ids) : null;
+    if (dto.cc_user_ids !== undefined) subscription.cc_user_ids = dto.cc_user_ids ? (Array.isArray(dto.cc_user_ids) ? dto.cc_user_ids.join(',') : dto.cc_user_ids) : null;
     if (dto.cc_names !== undefined) subscription.cc_names = dto.cc_names || null;
     if (dto.fee !== undefined) subscription.fee = dto.fee || null;
     if (dto.notes !== undefined) subscription.notes = dto.notes || null;
@@ -174,6 +181,21 @@ export class SubscriptionService {
     const updated = await this.subscriptionRepository.save(subscription);
     return await this.getSubscriptionById(updated.id, kitId);
   }
+
+  private validateSubscriptionDateRange(startDate: string | Date | null | undefined, expiryDate: string | Date | null | undefined): void {
+    if (!startDate || !expiryDate) return;
+    const start = this.dateOnlyValue(startDate);
+    const expiry = this.dateOnlyValue(expiryDate);
+    if (start > expiry) {
+      throw new Error('订阅起始日期不能晚于当前到期日');
+    }
+  }
+
+  private dateOnlyValue(value: string | Date): number {
+    const text = value instanceof Date ? value.toISOString().slice(0, 10) : value.split('T')[0];
+    return Date.parse(`${text}T00:00:00Z`);
+  }
+
 
   async disableSubscription(id: number, kitId: number, userId: number): Promise<boolean> {
     const subscription = await this.subscriptionRepository.findOne({

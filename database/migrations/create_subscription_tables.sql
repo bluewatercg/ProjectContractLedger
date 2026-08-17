@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS subscription_records (
   subject VARCHAR(200) NOT NULL COMMENT '主体：账号/域名/公司名',
   provider VARCHAR(100) NULL COMMENT '供应商/服务商',
   renewal_url VARCHAR(500) NULL COMMENT '续费入口URL',
+  start_date DATE NULL COMMENT '订阅起始日期',
   current_expiry_date DATE NOT NULL COMMENT '当前到期日',
   next_reminder_start_date DATE NULL COMMENT '下次提醒开始日',
   renewal_period_value INT NOT NULL COMMENT '续费周期数值',
@@ -57,6 +58,7 @@ CREATE TABLE IF NOT EXISTS subscription_records (
   INDEX idx_subscription_records_kit_status (kit_id, status),
   INDEX idx_subscription_records_kit_type (kit_id, type_id),
   INDEX idx_subscription_records_expiry (kit_id, current_expiry_date),
+  INDEX idx_subscription_records_start_date (kit_id, start_date),
   INDEX idx_subscription_records_reminder_start (kit_id, next_reminder_start_date),
   INDEX idx_subscription_records_owner (kit_id, owner_user_id),
   INDEX idx_subscription_records_owner_name (kit_id, owner_name)

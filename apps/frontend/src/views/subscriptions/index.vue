@@ -98,8 +98,8 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="所属主体" prop="subject">
-          <el-input v-model="form.subject" placeholder="请输入所属主体" />
+        <el-form-item label="订阅起始日期">
+          <el-date-picker v-model="form.start_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
         </el-form-item>
         <el-form-item label="当前到期日">
           <el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
@@ -180,7 +180,7 @@ const form = reactive<Partial<Subscription>>({
   type_id: undefined,
   name: '',
   subject: '',
-  provider: null,
+  start_date: null,
   current_expiry_date: '',
   next_reminder_start_date: null,
   renewal_period_value: 1,
@@ -235,12 +235,12 @@ const resetForm = () => {
     name: '',
     subject: '',
     provider: null,
+    start_date: null,
     current_expiry_date: '',
     next_reminder_start_date: null,
     renewal_period_value: 1,
     renewal_period_unit: 'month',
     remind_days_before: 30,
-    reminder_mode: 'daily',
     owner_name: null,
     owner_user_id: null,
     cc_user_ids: null,
@@ -266,6 +266,10 @@ const showEditDialog = (row: Subscription) => {
 }
 
 const submitForm = async () => {
+  if (form.start_date && form.current_expiry_date && form.start_date > form.current_expiry_date) {
+    ElMessage.error('订阅起始日期不能晚于当前到期日')
+    return
+  }
   await formRef.value.validate()
   formSubmitting.value = true
   

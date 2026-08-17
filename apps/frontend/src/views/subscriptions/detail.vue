@@ -10,13 +10,12 @@
       <div class="detail-header">
         <div class="basic-info">
           <h3>{{ subscription?.name }}</h3>
+          <p><strong>订阅起始日期：</strong>{{ subscription?.start_date || '未设置' }}</p>
+          <p><strong>当前到期日：</strong>{{ subscription?.current_expiry_date || '未设置' }}</p>
+          <p><strong>订阅时长：</strong>{{ durationLabel }}</p>
           <p><strong>事项类型：</strong>{{ subscription?.type?.name || '-' }}</p>
           <p><strong>所属主体：</strong>{{ subscription?.subject || '-' }}</p>
           <p><strong>服务商：</strong>{{ subscription?.provider || '-' }}</p>
-          <p><strong>主负责人：</strong>{{ subscription?.owner_name || '-' }}</p>
-          <p><strong>其他负责人：</strong>{{ subscription?.cc_names || '-' }}</p>
-          <p><strong>费用：</strong>{{ subscription?.fee ? `¥${Number(subscription.fee).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-' }}</p>
-          <p><strong>备注：</strong>{{ subscription?.notes || '-' }}</p>
           <p><strong>当前状态：</strong>
             <el-tag :type="subscription?.status === 'active' ? 'success' : 'info'">
               {{ subscription?.status === 'active' ? '已启用' : '已停用' }}
@@ -168,6 +167,9 @@
         </el-form-item>
         <el-form-item label="服务商">
           <el-input v-model="subscriptionForm.provider" placeholder="请输入服务商" />
+        </el-form-item>
+        <el-form-item label="订阅起始日期">
+          <el-date-picker v-model="subscriptionForm.start_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
         </el-form-item>
         <el-form-item label="当前到期日">
           <el-date-picker v-model="subscriptionForm.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
@@ -342,6 +344,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { subscriptionApi } from '@/api/subscription'
 import type { Subscription, SubscriptionRenewalRecord, SubscriptionRenewalAttachment } from '@/api/types'
+import { formatSubscriptionDuration } from '@/utils/subscription-duration'
 
 const router = useRouter()
 const route = useRoute()
@@ -351,6 +354,7 @@ const subscriptionId = computed(() => Number(route.params.id))
 
 const subscription = computed(() => store.currentSubscription)
 const renewalLogs = computed(() => store.renewalLogs)
+const durationLabel = computed(() => formatSubscriptionDuration(subscription.value?.start_date, subscription.value?.current_expiry_date))
 
 const renewalDialogVisible = ref(false)
 const renewalSubmitting = ref(false)
@@ -369,6 +373,7 @@ const subscriptionForm = reactive<Partial<Subscription>>({
   name: '',
   subject: '',
   provider: null,
+  start_date: null,
   current_expiry_date: '',
   next_reminder_start_date: null,
   renewal_period_value: 1,
@@ -417,6 +422,7 @@ const editSubscription = () => {
     name: subscription.value.name,
     subject: subscription.value.subject,
     provider: subscription.value.provider,
+    start_date: subscription.value.start_date ? String(subscription.value.start_date).split('T')[0] : null,
     current_expiry_date: subscription.value.current_expiry_date ? String(subscription.value.current_expiry_date).split('T')[0] : '',
     next_reminder_start_date: subscription.value.next_reminder_start_date ? String(subscription.value.next_reminder_start_date).split('T')[0] : null,
     renewal_period_value: subscription.value.renewal_period_value,
@@ -436,6 +442,10 @@ const submitSubscriptionForm = async () => {
   await subscriptionFormRef.value.validate()
   subscriptionSubmitting.value = true
   try {
+  if (subscriptionForm.start_date && subscriptionForm.current_expiry_date && subscriptionForm.start_date > subscriptionForm.current_expiry_date) {
+    ElMessage.error('订阅起始日期不能晚于当前到期日')
+    return
+  }
     const response = await store.updateSubscription(subscriptionId.value, { ...subscriptionForm })
     if (response.success) {
       ElMessage.success('订阅更新成功')

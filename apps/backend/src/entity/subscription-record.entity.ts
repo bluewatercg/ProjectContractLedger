@@ -42,6 +42,9 @@ export class SubscriptionRecord {
   @Column({ name: 'current_expiry_date', type: 'date', nullable: true, comment: '当前到期日' })
   current_expiry_date: Date | null;
 
+  @Column({ name: 'start_date', type: 'date', nullable: true, comment: '订阅起始日期' })
+  start_date: Date | null;
+
   @Column({ name: 'next_reminder_start_date', type: 'date', nullable: true, comment: '下次提醒开始日' })
   next_reminder_start_date: Date | null;
 
