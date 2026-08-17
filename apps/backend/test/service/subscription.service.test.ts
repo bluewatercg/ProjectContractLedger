@@ -11,6 +11,7 @@ const createService = () => {
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
     getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
     getMany: jest.fn().mockResolvedValue([]),
     getOne: jest.fn().mockResolvedValue(null),
@@ -51,6 +52,20 @@ const createService = () => {
   } as any;
   return service;
 };
+
+describe('SubscriptionService.getSubscriptionTypes', () => {
+  it('returns active types for the current kit in display order', async () => {
+    const service = createService();
+    const types = [{ id: 2, kit_id: 7, name: '域名', sort_order: 1, status: 'active' }];
+    const queryBuilder = service.typeRepository.createQueryBuilder('type') as any;
+    queryBuilder.getMany.mockResolvedValue(types);
+
+    await expect(service.getSubscriptionTypes(7)).resolves.toEqual(types);
+    expect(queryBuilder.where).toHaveBeenCalledWith('type.kit_id = :kitId', { kitId: 7 });
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith('type.status = :status', { status: 'active' });
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('type.sort_order', 'ASC');
+  });
+});
 
 describe('SubscriptionService.createSubscription', () => {
   it('creates subscription with correct data', async () => {

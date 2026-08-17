@@ -128,7 +128,9 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   }
 
   const fetchSubscriptionTypes = async () => {
-    // 这里应该调用API获取订阅类型，如果有的话
+    const response = await subscriptionApi.getSubscriptionTypes()
+    subscriptionTypes.value = response.success && response.data ? response.data : []
+    return response
   }
 
   return {

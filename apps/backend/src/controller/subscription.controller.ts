@@ -43,6 +43,16 @@ export class SubscriptionController {
     return this.ctx.state.user.id;
   }
 
+  @Get('/types')
+  async listSubscriptionTypes(): Promise<ApiResponse> {
+    try {
+      const types = await this.subscriptionService.getSubscriptionTypes(this.getKitId());
+      return { success: true, data: types, message: '获取事项类型成功' };
+    } catch (error) {
+      return this.error(error, '获取事项类型失败');
+    }
+  }
+
   @Get('/')
   async listSubscriptions(@Query() query: SubscriptionQuery): Promise<ApiResponse> {
     try {

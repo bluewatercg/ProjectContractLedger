@@ -11,6 +11,10 @@ import {
 } from './types'
 
 export const subscriptionApi = {
+  getSubscriptionTypes(): Promise<ApiResponse<SubscriptionType[]>> {
+    return apiClient.get('/subscriptions/types').then(res => res.data)
+  },
+
   getSubscriptions(params: PaginationQuery & { 
     search?: string, 
     status?: string,

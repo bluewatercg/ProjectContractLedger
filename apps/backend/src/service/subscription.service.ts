@@ -54,6 +54,16 @@ export class SubscriptionService {
   @Inject()
   subscriptionRenewalRecordService: SubscriptionRenewalRecordService;
 
+  async getSubscriptionTypes(kitId: number): Promise<SubscriptionType[]> {
+    return await this.typeRepository
+      .createQueryBuilder('type')
+      .where('type.kit_id = :kitId', { kitId })
+      .andWhere('type.status = :status', { status: 'active' })
+      .orderBy('type.sort_order', 'ASC')
+      .addOrderBy('type.id', 'ASC')
+      .getMany();
+  }
+
   async getSubscriptions(query: SubscriptionQuery, kitId: number): Promise<PaginationResult<SubscriptionRecord>> {
     const qb = this.subscriptionRepository
       .createQueryBuilder('subscription')
