@@ -15,8 +15,9 @@ export class SubscriptionRenewalRecordService {
   subscriptionService: SubscriptionService;
 
   async createRenewalRecord(subscriptionId: number, dto: CreateSubscriptionRenewalRecordDto, kitId: number, operatedBy?: number): Promise<SubscriptionRenewalRecordResponse> {
-    // 先将当前 active 记录改为 completed
-    await this.deactivateCurrentActiveRecord(subscriptionId);
+    if ((dto.status ?? 'active') === 'active') {
+      await this.deactivateCurrentActiveRecords(subscriptionId, kitId);
+    }
 
     // 创建新记录
     const renewalRecord = new SubscriptionRenewalRecord();
@@ -43,6 +44,9 @@ export class SubscriptionRenewalRecordService {
 
     if (!record) {
       throw new Error('续费记录不存在');
+    }
+    if (dto.status === 'active' && record.status !== 'active') {
+      await this.deactivateCurrentActiveRecords(record.subscription_id, kitId);
     }
 
     if (dto.renewal_date !== undefined) record.renewal_date = dto.renewal_date ? new Date(dto.renewal_date) : null;
@@ -108,14 +112,16 @@ export class SubscriptionRenewalRecordService {
     return true;
   }
 
-  private async deactivateCurrentActiveRecord(subscriptionId: number): Promise<void> {
-    const currentActiveRecord = await this.renewalRecordRepository.findOne({
-      where: { subscription_id: subscriptionId, status: 'active' } as any,
+  private async deactivateCurrentActiveRecords(subscriptionId: number, kitId: number): Promise<void> {
+    const currentActiveRecords = await this.renewalRecordRepository.find({
+      where: { subscription_id: subscriptionId, kit_id: kitId, status: 'active' } as any,
     });
 
-    if (currentActiveRecord) {
-      currentActiveRecord.status = 'completed';
-      await this.renewalRecordRepository.save(currentActiveRecord);
+    if (currentActiveRecords.length > 0) {
+      currentActiveRecords.forEach(record => {
+        record.status = 'completed';
+      });
+      await this.renewalRecordRepository.save(currentActiveRecords);
     }
   }
 

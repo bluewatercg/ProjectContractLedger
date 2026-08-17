@@ -101,8 +101,22 @@
         <el-form-item label="所属主体" prop="subject">
           <el-input v-model="form.subject" placeholder="请输入所属主体" />
         </el-form-item>
-        <el-form-item label="服务商">
-          <el-input v-model="form.provider" placeholder="请输入服务商" />
+        <el-form-item label="当前到期日">
+          <el-date-picker v-model="form.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="续费周期">
+          <el-input-number v-model="form.renewal_period_value" :min="1" style="width: 48%" />
+          <el-select v-model="form.renewal_period_unit" style="width: 48%; margin-left: 4%">
+            <el-option label="天" value="day" />
+            <el-option label="月" value="month" />
+            <el-option label="年" value="year" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="提醒开始日">
+          <el-date-picker v-model="form.next_reminder_start_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="提前提醒天数">
+          <el-input-number v-model="form.remind_days_before" :min="0" style="width: 100%" />
         </el-form-item>
         <el-form-item label="主负责人">
           <el-input v-model="form.owner_name" placeholder="请输入主负责人姓名" />
@@ -162,11 +176,17 @@ const editingSubscriptionId = ref<number | null>(null)
 const formSubmitting = ref(false)
 const formRef = ref()
 
-const form = reactive<Omit<Subscription, 'id'>>({
+const form = reactive<Partial<Subscription>>({
   type_id: undefined,
   name: '',
   subject: '',
   provider: null,
+  current_expiry_date: '',
+  next_reminder_start_date: null,
+  renewal_period_value: 1,
+  renewal_period_unit: 'month',
+  remind_days_before: 30,
+  reminder_mode: 'daily',
   owner_name: null,
   owner_user_id: null,
   cc_user_ids: null,
@@ -215,6 +235,12 @@ const resetForm = () => {
     name: '',
     subject: '',
     provider: null,
+    current_expiry_date: '',
+    next_reminder_start_date: null,
+    renewal_period_value: 1,
+    renewal_period_unit: 'month',
+    remind_days_before: 30,
+    reminder_mode: 'daily',
     owner_name: null,
     owner_user_id: null,
     cc_user_ids: null,

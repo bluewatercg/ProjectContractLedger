@@ -36,6 +36,39 @@ export class SubscriptionRecord {
   @Column({ length: 100, nullable: true, comment: '供应商/服务商' })
   provider: string | null;
 
+  @Column({ name: 'renewal_url', length: 500, nullable: true, comment: '续费入口或方式' })
+  renewal_url: string | null;
+
+  @Column({ name: 'current_expiry_date', type: 'date', nullable: true, comment: '当前到期日' })
+  current_expiry_date: Date | null;
+
+  @Column({ name: 'next_reminder_start_date', type: 'date', nullable: true, comment: '下次提醒开始日' })
+  next_reminder_start_date: Date | null;
+
+  @Column({ name: 'renewal_period_value', type: 'int', nullable: true, comment: '续费周期数值' })
+  renewal_period_value: number | null;
+
+  @Column({
+    name: 'renewal_period_unit',
+    type: 'enum',
+    enum: ['day', 'month', 'year'],
+    nullable: true,
+    comment: '续费周期单位',
+  })
+  renewal_period_unit: 'day' | 'month' | 'year' | null;
+
+  @Column({ name: 'remind_days_before', type: 'int', default: 30, comment: '提前提醒天数' })
+  remind_days_before: number;
+
+  @Column({
+    name: 'reminder_mode',
+    type: 'enum',
+    enum: ['once', 'daily'],
+    default: 'daily',
+    comment: '提醒方式',
+  })
+  reminder_mode: 'once' | 'daily';
+
   @Column({ name: 'owner_name', length: 100, nullable: true, comment: '主负责人名称（非系统用户）' })
   owner_name: string | null;
 

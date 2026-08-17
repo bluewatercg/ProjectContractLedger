@@ -141,6 +141,37 @@ describe('SubscriptionService.updateSubscription', () => {
     }));
   });
 
+  it('updates expiry and renewal period fields from the edit form', async () => {
+    const service = createService();
+    const subscription = {
+      id: 5,
+      kit_id: 2,
+      type_id: 1,
+      name: '企微认证',
+      subject: '主体',
+      current_expiry_date: '2026-10-13',
+      renewal_period_value: 1,
+      renewal_period_unit: 'month',
+      remind_days_before: 30,
+      reminder_mode: 'daily',
+      status: 'active',
+    };
+    (service.subscriptionRepository.findOne as jest.Mock).mockResolvedValue(subscription);
+    service.getSubscriptionById = jest.fn().mockResolvedValue(subscription);
+
+    await service.updateSubscription(5, {
+      current_expiry_date: '2026-11-13',
+      renewal_period_value: 2,
+      renewal_period_unit: 'month',
+    }, 2, 9);
+
+    expect(service.subscriptionRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+      current_expiry_date: new Date('2026-11-13'),
+      renewal_period_value: 2,
+      renewal_period_unit: 'month',
+    }));
+  });
+
   it('does not change status when updating without specifying status', async () => {
     const service = createService();
     const subscription = {

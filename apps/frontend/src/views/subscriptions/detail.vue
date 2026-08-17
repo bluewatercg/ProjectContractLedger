@@ -169,6 +169,23 @@
         <el-form-item label="服务商">
           <el-input v-model="subscriptionForm.provider" placeholder="请输入服务商" />
         </el-form-item>
+        <el-form-item label="当前到期日">
+          <el-date-picker v-model="subscriptionForm.current_expiry_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="续费周期">
+          <el-input-number v-model="subscriptionForm.renewal_period_value" :min="1" style="width: 48%" />
+          <el-select v-model="subscriptionForm.renewal_period_unit" style="width: 48%; margin-left: 4%">
+            <el-option label="天" value="day" />
+            <el-option label="月" value="month" />
+            <el-option label="年" value="year" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="提醒开始日">
+          <el-date-picker v-model="subscriptionForm.next_reminder_start_date" value-format="YYYY-MM-DD" type="date" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="提前提醒天数">
+          <el-input-number v-model="subscriptionForm.remind_days_before" :min="0" style="width: 100%" />
+        </el-form-item>
         <el-form-item label="主负责人">
           <el-input v-model="subscriptionForm.owner_name" placeholder="请输入主负责人姓名" />
         </el-form-item>
@@ -352,6 +369,12 @@ const subscriptionForm = reactive<Partial<Subscription>>({
   name: '',
   subject: '',
   provider: null,
+  current_expiry_date: '',
+  next_reminder_start_date: null,
+  renewal_period_value: 1,
+  renewal_period_unit: 'month',
+  remind_days_before: 30,
+  reminder_mode: 'daily',
   owner_name: null,
   cc_names: null,
   fee: null,
@@ -394,6 +417,12 @@ const editSubscription = () => {
     name: subscription.value.name,
     subject: subscription.value.subject,
     provider: subscription.value.provider,
+    current_expiry_date: subscription.value.current_expiry_date ? String(subscription.value.current_expiry_date).split('T')[0] : '',
+    next_reminder_start_date: subscription.value.next_reminder_start_date ? String(subscription.value.next_reminder_start_date).split('T')[0] : null,
+    renewal_period_value: subscription.value.renewal_period_value,
+    renewal_period_unit: subscription.value.renewal_period_unit,
+    remind_days_before: subscription.value.remind_days_before,
+    reminder_mode: subscription.value.reminder_mode || 'daily',
     owner_name: subscription.value.owner_name,
     cc_names: subscription.value.cc_names,
     fee: subscription.value.fee,
