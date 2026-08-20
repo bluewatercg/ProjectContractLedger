@@ -61,16 +61,7 @@
             ⚠ {{ statsIncompleteFeeCount }} 条记录未填费用，未计入统计
           </span>
         </div>
-        <el-table :data="statsByPeriod" size="small" stripe style="width: 100%; margin-bottom: 16px">
-          <el-table-column :label="statsPeriodLabel" prop="label" />
-          <el-table-column label="交易笔数" prop="count" width="110" align="right" />
-          <el-table-column label="总费用" width="160" align="right">
-            <template #default="{ row }">{{ formatCurrency(row.sum) }}</template>
-          </el-table-column>
-          <el-table-column label="平均每笔" width="160" align="right">
-            <template #default="{ row }">{{ formatCurrency(row.avg) }}</template>
-          </el-table-column>
-        </el-table>
+        <div ref="statsChartRef" class="stats-chart"></div>
       </template>
     </el-card>
 
@@ -373,13 +364,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import * as echarts from 'echarts'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { subscriptionApi } from '@/api/subscription'
 import type { Subscription, SubscriptionRenewalRecord, SubscriptionRenewalAttachment } from '@/api/types'
 import { formatSubscriptionDuration } from '@/utils/subscription-duration'
+import { createModernBarChart } from '@/utils/chartTheme'
 
 const router = useRouter()
 const route = useRoute()
@@ -447,8 +440,6 @@ const statsIncompleteFeeCount = computed(
   () => validRenewals.value.filter(r => r.fee == null || isNaN(Number(r.fee))).length
 )
 
-const statsPeriodLabel = computed(() => (statsViewMode.value === 'year' ? '年份' : '月份'))
-
 const formatCurrency = (x: number) => '¥' + Number(x).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const statsByPeriod = computed(() => {
@@ -485,6 +476,42 @@ const statsTotalSum = computed(() =>
 const statsTotalAvg = computed(() =>
   statsTotalCount.value === 0 ? 0 : statsTotalSum.value / statsTotalCount.value
 )
+
+// ---- 费用柱状图 ----
+const statsChartRef = ref<HTMLElement>()
+let statsChart: echarts.ECharts | null = null
+
+const renderStatsChart = () => {
+  if (!statsChartRef.value || statsByPeriod.value.length === 0) return
+  if (!statsChart) {
+    statsChart = echarts.init(statsChartRef.value)
+  }
+  const data = statsByPeriod.value
+  const categories = data.map(row => row.label)
+  const fees = data.map(row => Number(row.sum.toFixed(2)))
+  statsChart.setOption(
+    createModernBarChart({
+      categories,
+      series: [
+        { name: '总费用', data: fees }
+      ]
+    }),
+    true
+  )
+}
+
+const handleStatsResize = () => statsChart?.resize()
+
+// 数据或维度变化时重绘
+watch([statsByPeriod, statsViewMode], () => {
+  nextTick(() => renderStatsChart())
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleStatsResize)
+  statsChart?.dispose()
+  statsChart = null
+})
 
 const renewalRules = {
   next_reminder_date: [{ required: true, message: '请选择下次提醒时间', trigger: 'change' }]
@@ -765,6 +792,9 @@ onMounted(async () => {
   await store.fetchSubscriptionTypes()
   await store.fetchSubscription(subscriptionId.value)
   await store.fetchRenewalLogs(subscriptionId.value)
+  window.addEventListener('resize', handleStatsResize)
+  await nextTick()
+  renderStatsChart()
 })
 </script>
 
@@ -836,6 +866,12 @@ onMounted(async () => {
 
 .stats-warn {
   color: #e6a23c;
+}
+
+.stats-chart {
+  width: 100%;
+  height: 260px;
+  margin-bottom: 4px;
 }
 
 .file-info {
