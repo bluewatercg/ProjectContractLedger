@@ -43,6 +43,41 @@
     <el-card class="renewal-card">
       <template #header>
         <div class="card-header">
+          <span class="card-title">费用统计</span>
+          <el-radio-group v-model="statsViewMode" size="small">
+            <el-radio-button value="year">按年</el-radio-button>
+            <el-radio-button value="month">按月</el-radio-button>
+          </el-radio-group>
+        </div>
+      </template>
+
+      <div v-if="validRenewals.length === 0" class="stats-empty">暂无统计数据</div>
+      <template v-else>
+        <div class="stats-legend">
+          <span>累计费用：<b>{{ formatCurrency(statsTotalSum) }}</b></span>
+          <span>交易笔数：<b>{{ statsTotalCount }}</b></span>
+          <span>平均每笔：<b>{{ formatCurrency(statsTotalAvg) }}</b></span>
+          <span v-if="statsIncompleteFeeCount > 0" class="stats-warn">
+            ⚠ {{ statsIncompleteFeeCount }} 条记录未填费用，未计入统计
+          </span>
+        </div>
+        <el-table :data="statsByPeriod" size="small" stripe style="width: 100%; margin-bottom: 16px">
+          <el-table-column :label="statsPeriodLabel" prop="label" />
+          <el-table-column label="交易笔数" prop="count" width="110" align="right" />
+          <el-table-column label="总费用" width="160" align="right">
+            <template #default="{ row }">{{ formatCurrency(row.sum) }}</template>
+          </el-table-column>
+          <el-table-column label="平均每笔" width="160" align="right">
+            <template #default="{ row }">{{ formatCurrency(row.avg) }}</template>
+          </el-table-column>
+        </el-table>
+      </template>
+    </el-card>
+
+    <!-- 续费记录表格 -->
+    <el-card class="renewal-card">
+      <template #header>
+        <div class="card-header">
           <span class="card-title">续费记录</span>
         </div>
       </template>
@@ -401,6 +436,56 @@ const renewalForm = reactive({
 const contractFile = ref<File | null>(null)
 const invoiceFile = ref<File | null>(null)
 
+const statsViewMode = ref<'year' | 'month'>('year')
+
+// 排除已作废(status=voided)的记录
+const validRenewals = computed(() =>
+  (renewalLogs.value || []).filter(r => r.status === 'active' || r.status === 'completed')
+)
+
+const statsIncompleteFeeCount = computed(
+  () => validRenewals.value.filter(r => r.fee == null || isNaN(Number(r.fee))).length
+)
+
+const statsPeriodLabel = computed(() => (statsViewMode.value === 'year' ? '年份' : '月份'))
+
+const formatCurrency = (x: number) => '¥' + Number(x).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const statsByPeriod = computed(() => {
+  const map = new Map<string, { count: number; sum: number }>()
+  for (const r of validRenewals.value) {
+    const fee = Number(r.fee)
+    if (isNaN(fee)) continue
+    const date = r.renewal_date || ''
+    const key = statsViewMode.value === 'year' ? date.slice(0, 4) : date.slice(0, 7)
+    if (!key) continue
+    const entry = map.get(key) || { count: 0, sum: 0 }
+    entry.count += 1
+    entry.sum += fee
+    map.set(key, entry)
+  }
+  return Array.from(map.entries())
+    .map(([key, val]) => ({
+      label: statsViewMode.value === 'year'
+        ? key
+        : `${key.slice(0, 4)}年${parseInt(key.slice(5, 7), 10)}月`,
+      count: val.count,
+      sum: val.sum,
+      avg: val.sum / val.count
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+})
+
+const statsTotalCount = computed(() =>
+  statsByPeriod.value.reduce((acc, row) => acc + row.count, 0)
+)
+const statsTotalSum = computed(() =>
+  statsByPeriod.value.reduce((acc, row) => acc + row.sum, 0)
+)
+const statsTotalAvg = computed(() =>
+  statsTotalCount.value === 0 ? 0 : statsTotalSum.value / statsTotalCount.value
+)
+
 const renewalRules = {
   next_reminder_date: [{ required: true, message: '请选择下次提醒时间', trigger: 'change' }]
 }
@@ -726,6 +811,31 @@ onMounted(async () => {
 
 .renewal-card {
   margin-bottom: 20px;
+}
+
+.stats-empty {
+  padding: 12px 0;
+  color: #999;
+  font-size: 13px;
+}
+
+.stats-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 4px 0 12px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.stats-legend b {
+  font-size: 15px;
+  color: #303133;
+}
+
+.stats-warn {
+  color: #e6a23c;
 }
 
 .file-info {
