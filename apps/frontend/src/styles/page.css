@@ -3,11 +3,10 @@
 
 /* ==================== 页面头部增强 Page Header Enhancements ==================== */
 .page-header {
-  /* 基础样式继承自 index.css，这里只添加特殊样式 */
-  background: var(--color-bg-container);
-  border-radius: var(--radius-base);
-  box-shadow: var(--shadow-base);
-  padding: var(--spacing-5);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0 var(--spacing-5);
   margin-bottom: var(--spacing-6);
 }
 
@@ -49,7 +48,7 @@
 /* ==================== 财务概览样式 Financial Overview ==================== */
 .financial-section {
   background: var(--color-bg-container);
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-lg);
   padding: var(--spacing-6);
   box-shadow: var(--shadow-base);
   margin-bottom: var(--spacing-6);
@@ -61,7 +60,7 @@
   align-items: center;
   margin-bottom: var(--spacing-6);
   padding-bottom: var(--spacing-4);
-  border-bottom: 2px solid var(--color-border-lighter);
+  border-bottom: 1px solid var(--color-border-lighter);
 }
 
 .section-header h3 {
@@ -84,7 +83,9 @@
 /* ==================== 漏斗图样式 Funnel Chart ==================== */
 .financial-funnel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--spacing-6) minmax(0, 1fr) var(--spacing-6) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--spacing-6) minmax(0, 1fr) var(
+      --spacing-6
+    ) minmax(0, 1fr);
   align-items: stretch;
   gap: 0;
 }
@@ -100,26 +101,12 @@
   transition: var(--transition-all);
 }
 
-.funnel-item {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.funnel-itemHighlight {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-}
-
+.funnel-item,
+.funnel-itemHighlight,
 .funnel-itemSuccess {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
-}
-
-.funnel-item:hover,
-.funnel-itemHighlight:hover,
-.funnel-itemSuccess:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  background: var(--color-bg-container);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-base);
 }
 
 .funnel-label {
@@ -153,7 +140,7 @@
 }
 
 .funnel-connector::after {
-  content: '→';
+  content: "→";
   position: absolute;
   right: -8px;
   top: 50%;
@@ -298,7 +285,7 @@
 
 @media (max-width: 480px) {
   .page-header {
-    padding: var(--spacing-4);
+    padding: 0 0 var(--spacing-4);
   }
 
   .financial-section {

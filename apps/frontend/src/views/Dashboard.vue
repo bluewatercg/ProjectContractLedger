@@ -2,6 +2,7 @@
   <div class="page-container">
     <div class="page-header">
       <h2 class="page-title">仪表板</h2>
+      <p class="page-subtitle">合同、开票与收款的资金流转全景</p>
       <div class="header-actions">
         <el-select
           v-model="selectedYear"
@@ -643,8 +644,8 @@ import {
   createModernBarChart,
   createModernPieChart,
   chartColors,
-  formatCurrency as formatChartCurrency
-} from '@/utils/chartTheme';
+  formatCurrency as formatChartCurrency,
+} from "@/utils/chartTheme";
 
 const router = useRouter();
 const kitStore = useKitStore();
@@ -809,16 +810,16 @@ const initRevenueTrendChart = async () => {
         months: data.map((item) => item.monthName),
         series: [
           {
-            name: '应收金额',
+            name: "应收金额",
             data: data.map((item) => item.revenue),
-            color: chartColors.primary[0]
+            color: chartColors.primary[0],
           },
           {
-            name: '实收金额',
+            name: "实收金额",
             data: data.map((item) => item.payments),
-            color: chartColors.primary[1]
-          }
-        ]
+            color: chartColors.primary[1],
+          },
+        ],
       });
       chart.setOption(option);
     }
@@ -869,20 +870,20 @@ const initCustomerContributionChart = async () => {
         categories: data.map((item) => item.name),
         series: [
           {
-            name: '贡献总额',
+            name: "贡献总额",
             data: data.map((item) => item.total),
-            color: chartColors.primary[0]
-          }
-        ]
+            color: chartColors.primary[0],
+          },
+        ],
       });
       // 横向柱状图配置
-      option.xAxis.type = 'value';
+      option.xAxis.type = "value";
       option.yAxis = {
-        type: 'category',
+        type: "category",
         data: data.map((item) => item.name),
-        axisLine: { lineStyle: { color: '#E2E8F0' } },
-        axisLabel: { color: '#64748B', fontSize: 12 },
-        axisTick: { show: false }
+        axisLine: { lineStyle: { color: "#E2E8F0" } },
+        axisLabel: { color: "#64748B", fontSize: 12 },
+        axisTick: { show: false },
       };
       chart.setOption(option);
     }
@@ -1042,29 +1043,37 @@ onUnmounted(() => {
   charts.forEach((chart) => chart.dispose());
 });
 </script>
-
 <style scoped>
-/* 使用全局页面样式，这里只定义Dashboard特有的样式 */
+/* Dashboard-specific styles - Stripe-inspired design system */
 
-.financial-section {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  margin-bottom: 32px;
+/* Page subtitle */
+.page-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted, #64748d);
+  font-weight: 400;
 }
 
+.financial-section {
+  background: var(--color-bg-container, white);
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
+}
 .financial-section .section-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .financial-section h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
+  color: var(--color-text-primary, #0d253d);
 }
 
 .financial-funnel {
@@ -1072,63 +1081,64 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr) 40px minmax(0, 1fr);
   align-items: stretch;
   gap: 0;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
 .funnel-item,
 .funnel-itemHighlight,
 .funnel-itemSuccess {
   min-width: 0;
-  background: white;
-  padding: 24px;
+  background: var(--color-bg-container, white);
+  padding: 20px;
   border-radius: 12px;
-  border: 2px solid #E2E8F0;
+  border: 1px solid var(--color-border-base);
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .funnel-item:hover,
 .funnel-itemHighlight:hover,
 .funnel-itemSuccess:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-  border-color: #3B82F6;
+  border-color: var(--color-primary, #533afd);
+  box-shadow: 0 2px 8px rgba(83, 58, 253, 0.08);
 }
 
 .funnel-itemHighlight {
-  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
-  border-color: #0EA5E9;
-  border-left-width: 4px;
+  background: var(--color-bg-active, #f0edff);
+  border-color: var(--color-primary-light, #665efd);
+  border-left-width: 3px;
 }
 
 .funnel-itemSuccess {
-  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-  border-color: #22C55E;
-  border-left-width: 4px;
+  background: #f0fdf4;
+  border-color: var(--color-success, #10b981);
+  border-left-width: 3px;
 }
 
 .funnel-label {
-  font-size: 0.875rem;
-  color: #64748b;
-  font-weight: 600;
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 13px;
+  color: var(--color-text-muted, #64748d);
+  font-weight: 500;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
 }
 
 .funnel-value {
-  font-size: 2rem;
+  font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 8px;
+  color: var(--color-text-primary, #0d253d);
+  margin-bottom: 6px;
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
 }
 
 .funnel-desc {
-  font-size: 0.8125rem;
-  color: #94a3b8;
-  font-weight: 500;
+  font-size: 12px;
+  color: var(--color-text-muted, #64748d);
+  font-weight: 400;
 }
 
 .funnel-progress {
@@ -1137,105 +1147,93 @@ onUnmounted(() => {
 
 .funnel-connector {
   align-self: center;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-border-base) 0,
+    var(--color-border-base) 4px,
+    transparent 4px,
+    transparent 8px
+  );
   position: relative;
-  height: 2px;
-  background: linear-gradient(90deg, #3B82F6 0%, #0EA5E9 100%);
-  z-index: 1;
 }
 
 .funnel-connector::after {
   content: "";
   position: absolute;
   right: 0;
-  top: -4px;
+  top: -3px;
   width: 0;
   height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 8px solid #0EA5E9;
-}
-
-.funnel-connector::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: -2px;
-  width: 6px;
-  height: 6px;
-  background: #3B82F6;
-  border-radius: 50%;
-  animation: flowParticle 2s ease-in-out infinite;
-}
-
-@keyframes flowParticle {
-  0%, 100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  50% {
-    transform: translateX(24px);
-    opacity: 0.3;
-  }
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--color-primary, #533afd);
 }
 
 .financial-details-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .detail-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 16px 20px;
   border-radius: 12px;
-  background: white;
-  border: 2px solid #F1F5F9;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  background: var(--color-bg-container, white);
+  border: 1px solid var(--color-border-base);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  min-width: 0;
 }
 
 .detail-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-color: var(--color-primary, #533afd);
+  box-shadow: 0 2px 8px rgba(83, 58, 253, 0.08);
 }
 
 .detail-card.primary {
-  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-  border-color: #93C5FD;
+  background: var(--color-bg-active, #f0edff);
+  border-color: var(--color-primary-light, #665efd);
 }
 .detail-card.success {
-  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-  border-color: #86EFAC;
+  background: #f0fdf4;
+  border-color: var(--color-success, #10b981);
 }
 .detail-card.warning {
-  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
-  border-color: #FDE68A;
+  background: #fffbeb;
+  border-color: var(--color-warning, #f59e0b);
 }
 .detail-card.danger {
-  background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
-  border-color: #FECACA;
+  background: #fef2f2;
+  border-color: var(--color-danger, #ef4444);
 }
 .detail-card.info {
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
-  border-color: #E2E8F0;
+  background: var(--color-bg-page, #f6f9fc);
+  border-color: var(--color-border-base);
 }
 
 .detail-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .detail-label {
   font-size: 13px;
-  opacity: 0.8;
+  color: var(--color-text-muted, #64748d);
   margin-bottom: 4px;
 }
 
 .detail-value {
   font-size: 20px;
   font-weight: 700;
+  color: var(--color-text-primary, #0d253d);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
 }
 
 .detail-sub {
@@ -1243,30 +1241,33 @@ onUnmounted(() => {
   margin-top: 4px;
   font-weight: normal;
   display: block;
+  color: var(--color-danger, #ef4444);
 }
 
 .detail-icon {
-  font-size: 24px;
-  opacity: 0.4;
+  font-size: 22px;
+  opacity: 0.5;
+  color: var(--color-text-muted, #64748d);
 }
 
 .info-icon {
-  color: #94a3b8;
+  color: var(--color-text-muted, #64748d);
   cursor: help;
   font-size: 16px;
 }
 
 .charts-row {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   margin-bottom: 24px;
 }
 
 .chart-container {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-container, white);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-border-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .chart-container.large {
@@ -1288,27 +1289,31 @@ onUnmounted(() => {
 
 .chart-header h3 {
   margin: 0;
-  font-size: 16px;
-  color: #333;
+  font-size: 15px;
+  color: var(--color-text-primary, #0d253d);
+  font-weight: 600;
 }
 
 .chart-box {
-  height: 300px;
+  height: 280px;
   width: 100%;
 }
 
 .quick-actions {
-  margin-top: 32px;
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 32px;
+  margin-top: 24px;
+  background: var(--color-bg-container, white);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-border-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
 }
 
 .quick-actions h3 {
-  margin-bottom: 16px;
-  color: #333;
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  color: var(--color-text-primary, #0d253d);
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -1319,82 +1324,83 @@ onUnmounted(() => {
 
 /* 提醒区域样式 */
 .reminders-section {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 32px;
+  background: var(--color-bg-container, white);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-border-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .section-header h3 {
   margin: 0;
-  color: #333;
-  font-size: 18px;
+  color: var(--color-text-primary, #0d253d);
+  font-size: 16px;
   font-weight: 600;
 }
 
 .reminder-stats {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
 .priority-summary {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 6px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg-page, #f6f9fc);
+  border-radius: 8px;
 }
 
 .priority-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
 .priority-item.high {
-  color: #f56c6c;
+  color: var(--color-danger, #ef4444);
 }
 
 .priority-item.medium {
-  color: #e6a23c;
+  color: var(--color-warning, #f59e0b);
 }
 
 .priority-item.low {
-  color: #67c23a;
+  color: var(--color-success, #10b981);
 }
 
 .reminders-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .category-section {
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-base);
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .category-title {
   margin: 0;
   padding: 12px 16px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #ebeef5;
-  font-size: 14px;
+  background: var(--color-bg-page, #f6f9fc);
+  border-bottom: 1px solid var(--color-border-base);
+  font-size: 13px;
   font-weight: 600;
-  color: #606266;
+  color: var(--color-text-regular, #273951);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1403,7 +1409,7 @@ onUnmounted(() => {
 .category-section .reminder-item {
   margin: 0;
   border: none;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid var(--color-border-base);
   border-radius: 0;
 }
 
@@ -1414,42 +1420,44 @@ onUnmounted(() => {
 .reminder-item {
   display: flex;
   align-items: center;
-  padding: 16px;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-base);
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #fff;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  background: var(--color-bg-container, white);
 }
 
 .reminder-item:hover {
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+  border-color: var(--color-primary, #533afd);
+  box-shadow: 0 2px 8px rgba(83, 58, 253, 0.08);
 }
 
 .reminder-item.priority-high {
-  border-left: 4px solid #f56c6c;
+  border-left: 3px solid var(--color-danger, #ef4444);
 }
 
 .reminder-item.priority-medium {
-  border-left: 4px solid #e6a23c;
+  border-left: 3px solid var(--color-warning, #f59e0b);
 }
 
 .reminder-item.priority-low {
-  border-left: 4px solid #67c23a;
+  border-left: 3px solid var(--color-success, #10b981);
 }
 
 .reminder-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #f0f2f5;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-bg-active, #f0edff);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
-  font-size: 18px;
-  color: #409eff;
+  margin-right: 14px;
+  font-size: 16px;
+  color: var(--color-primary, #533afd);
 }
 
 .reminder-content {
@@ -1458,25 +1466,25 @@ onUnmounted(() => {
 }
 
 .reminder-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary, #0d253d);
   margin-bottom: 4px;
   line-height: 1.4;
 }
 
 .reminder-description {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted, #64748d);
+  margin-bottom: 6px;
   line-height: 1.4;
 }
 
 .reminder-meta {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-muted, #64748d);
 }
 
 .reminder-meta > span {
@@ -1498,97 +1506,100 @@ onUnmounted(() => {
 
 /* 合同续签提醒区域样式 */
 .renewal-section {
-  background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
-  border: 1px solid #ffc107;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
-  margin-bottom: 32px;
+  background: var(--color-bg-container, white);
+  border: 1px solid var(--color-warning, #f59e0b);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
 }
 
 .renewal-section .section-header h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #856404;
+  color: var(--color-text-primary, #0d253d);
 }
 
 .renewal-icon {
-  color: #ffc107;
-  font-size: 20px;
+  color: var(--color-warning, #f59e0b);
+  font-size: 18px;
 }
 
 .renewal-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .renewal-item {
   display: flex;
   align-items: center;
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #ffe69c;
+  padding: 14px 16px;
+  background: var(--color-bg-page, #f6f9fc);
+  border-radius: 10px;
+  border: 1px solid var(--color-border-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .renewal-item:hover {
-  border-color: #ffc107;
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
-  transform: translateY(-2px);
+  border-color: var(--color-warning, #f59e0b);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
 }
 
 .renewal-item.priority-high {
-  border-left: 4px solid #dc3545;
+  border-left: 3px solid var(--color-danger, #ef4444);
 }
 
 .renewal-item.priority-medium {
-  border-left: 4px solid #ffc107;
+  border-left: 3px solid var(--color-warning, #f59e0b);
 }
 
 .renewal-item.priority-low {
-  border-left: 4px solid #28a745;
+  border-left: 3px solid var(--color-success, #10b981);
 }
 
 .renewal-countdown {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-right: 20px;
+  margin-right: 16px;
   flex-shrink: 0;
 }
 
 .renewal-countdown.urgent {
-  background: linear-gradient(135deg, #dc3545, #c82333);
+  background: var(--color-danger, #ef4444);
   color: white;
 }
 
 .renewal-countdown.warning {
-  background: linear-gradient(135deg, #ffc107, #e0a800);
-  color: #212529;
+  background: var(--color-warning, #f59e0b);
+  color: white;
 }
 
 .renewal-countdown.normal {
-  background: linear-gradient(135deg, #28a745, #218838);
+  background: var(--color-success, #10b981);
   color: white;
 }
 
 .countdown-number {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .countdown-label {
-  font-size: 11px;
+  font-size: 10px;
   margin-top: 4px;
+  opacity: 0.9;
 }
 
 .renewal-content {
@@ -1597,15 +1608,15 @@ onUnmounted(() => {
 }
 
 .renewal-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 6px;
+  color: var(--color-text-primary, #0d253d);
+  margin-bottom: 4px;
 }
 
 .renewal-customer {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: var(--color-text-muted, #64748d);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1614,7 +1625,8 @@ onUnmounted(() => {
 
 .renewal-amount {
   font-size: 13px;
-  color: #999;
+  color: var(--color-text-muted, #64748d);
+  font-variant-numeric: tabular-nums;
 }
 
 .renewal-actions {
@@ -1625,22 +1637,22 @@ onUnmounted(() => {
 
 .no-renewals {
   text-align: center;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
+  padding: 24px 20px;
+  background: var(--color-bg-page, #f6f9fc);
+  border-radius: 10px;
 }
 
 @media (max-width: 1200px) {
   .financial-funnel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    gap: 16px;
   }
 
   .funnel-item,
   .funnel-itemHighlight,
   .funnel-itemSuccess {
     width: auto;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .funnel-connector {
@@ -1648,19 +1660,27 @@ onUnmounted(() => {
   }
 
   .financial-details-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
   .financial-funnel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .funnel-item,
   .funnel-itemHighlight,
   .funnel-itemSuccess {
     width: auto;
+  }
+
+  .financial-details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .charts-row {
+    flex-direction: column;
   }
 
   .action-buttons {
@@ -1688,7 +1708,6 @@ onUnmounted(() => {
     justify-content: flex-end;
   }
 
-  /* 续签区域响应式 */
   .renewal-item {
     flex-direction: column;
     align-items: flex-start;
@@ -1696,18 +1715,14 @@ onUnmounted(() => {
   }
 
   .renewal-countdown {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     margin-right: 0;
     margin-bottom: 8px;
   }
 
   .countdown-number {
-    font-size: 22px;
-  }
-
-  .countdown-label {
-    font-size: 10px;
+    font-size: 20px;
   }
 
   .renewal-actions {
@@ -1717,13 +1732,13 @@ onUnmounted(() => {
   }
 }
 
-/* 账龄分析区域 - 轻量现代化企业风格 */
+/* 账龄分析区域 */
 .aging-section {
-  background: white;
-  padding: 24px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--color-bg-container, white);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   margin-bottom: 24px;
 }
 
@@ -1731,9 +1746,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-base);
 }
 
 .aging-section .header-left {
@@ -1743,91 +1758,90 @@ onUnmounted(() => {
 }
 
 .aging-section .section-icon {
-  font-size: 20px;
-  color: #3b82f6;
+  font-size: 18px;
+  color: var(--color-primary, #533afd);
 }
 
 .aging-section h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary, #0d253d);
 }
 
 .aging-section .info-icon {
-  color: #9ca3af;
+  color: var(--color-text-muted, #64748d);
   font-size: 16px;
   cursor: help;
-  transition: color 0.2s;
 }
 
 .aging-section .info-icon:hover {
-  color: #6b7280;
+  color: var(--color-text-regular, #273951);
 }
 
 /* 汇总统计卡片行 */
 .aging-summary-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .summary-card {
-  background: #fafafa;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 16px;
-  transition: all 0.2s ease;
+  background: var(--color-bg-page, #f6f9fc);
+  border: 1px solid var(--color-border-base);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
 }
 
 .summary-card:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-primary, #533afd);
 }
 
 .summary-card.primary {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: var(--color-bg-active, #f0edff);
+  border-color: var(--color-primary-light, #665efd);
 }
 
 .summary-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .summary-icon {
-  font-size: 18px;
-  color: #6b7280;
+  font-size: 16px;
+  color: var(--color-text-muted, #64748d);
 }
 
 .summary-card.primary .summary-icon {
-  color: #3b82f6;
+  color: var(--color-primary, #533afd);
 }
 
 .summary-label {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 12px;
+  color: var(--color-text-muted, #64748d);
   font-weight: 500;
 }
 
 .summary-value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary, #0d253d);
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-card.primary .summary-value {
-  color: #1e40af;
+  color: var(--color-primary-dark, #2e2b8c);
 }
 
 .summary-value .unit {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--color-text-muted, #64748d);
   margin-left: 4px;
 }
 
@@ -1835,15 +1849,15 @@ onUnmounted(() => {
 .aging-buckets {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .bucket-row {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 14px 16px;
-  transition: all 0.2s ease;
+  background: var(--color-bg-container, white);
+  border: 1px solid var(--color-border-base);
+  border-radius: 10px;
+  padding: 12px 16px;
+  transition: border-color 0.2s;
   position: relative;
   overflow: hidden;
 }
@@ -1855,35 +1869,29 @@ onUnmounted(() => {
   top: 0;
   bottom: 0;
   width: 3px;
-  transition: width 0.2s ease;
 }
 
 .bucket-row.risk-low::before {
-  background: #10b981;
+  background: var(--color-success, #10b981);
 }
 
 .bucket-row.risk-medium::before {
-  background: #f59e0b;
+  background: var(--color-warning, #f59e0b);
 }
 
 .bucket-row.risk-high::before {
-  background: #ef4444;
+  background: var(--color-danger, #ef4444);
 }
 
 .bucket-row:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.bucket-row:hover::before {
-  width: 4px;
+  border-color: var(--color-primary, #533afd);
 }
 
 .bucket-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .bucket-info {
@@ -1900,27 +1908,27 @@ onUnmounted(() => {
 }
 
 .risk-indicator.risk-low {
-  background: #10b981;
+  background: var(--color-success, #10b981);
 }
 
 .risk-indicator.risk-medium {
-  background: #f59e0b;
+  background: var(--color-warning, #f59e0b);
 }
 
 .risk-indicator.risk-high {
-  background: #ef4444;
+  background: var(--color-danger, #ef4444);
 }
 
 .bucket-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-primary, #0d253d);
 }
 
 .bucket-count {
-  font-size: 12px;
-  color: #6b7280;
-  background: #f3f4f6;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748d);
+  background: var(--color-bg-page, #f6f9fc);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -1932,44 +1940,46 @@ onUnmounted(() => {
 }
 
 .bucket-amount .amount {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary, #0d253d);
+  font-variant-numeric: tabular-nums;
 }
 
 .bucket-amount .percentage {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 12px;
+  color: var(--color-text-muted, #64748d);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .bucket-progress {
-  height: 6px;
-  background: #f3f4f6;
-  border-radius: 3px;
+  height: 4px;
+  background: var(--color-bg-page, #f6f9fc);
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .bucket-progress .progress-bar {
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+  transition: width 0.4s ease;
 }
 
 .bucket-progress .progress-bar.risk-low {
-  background: #10b981;
+  background: var(--color-success, #10b981);
 }
 
 .bucket-progress .progress-bar.risk-medium {
-  background: #f59e0b;
+  background: var(--color-warning, #f59e0b);
 }
 
 .bucket-progress .progress-bar.risk-high {
-  background: #ef4444;
+  background: var(--color-danger, #ef4444);
 }
 
 .no-aging-data {
-  padding: 40px 20px;
+  padding: 32px 20px;
   text-align: center;
 }
 
@@ -1979,15 +1989,15 @@ onUnmounted(() => {
   }
 
   .aging-summary-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .summary-value {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .bucket-amount .amount {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .bucket-header {
@@ -2002,20 +2012,9 @@ onUnmounted(() => {
   }
 }
 
-/* Animation classes for financial funnel */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* Simple fade-in animation */
 .animate-slide-in-up {
-  animation: slideInUp 0.6s ease-out forwards;
+  animation: fadeIn 0.4s ease-out forwards;
   opacity: 0;
 }
 
@@ -2025,5 +2024,14 @@ onUnmounted(() => {
 
 .animate-slide-in-up.delay-200 {
   animation-delay: 0.2s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

@@ -1,7 +1,10 @@
 <template>
   <div class="page-container">
     <div class="page-header">
-      <h2 class="page-title">合同管理</h2>
+      <div class="page-header-text">
+        <h2 class="page-title">合同管理</h2>
+        <p class="page-subtitle">管理所有合同、跟踪开票与收款进度</p>
+      </div>
       <el-button type="primary" @click="$router.push('/contracts/create')">
         <el-icon><Plus /></el-icon>
         新建合同
@@ -78,7 +81,10 @@
             @delete="deleteContract"
           />
 
-          <div v-if="!loading && contracts.length === 0" class="card-empty-state">
+          <div
+            v-if="!loading && contracts.length === 0"
+            class="card-empty-state"
+          >
             <div class="empty-icon">📦📝💰</div>
             <div class="empty-text">还没有创建任何合同</div>
             <el-button
@@ -91,7 +97,7 @@
           </div>
         </div>
       </div>
-      
+
       <div v-else>
         <SkeletonLoader
           v-if="loading && currentPage === 1"
@@ -110,50 +116,103 @@
             style="width: 100%"
             :row-class-name="getRowClassName"
           >
-
-            <el-table-column prop="contract_number" label="合同编号" width="140" fixed />
-            <el-table-column prop="title" label="合同标题" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="customer.name" label="客户名称" width="150" show-overflow-tooltip />
-            <el-table-column prop="businessCategory.name" label="业务分类" width="120" show-overflow-tooltip>
+            <el-table-column
+              prop="contract_number"
+              label="合同编号"
+              width="140"
+              fixed
+            />
+            <el-table-column
+              prop="title"
+              label="合同标题"
+              min-width="180"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="customer.name"
+              label="客户名称"
+              width="150"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="businessCategory.name"
+              label="业务分类"
+              width="120"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">
-                <span v-if="row.businessCategory">{{ row.businessCategory.name }}</span>
+                <span v-if="row.businessCategory">{{
+                  row.businessCategory.name
+                }}</span>
                 <span v-else style="color: #c0c4cc">-</span>
               </template>
             </el-table-column>
             <!-- 套账列（仅在查看全部时显示） -->
-            <el-table-column v-if="kitStore.viewAllKits" label="所属套账" width="120">
+            <el-table-column
+              v-if="kitStore.viewAllKits"
+              label="所属套账"
+              width="120"
+            >
               <template #default="{ row }">
-                <el-tag size="small" type="info">{{ getKitName(row.kit_id) }}</el-tag>
+                <el-tag size="small" type="info">{{
+                  getKitName(row.kit_id)
+                }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="财务状况" width="280">
               <template #default="{ row }">
-                <div class="financial-status-cell" :class="`financial-${row.billingStatus}`">
+                <div class="financial-status-cell">
                   <div class="financial-header">
-                    <span class="contract-amount">💰 ¥{{ formatCurrency(row.total_amount) }}</span>
-                    <el-tag :type="getBillingStatusType(row.billingStatus)" size="small">
+                    <span class="contract-amount"
+                      >¥{{ formatCurrency(row.total_amount) }}</span
+                    >
+                    <el-tag
+                      :type="getBillingStatusType(row.billingStatus)"
+                      size="small"
+                      round
+                    >
                       {{ row.billingStatusText || "-" }}
                     </el-tag>
                   </div>
                   <div class="financial-progress">
                     <div class="progress-item">
-                      <span class="progress-label">📄 开票:</span>
+                      <span class="progress-label">开票</span>
                       <span class="progress-value">
                         ¥{{ formatCurrency(row.invoicedAmount || 0) }}
-                        <span class="progress-percent">({{ getInvoicePercent(row.invoicedAmount, row.total_amount) }}%)</span>
+                        <span class="progress-percent"
+                          >{{
+                            getInvoicePercent(
+                              row.invoicedAmount,
+                              row.total_amount,
+                            )
+                          }}%</span
+                        >
                       </span>
                     </div>
                     <div class="progress-item">
-                      <span class="progress-label">💵 收款:</span>
+                      <span class="progress-label">收款</span>
                       <span class="progress-value">
                         ¥{{ formatCurrency(row.paidAmount || 0) }}
-                        <span class="progress-percent">({{ getPaymentPercent(row.paidAmount, row.total_amount) }}%)</span>
+                        <span class="progress-percent"
+                          >{{
+                            getPaymentPercent(row.paidAmount, row.total_amount)
+                          }}%</span
+                        >
                       </span>
                     </div>
                   </div>
-                  <div class="financial-remaining" v-if="row.unpaidAmount > 0 || row.uninvoicedAmount > 0">
-                    <span v-if="row.uninvoicedAmount > 0" class="remaining-tag">余额: ¥{{ formatCurrency(row.uninvoicedAmount) }}</span>
-                    <span v-if="row.unpaidAmount > 0" class="remaining-tag danger">未收款: ¥{{ formatCurrency(row.unpaidAmount) }}</span>
+                  <div
+                    class="financial-remaining"
+                    v-if="row.unpaidAmount > 0 || row.uninvoicedAmount > 0"
+                  >
+                    <span v-if="row.uninvoicedAmount > 0" class="remaining-tag"
+                      >余额 ¥{{ formatCurrency(row.uninvoicedAmount) }}</span
+                    >
+                    <span
+                      v-if="row.unpaidAmount > 0"
+                      class="remaining-tag remaining-danger"
+                      >未收 ¥{{ formatCurrency(row.unpaidAmount) }}</span
+                    >
                   </div>
                 </div>
               </template>
@@ -161,16 +220,44 @@
             <el-table-column prop="end_date" label="到期日" width="110" />
             <el-table-column prop="status" label="合同状态" width="90">
               <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+                <el-tag :type="getStatusType(row.status)" size="small" round>{{
+                  getStatusText(row.status)
+                }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="280" fixed="right">
               <template #default="{ row }">
-                <el-button size="small" @click="viewContract(row.id)">查看</el-button>
-                <el-button size="small" type="primary" @click="editContract(row.id)">编辑</el-button>
-                <el-button v-if="row.uninvoicedAmount > 0 && row.status === 'active'" size="small" type="warning" @click="goToInvoice(row.id)">去开票</el-button>
-                <el-button v-if="row.unpaidAmount > 0 && row.invoicedAmount > 0" size="small" type="success" @click="goToPayment(row.id)">去收款</el-button>
-                <el-button size="small" type="danger" @click="deleteContract(row.id)">删除</el-button>
+                <div class="action-group">
+                  <el-button size="small" @click="viewContract(row.id)"
+                    >查看</el-button
+                  >
+                  <el-button
+                    size="small"
+                    type="primary"
+                    @click="editContract(row.id)"
+                    >编辑</el-button
+                  >
+                  <el-button
+                    v-if="row.uninvoicedAmount > 0 && row.status === 'active'"
+                    size="small"
+                    type="warning"
+                    @click="goToInvoice(row.id)"
+                    >去开票</el-button
+                  >
+                  <el-button
+                    v-if="row.unpaidAmount > 0 && row.invoicedAmount > 0"
+                    size="small"
+                    type="success"
+                    @click="goToPayment(row.id)"
+                    >去收款</el-button
+                  >
+                  <el-button
+                    size="small"
+                    type="danger"
+                    @click="deleteContract(row.id)"
+                    >删除</el-button
+                  >
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -181,8 +268,6 @@
         <p v-if="loading">加载中...</p>
         <p v-if="noMore">没有更多数据了</p>
       </div>
-
-
 
       <el-empty
         v-if="!loading && contracts.length === 0 && viewMode === 'table'"
@@ -219,7 +304,7 @@ const savedViewMode = localStorage.getItem("contractViewMode") as
 
 const loading = ref(false);
 const contracts = ref<any[]>([]);
-const searchQuery = ref('');
+const searchQuery = ref("");
 const customerFilter = ref<number | null>(null);
 const statusFilter = ref("");
 const billingStatusFilter = ref("");
@@ -271,8 +356,8 @@ const handleViewModeChange = (mode: "table" | "card") => {
 
 // 获取套账名称
 const getKitName = (kitId: number) => {
-  const kit = kitStore.kits.find(k => k.id === kitId);
-  return kit?.name || '未知套账';
+  const kit = kitStore.kits.find((k) => k.id === kitId);
+  return kit?.name || "未知套账";
 };
 
 // 格式化货币
@@ -382,13 +467,19 @@ const fetchContracts = async (append = false) => {
       const totalCount = response.data.total;
 
       if (append) {
-        contracts.value = sortContractsByPriority([...contracts.value, ...newItems]);
+        contracts.value = sortContractsByPriority([
+          ...contracts.value,
+          ...newItems,
+        ]);
       } else {
         contracts.value = sortContractsByPriority(newItems);
       }
 
       total.value = totalCount;
-      if (contracts.value.length >= totalCount || newItems.length < pageSize.value) {
+      if (
+        contracts.value.length >= totalCount ||
+        newItems.length < pageSize.value
+      ) {
         noMore.value = true;
       }
     }
@@ -405,7 +496,6 @@ const loadMore = () => {
   currentPage.value++;
   fetchContracts(true);
 };
-
 
 const sortContractsByPriority = (contracts: any[]) => {
   return contracts.sort((a, b) => {
@@ -425,11 +515,6 @@ const getContractPriority = (contract: any) => {
 const handleFilter = () => {
   fetchContracts(false);
 };
-
-
-
-
-
 
 // 查看合同
 const viewContract = (id: number) => {
@@ -482,85 +567,227 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-lighter);
+}
+
+.page-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.page-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.page-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 .load-more-status {
   text-align: center;
-  padding: 20px 0;
-  color: #909399;
-  font-size: 14px;
+  padding: var(--spacing-5) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .table-infinite-container {
   overflow-y: auto;
-  max-height: calc(100vh - 250px);
+  max-height: calc(100vh - 280px);
 }
-
 
 .table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-5);
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--spacing-3);
 }
 
 .table-search {
   display: flex;
-  gap: 20px;
+  gap: var(--spacing-3);
   flex-wrap: wrap;
   align-items: center;
   flex: 1;
+  min-width: 0;
 }
 
 .filter-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .filter-label {
-  font-size: 13px;
-  color: #606266;
-  font-weight: 500;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 
 .view-switcher {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-shrink: 0;
 }
 
 :deep(.el-segmented) {
-  --el-segmented-bg-color: #f5f7fa;
-  --el-segmented-item-selected-bg-color: #409eff;
+  --el-segmented-bg-color: var(--color-bg-hover);
+  --el-segmented-item-selected-bg-color: var(--color-bg-container);
+  --el-segmented-item-selected-color: var(--color-primary);
+  --el-segmented-item-color: var(--color-text-muted);
+  border-radius: var(--radius-full);
 }
 
-/* 卡片网格布局 */
+:deep(.el-segmented__item) {
+  border-radius: var(--radius-full);
+}
+
+/* 表格财务数据 */
+:deep(.el-table) {
+  --el-table-border-color: var(--color-border-lighter);
+  --el-table-header-bg-color: var(--color-bg-hover);
+  --el-table-header-text-color: var(--color-text-secondary);
+  --el-table-text-color: var(--color-text-regular);
+  --el-table-row-hover-bg-color: var(--color-bg-hover);
+}
+
+:deep(.el-table th.el-table__cell) {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.financial-status-cell {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border-lighter);
+}
+
+.financial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.contract-amount {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.financial-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.progress-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-xs);
+}
+
+.progress-label {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.progress-value {
+  color: var(--color-text-regular);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.progress-percent {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-left: var(--spacing-1);
+}
+
+.financial-remaining {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px dashed var(--color-border-base);
+}
+
+.remaining-tag {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.remaining-danger {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-medium);
+}
+
+.action-group {
+  display: flex;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+}
+
+/* 卡片网格布局 - auto-fit 响应式 */
 .contracts-grid {
   display: grid;
-  gap: 16px;
-  padding: 12px 4px;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) 0;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
-/* Desktop: 4 columns */
-@media (min-width: 1200px) {
-  .contracts-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+/* 卡片空状态 */
+.card-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-16) var(--spacing-5);
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
 }
 
-/* Tablet: 3 columns */
-@media (min-width: 768px) and (max-width: 1199px) {
-  .contracts-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.empty-icon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-4);
+  opacity: 0.5;
 }
 
-/* Mobile: 1 column */
+.empty-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-5);
+}
+
+/* 窄屏适配 */
 @media (max-width: 767px) {
-  .contracts-grid {
-    grid-template-columns: 1fr;
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
   }
 
   .table-toolbar {
@@ -572,8 +799,7 @@ onMounted(() => {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    min-width: 0;
-    gap: 12px;
+    gap: var(--spacing-2);
   }
 
   .table-search :deep(.el-input),
@@ -583,14 +809,11 @@ onMounted(() => {
 
   .filter-group {
     width: 100%;
-    min-width: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+    flex-wrap: wrap;
   }
 
   .filter-group :deep(.el-segmented) {
-    max-width: 100%;
+    flex: 1;
     overflow-x: auto;
   }
 
@@ -602,130 +825,5 @@ onMounted(() => {
   .view-switcher {
     justify-content: center;
   }
-
-  .view-switcher :deep(.el-segmented) {
-    max-width: 100%;
-  }
-}
-
-/* 卡片空状态 */
-.card-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  grid-column: 1 / -1;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 24px;
-}
-
-.empty-text {
-  font-size: 16px;
-  color: #909399;
-  margin-bottom: 24px;
-}
-
-/* 财务状况单元格样式 */
-.financial-status-cell {
-  padding: 8px;
-  border-radius: 6px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-}
-
-.financial-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.contract-amount {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.financial-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.progress-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-}
-
-.progress-label {
-  color: #606266;
-  font-weight: 500;
-}
-
-.progress-value {
-  color: #303133;
-}
-
-.progress-percent {
-  font-size: 11px;
-  color: #909399;
-  margin-left: 4px;
-}
-
-.financial-remaining {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #e4e7ed;
-}
-
-.remaining-tag {
-  font-size: 12px;
-  color: #909399;
-}
-
-.remaining-tag.danger {
-  color: #f56c6c;
-  font-weight: 500;
-}
-
-/* 财务状态特殊样式 */
-.financial-pending_payment {
-  background: linear-gradient(135deg, #fef0f0 0%, #fde2e2 100%);
-  border-color: #fbc4c4;
-}
-
-.financial-pending_invoice {
-  background: linear-gradient(135deg, #ecf5ff 0%, #d9ecff 100%);
-  border-color: #b3d8ff;
-}
-
-.financial-completed {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e1f3d8 100%);
-  border-color: #c2e7b0;
-}
-
-/* 行样式 */
-:deep(.row-pending-payment) {
-  background-color: #fef0f0 !important;
-}
-
-:deep(.row-pending-payment:hover > td) {
-  background-color: #fde2e2 !important;
-}
-
-:deep(.row-pending-invoice) {
-  background-color: #ecf5ff !important;
-}
-
-:deep(.row-pending-invoice:hover > td) {
-  background-color: #d9ecff !important;
 }
 </style>

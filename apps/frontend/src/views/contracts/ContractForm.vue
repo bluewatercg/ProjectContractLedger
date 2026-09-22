@@ -2,9 +2,13 @@
   <div class="page-container">
     <div class="contract-form-container animate-fade-in">
       <div class="form-header">
-        <h2 class="form-title">{{ isEdit ? '编辑合同' : '新建合同' }}</h2>
+        <h2 class="form-title">{{ isEdit ? "编辑合同" : "新建合同" }}</h2>
         <p class="form-description">
-          {{ isEdit ? '修改合同信息，确保所有必填项准确无误' : '按向导分三步完成合同录入' }}
+          {{
+            isEdit
+              ? "修改合同信息，确保所有必填项准确无误"
+              : "按向导分三步完成合同录入"
+          }}
         </p>
       </div>
 
@@ -36,24 +40,28 @@
           </h3>
           <el-radio-group v-model="form.contract_type" class="purpose-group">
             <el-radio-button label="main">
-              主合同
-              <div class="purpose-desc">与客户的主体合作合同（如项目开发、整体服务）</div>
+              <span class="purpose-label">主合同</span>
+              <span class="purpose-desc"
+                >与客户的主体合作合同（如项目开发、整体服务）</span
+              >
             </el-radio-button>
             <el-radio-button label="maintenance">
-              运维合同
-              <div class="purpose-desc">依附于主合同的运维/服务合同</div>
+              <span class="purpose-label">运维合同</span>
+              <span class="purpose-desc">依附于主合同的运维/服务合同</span>
             </el-radio-button>
             <el-radio-button label="supplement">
-              补充协议
-              <div class="purpose-desc">对主合同条款的补充或变更</div>
+              <span class="purpose-label">补充协议</span>
+              <span class="purpose-desc">对主合同条款的补充或变更</span>
             </el-radio-button>
             <el-radio-button label="renewal">
-              续签合同
-              <div class="purpose-desc">对同一客户同一业务的到期续签，需选择被续签的旧合同</div>
+              <span class="purpose-label">续签合同</span>
+              <span class="purpose-desc"
+                >对同一客户同一业务的到期续签，需选择被续签的旧合同</span
+              >
             </el-radio-button>
             <el-radio-button label="standalone">
-              独立合同
-              <div class="purpose-desc">不依赖其他合同的独立项目</div>
+              <span class="purpose-label">独立合同</span>
+              <span class="purpose-desc">不依赖其他合同的独立项目</span>
             </el-radio-button>
           </el-radio-group>
           <div class="step-actions">
@@ -70,7 +78,11 @@
               基本信息
             </h3>
             <div class="form-grid">
-              <el-form-item label="客户" prop="customer_id" class="form-item-full">
+              <el-form-item
+                label="客户"
+                prop="customer_id"
+                class="form-item-full"
+              >
                 <CustomerSelect
                   v-model="form.customer_id"
                   placeholder="请选择客户（支持搜索）"
@@ -78,18 +90,30 @@
                 />
               </el-form-item>
 
-              <el-form-item label="业务分类" prop="business_category_id" class="form-item-full">
+              <el-form-item
+                label="业务分类"
+                prop="business_category_id"
+                class="form-item-full"
+              >
                 <BusinessCategorySelect
                   v-model="form.business_category_id"
                   placeholder="请选择业务分类（可选）"
                 />
               </el-form-item>
 
-              <el-form-item label="合同标题" prop="title" class="form-item-full">
+              <el-form-item
+                label="合同标题"
+                prop="title"
+                class="form-item-full"
+              >
                 <el-input v-model="form.title" placeholder="请输入合同标题" />
               </el-form-item>
 
-              <el-form-item label="合同描述" prop="description" class="form-item-full">
+              <el-form-item
+                label="合同描述"
+                prop="description"
+                class="form-item-full"
+              >
                 <el-input
                   v-model="form.description"
                   type="textarea"
@@ -141,10 +165,7 @@
           </div>
 
           <!-- 续签来源（仅续签类型显示） -->
-          <div
-            v-if="form.contract_type === 'renewal'"
-            class="form-section"
-          >
+          <div v-if="form.contract_type === 'renewal'" class="form-section">
             <h3 class="section-title">
               <el-icon><Link /></el-icon>
               续签来源
@@ -153,7 +174,13 @@
               <el-form-item
                 label="被续签的旧合同"
                 prop="previous_contract_id"
-                :rules="[{ required: true, message: '请选择需要续签的旧合同', trigger: 'change' }]"
+                :rules="[
+                  {
+                    required: true,
+                    message: '请选择需要续签的旧合同',
+                    trigger: 'change',
+                  },
+                ]"
                 class="form-item-full"
               >
                 <el-select
@@ -181,7 +208,12 @@
 
           <!-- 续签配置（仅续签类型或主合同显示） -->
           <div
-            v-if="form.contract_type === 'renewal' || form.contract_type === 'main' || form.contract_type === 'standalone' || isEdit"
+            v-if="
+              form.contract_type === 'renewal' ||
+              form.contract_type === 'main' ||
+              form.contract_type === 'standalone' ||
+              isEdit
+            "
             class="form-section"
           >
             <h3 class="section-title">
@@ -189,10 +221,18 @@
               续签配置
             </h3>
             <div class="form-grid">
-              <el-form-item label="是否续签" prop="is_renewable" class="form-item-full">
+              <el-form-item
+                label="是否续签"
+                prop="is_renewable"
+                class="form-item-full"
+              >
                 <el-radio-group v-model="form.is_renewable">
-                  <el-radio :label="false">否，一次性合同（如开发项目、咨询服务等）</el-radio>
-                  <el-radio :label="true">是，需要续签（如运维服务、年度支持等）</el-radio>
+                  <el-radio :label="false"
+                    >否，一次性合同（如开发项目、咨询服务等）</el-radio
+                  >
+                  <el-radio :label="true"
+                    >是，需要续签（如运维服务、年度支持等）</el-radio
+                  >
                 </el-radio-group>
               </el-form-item>
 
@@ -218,7 +258,11 @@
               </el-form-item>
 
               <!-- 编辑模式下保留旧合同关联入口 -->
-              <el-form-item v-if="isEdit" label="关联旧合同" class="form-item-full">
+              <el-form-item
+                v-if="isEdit"
+                label="关联旧合同"
+                class="form-item-full"
+              >
                 <el-select
                   v-model="previousContractId"
                   filterable
@@ -248,7 +292,11 @@
               合同条款与备注
             </h3>
             <div class="form-grid">
-              <el-form-item label="合同条款" prop="terms" class="form-item-full">
+              <el-form-item
+                label="合同条款"
+                prop="terms"
+                class="form-item-full"
+              >
                 <el-input
                   v-model="form.terms"
                   type="textarea"
@@ -271,9 +319,16 @@
           <div class="step-actions">
             <el-button @click="goBack">取消</el-button>
             <el-button v-if="!isEdit" @click="prevStep">上一步</el-button>
-            <el-button v-if="!isEdit" type="primary" @click="nextStep">下一步</el-button>
-            <el-button v-else type="primary" :loading="submitting" @click="handleSubmit">
-              {{ submitting ? '保存中...' : '保存' }}
+            <el-button v-if="!isEdit" type="primary" @click="nextStep"
+              >下一步</el-button
+            >
+            <el-button
+              v-else
+              type="primary"
+              :loading="submitting"
+              @click="handleSubmit"
+            >
+              {{ submitting ? "保存中..." : "保存" }}
             </el-button>
           </div>
         </template>
@@ -285,37 +340,79 @@
             确认合同信息
           </h3>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="合同用途">{{ contractTypeText }}</el-descriptions-item>
-            <el-descriptions-item label="客户">{{ customerDisplayName }}</el-descriptions-item>
-            <el-descriptions-item label="业务分类">{{ businessCategoryName || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="合同标题">{{ form.title || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="合同金额">¥{{ formatCurrency(safeNumber(form.total_amount)) }}</el-descriptions-item>
+            <el-descriptions-item label="合同用途">{{
+              contractTypeText
+            }}</el-descriptions-item>
+            <el-descriptions-item label="客户">{{
+              customerDisplayName
+            }}</el-descriptions-item>
+            <el-descriptions-item label="业务分类">{{
+              businessCategoryName || "-"
+            }}</el-descriptions-item>
+            <el-descriptions-item label="合同标题">{{
+              form.title || "-"
+            }}</el-descriptions-item>
+            <el-descriptions-item label="合同金额"
+              >¥{{
+                formatCurrency(safeNumber(form.total_amount))
+              }}</el-descriptions-item
+            >
             <el-descriptions-item label="合同期限">
-              {{ formatDisplayDate(form.start_date as any) }} ~ {{ formatDisplayDate(form.end_date as any) }}
+              {{ formatDisplayDate(form.start_date as any) }} ~
+              {{ formatDisplayDate(form.end_date as any) }}
             </el-descriptions-item>
-            <el-descriptions-item v-if="form.contract_type === 'renewal'" label="被续签旧合同">
+            <el-descriptions-item
+              v-if="form.contract_type === 'renewal'"
+              label="被续签旧合同"
+            >
               {{ renewalOldContractTitle }}
             </el-descriptions-item>
-            <el-descriptions-item label="是否续签">{{ form.is_renewable ? '是' : '否' }}</el-descriptions-item>
+            <el-descriptions-item label="是否续签">{{
+              form.is_renewable ? "是" : "否"
+            }}</el-descriptions-item>
             <el-descriptions-item v-if="form.is_renewable" label="续签提醒">
-              提前 {{ form.renewal_reminder_days || '30' }} 天
+              提前 {{ form.renewal_reminder_days || "30" }} 天
             </el-descriptions-item>
-            <el-descriptions-item v-if="form.description" label="合同描述" :span="2">{{ form.description }}</el-descriptions-item>
-            <el-descriptions-item v-if="form.terms" label="合同条款" :span="2">{{ form.terms }}</el-descriptions-item>
-            <el-descriptions-item v-if="form.notes" label="备注" :span="2">{{ form.notes }}</el-descriptions-item>
+            <el-descriptions-item
+              v-if="form.description"
+              label="合同描述"
+              :span="2"
+              >{{ form.description }}</el-descriptions-item
+            >
+            <el-descriptions-item
+              v-if="form.terms"
+              label="合同条款"
+              :span="2"
+              >{{ form.terms }}</el-descriptions-item
+            >
+            <el-descriptions-item v-if="form.notes" label="备注" :span="2">{{
+              form.notes
+            }}</el-descriptions-item>
           </el-descriptions>
           <div class="step-actions">
             <el-button @click="goBack">取消</el-button>
             <el-button @click="prevStep">上一步</el-button>
-            <el-button type="primary" :loading="submitting" @click="handleSubmit">
-              {{ submitting ? '保存中...' : '确认并保存' }}
+            <el-button
+              type="primary"
+              :loading="submitting"
+              @click="handleSubmit"
+            >
+              {{ submitting ? "保存中..." : "确认并保存" }}
             </el-button>
           </div>
         </div>
       </el-form>
 
       <!-- 编辑模式下显示发票和收款信息 -->
-      <div v-if="isEdit && contractData && contractData.invoices && contractData.invoices.length > 0" class="mt-8">
+      <div
+        v-if="
+          isEdit &&
+          contractData &&
+          contractData.invoices &&
+          contractData.invoices.length > 0
+        "
+        class="mt-8"
+      >
         <el-divider content-position="left">
           <h3 class="text-lg font-semibold">关联发票及收款情况</h3>
         </el-divider>
@@ -327,23 +424,35 @@
           </div>
           <div class="stat-card stat-card-green">
             <div class="stat-label">发票总额</div>
-            <div class="stat-value">¥{{ formatCurrency(invoiceStats.totalAmount) }}</div>
+            <div class="stat-value">
+              ¥{{ formatCurrency(invoiceStats.totalAmount) }}
+            </div>
           </div>
           <div class="stat-card stat-card-purple">
             <div class="stat-label">未开票总额</div>
-            <div class="stat-value">¥{{ formatCurrency(invoiceStats.uninvoicedAmount) }}</div>
+            <div class="stat-value">
+              ¥{{ formatCurrency(invoiceStats.uninvoicedAmount) }}
+            </div>
           </div>
           <div class="stat-card stat-card-orange">
             <div class="stat-label">已收款</div>
-            <div class="stat-value">¥{{ formatCurrency(invoiceStats.paidAmount) }}</div>
+            <div class="stat-value">
+              ¥{{ formatCurrency(invoiceStats.paidAmount) }}
+            </div>
           </div>
           <div class="stat-card stat-card-red">
             <div class="stat-label">未收款</div>
-            <div class="stat-value">¥{{ formatCurrency(invoiceStats.unpaidAmount) }}</div>
+            <div class="stat-value">
+              ¥{{ formatCurrency(invoiceStats.unpaidAmount) }}
+            </div>
           </div>
         </div>
 
-        <el-table :data="contractData?.invoices || []" border style="width: 100%">
+        <el-table
+          :data="contractData?.invoices || []"
+          border
+          style="width: 100%"
+        >
           <el-table-column prop="invoice_number" label="发票编号" width="150">
             <template #default="scope">
               <el-link
@@ -376,14 +485,25 @@
           <el-table-column label="收款情况" min-width="300">
             <template #default="scope">
               <div v-if="scope.row.payments && scope.row.payments.length > 0">
-                <div v-for="payment in scope.row.payments" :key="payment.id" class="payment-item">
+                <div
+                  v-for="payment in scope.row.payments"
+                  :key="payment.id"
+                  class="payment-item"
+                >
                   <div class="payment-header">
                     <div class="payment-amount">
-                      <span class="amount-text">¥{{ formatCurrency(payment.amount) }}</span>
-                      <span class="date-text">{{ formatDisplayDate(payment.payment_date) }}</span>
+                      <span class="amount-text"
+                        >¥{{ formatCurrency(payment.amount) }}</span
+                      >
+                      <span class="date-text">{{
+                        formatDisplayDate(payment.payment_date)
+                      }}</span>
                     </div>
                     <div class="payment-tags">
-                      <el-tag size="small" :type="getPaymentStatusType(payment.status)">
+                      <el-tag
+                        size="small"
+                        :type="getPaymentStatusType(payment.status)"
+                      >
                         {{ getPaymentStatusText(payment.status) }}
                       </el-tag>
                       <el-tag size="small" type="info">
@@ -397,7 +517,11 @@
                 </div>
                 <div class="payment-summary">
                   已收: ¥{{ formatCurrency(getInvoicePaidAmount(scope.row)) }} /
-                  未收: ¥{{ formatCurrency(scope.row.total_amount - getInvoicePaidAmount(scope.row)) }}
+                  未收: ¥{{
+                    formatCurrency(
+                      scope.row.total_amount - getInvoicePaidAmount(scope.row),
+                    )
+                  }}
                 </div>
               </div>
               <div v-else class="text-gray-500 text-sm">暂无收款记录</div>
@@ -406,7 +530,14 @@
         </el-table>
       </div>
 
-      <div v-else-if="isEdit && contractData && (!contractData.invoices || contractData.invoices.length === 0)" class="mt-8">
+      <div
+        v-else-if="
+          isEdit &&
+          contractData &&
+          (!contractData.invoices || contractData.invoices.length === 0)
+        "
+        class="mt-8"
+      >
         <el-divider content-position="left">
           <h3 class="text-lg font-semibold">关联发票及收款情况</h3>
         </el-divider>
@@ -441,455 +572,588 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { InfoFilled, Document, Money, Refresh, Memo, Link } from '@element-plus/icons-vue'
-import { contractApi } from '@/api'
-import { attachmentApi } from '@/api/attachment'
-import { useKitStore } from '@/stores/kit'
-import type { CreateContractDto, UpdateContractDto, Customer, Contract } from '@/api/types'
-import type { Attachment } from '@/api/attachment'
-import CustomerSelect from '@/components/CustomerSelect.vue'
-import FileUpload from '@/components/FileUpload.vue'
-import AttachmentList from '@/components/AttachmentList.vue'
-import BusinessCategorySelect from '@/components/BusinessCategorySelect.vue'
-const router = useRouter()
-const route = useRoute()
-const kitStore = useKitStore()
+import { ref, reactive, onMounted, computed, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+import {
+  InfoFilled,
+  Document,
+  Money,
+  Refresh,
+  Memo,
+  Link,
+} from "@element-plus/icons-vue";
+import { contractApi } from "@/api";
+import { attachmentApi } from "@/api/attachment";
+import { useKitStore } from "@/stores/kit";
+import type {
+  CreateContractDto,
+  UpdateContractDto,
+  Customer,
+  Contract,
+} from "@/api/types";
+import type { Attachment } from "@/api/attachment";
+import CustomerSelect from "@/components/CustomerSelect.vue";
+import FileUpload from "@/components/FileUpload.vue";
+import AttachmentList from "@/components/AttachmentList.vue";
+import BusinessCategorySelect from "@/components/BusinessCategorySelect.vue";
+const router = useRouter();
+const route = useRoute();
+const kitStore = useKitStore();
 
-const formRef = ref<FormInstance>()
+const formRef = ref<FormInstance>();
 
-const loading = ref(false)
-const submitting = ref(false)
-const contractData = ref<any>(null)
-const attachments = ref<Attachment[]>([])
-const attachmentsLoading = ref(false)
+const loading = ref(false);
+const submitting = ref(false);
+const contractData = ref<any>(null);
+const attachments = ref<Attachment[]>([]);
+const attachmentsLoading = ref(false);
 
-const step = ref(0)
+const step = ref(0);
 
-const previousContractId = ref<number | null>(null)
-const oldContracts = ref<Array<{ id: number; contract_number: string; title: string }>>([])
-const oldContractsLoading = ref(false)
+const previousContractId = ref<number | null>(null);
+const oldContracts = ref<
+  Array<{ id: number; contract_number: string; title: string }>
+>([]);
+const oldContractsLoading = ref(false);
 
-const selectedCustomer = ref<Customer | null>(null)
+const selectedCustomer = ref<Customer | null>(null);
 
-const isEdit = computed(() => !!route.params.id)
-const contractId = computed(() => Number(route.params.id))
+const isEdit = computed(() => !!route.params.id);
+const contractId = computed(() => Number(route.params.id));
 
 const safeNumber = (value: any): number => {
-  if (value === null || value === undefined || value === '') return 0
-  const num = Number(value)
-  return isNaN(num) ? 0 : num
-}
+  if (value === null || value === undefined || value === "") return 0;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+};
 
 const invoiceStats = computed(() => {
-  if (!contractData.value?.invoices || !Array.isArray(contractData.value.invoices)) {
+  if (
+    !contractData.value?.invoices ||
+    !Array.isArray(contractData.value.invoices)
+  ) {
     return {
       totalCount: 0,
       totalAmount: 0,
       paidAmount: 0,
       unpaidAmount: 0,
-      uninvoicedAmount: contractData.value ? safeNumber(contractData.value.total_amount) : 0
-    }
+      uninvoicedAmount: contractData.value
+        ? safeNumber(contractData.value.total_amount)
+        : 0,
+    };
   }
-  const invoices = contractData.value.invoices
-  const contractAmount = safeNumber(contractData.value.total_amount)
-  const totalCount = invoices.length
-  const totalAmount = invoices.reduce((sum: number, invoice: any) => sum + safeNumber(invoice.total_amount), 0)
-  const paidAmount = invoices.reduce((sum: number, invoice: any) => sum + getInvoicePaidAmount(invoice), 0)
-  const unpaidAmount = totalAmount - paidAmount
-  const uninvoicedAmount = contractAmount - totalAmount
-  return { totalCount, totalAmount, paidAmount, unpaidAmount, uninvoicedAmount }
-})
+  const invoices = contractData.value.invoices;
+  const contractAmount = safeNumber(contractData.value.total_amount);
+  const totalCount = invoices.length;
+  const totalAmount = invoices.reduce(
+    (sum: number, invoice: any) => sum + safeNumber(invoice.total_amount),
+    0,
+  );
+  const paidAmount = invoices.reduce(
+    (sum: number, invoice: any) => sum + getInvoicePaidAmount(invoice),
+    0,
+  );
+  const unpaidAmount = totalAmount - paidAmount;
+  const uninvoicedAmount = contractAmount - totalAmount;
+  return {
+    totalCount,
+    totalAmount,
+    paidAmount,
+    unpaidAmount,
+    uninvoicedAmount,
+  };
+});
 
 const form = reactive<CreateContractDto>({
   customer_id: 0,
-  title: '',
-  description: '',
+  title: "",
+  description: "",
   total_amount: 0,
-  start_date: '',
-  end_date: '',
+  start_date: "",
+  end_date: "",
   is_renewable: false,
-  renewal_reminder_days: '30',
-  terms: '',
-  notes: '',
+  renewal_reminder_days: "30",
+  terms: "",
+  notes: "",
   business_category_id: undefined,
-  contract_type: 'main',
-})
+  contract_type: "main",
+});
 
 const rules: FormRules = {
-  customer_id: [{ required: true, message: '请选择客户', trigger: 'change' }],
-  title: [{ required: true, message: '请输入合同标题', trigger: 'blur' }],
-  total_amount: [{ required: true, message: '请输入合同金额', trigger: 'blur' }],
-  start_date: [{ required: true, message: '请选择开始日期', trigger: 'change' }],
-  end_date: [{ required: true, message: '请选择结束日期', trigger: 'change' }],
-}
+  customer_id: [{ required: true, message: "请选择客户", trigger: "change" }],
+  title: [{ required: true, message: "请输入合同标题", trigger: "blur" }],
+  total_amount: [
+    { required: true, message: "请输入合同金额", trigger: "blur" },
+  ],
+  start_date: [
+    { required: true, message: "请选择开始日期", trigger: "change" },
+  ],
+  end_date: [{ required: true, message: "请选择结束日期", trigger: "change" }],
+};
 
 const contractTypeText = computed(() => {
   const map: Record<string, string> = {
-    main: '主合同',
-    maintenance: '运维合同',
-    supplement: '补充协议',
-    renewal: '续签合同',
-    standalone: '独立合同',
-  }
-  return map[form.contract_type || 'main'] || '主合同'
-})
+    main: "主合同",
+    maintenance: "运维合同",
+    supplement: "补充协议",
+    renewal: "续签合同",
+    standalone: "独立合同",
+  };
+  return map[form.contract_type || "main"] || "主合同";
+});
 
 const renewalOldContractTitle = computed(() => {
-  const found = oldContracts.value.find(c => c.id === previousContractId.value)
-  return found ? `${found.contract_number} - ${found.title}` : '-'
-})
+  const found = oldContracts.value.find(
+    (c) => c.id === previousContractId.value,
+  );
+  return found ? `${found.contract_number} - ${found.title}` : "-";
+});
 
 const customerDisplayName = computed(() => {
-  if (selectedCustomer.value?.name) return selectedCustomer.value.name
-  if (contractData.value?.customer?.name) return contractData.value.customer.name
-  return form.customer_id ? `客户 #${form.customer_id}` : '-'
-})
+  if (selectedCustomer.value?.name) return selectedCustomer.value.name;
+  if (contractData.value?.customer?.name)
+    return contractData.value.customer.name;
+  return form.customer_id ? `客户 #${form.customer_id}` : "-";
+});
 
 const businessCategoryName = computed(() => {
-  return contractData.value?.businessCategory?.name || (form.business_category_id ? `分类 #${form.business_category_id}` : '')
-})
+  return (
+    contractData.value?.businessCategory?.name ||
+    (form.business_category_id ? `分类 #${form.business_category_id}` : "")
+  );
+});
 
-const handleCustomerChange = (_customerId: number | null, customer: Customer | null) => {
-  form.customer_id = _customerId || 0
-  selectedCustomer.value = customer
-  previousContractId.value = null
-  oldContracts.value = []
+const handleCustomerChange = (
+  _customerId: number | null,
+  customer: Customer | null,
+) => {
+  form.customer_id = _customerId || 0;
+  selectedCustomer.value = customer;
+  previousContractId.value = null;
+  oldContracts.value = [];
   if (_customerId) {
-    fetchOldContracts()
+    fetchOldContracts();
   }
-}
+};
 
-const formatCurrency = (amount: number) => new Intl.NumberFormat('zh-CN').format(amount)
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("zh-CN").format(amount);
 
 const formatDisplayDate = (dateString: string) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('zh-CN')
-}
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("zh-CN");
+};
 
 const getInvoiceStatusType = (status: string) => {
-  const map: Record<string, string> = { draft: 'info', sent: 'warning', paid: 'success', overdue: 'danger', cancelled: 'primary' }
-  return map[status] || 'info'
-}
+  const map: Record<string, string> = {
+    draft: "info",
+    sent: "warning",
+    paid: "success",
+    overdue: "danger",
+    cancelled: "primary",
+  };
+  return map[status] || "info";
+};
 
 const getInvoiceStatusText = (status: string) => {
-  const map: Record<string, string> = { draft: '草稿', sent: '已开票', paid: '已付款', overdue: '逾期', cancelled: '已取消' }
-  return map[status] || status
-}
+  const map: Record<string, string> = {
+    draft: "草稿",
+    sent: "已开票",
+    paid: "已付款",
+    overdue: "逾期",
+    cancelled: "已取消",
+  };
+  return map[status] || status;
+};
 
 const getPaymentStatusType = (status: string) => {
-  const map: Record<string, string> = { pending: 'warning', completed: 'success', failed: 'danger' }
-  return map[status] || 'info'
-}
+  const map: Record<string, string> = {
+    pending: "warning",
+    completed: "success",
+    failed: "danger",
+  };
+  return map[status] || "info";
+};
 
 const getPaymentStatusText = (status: string) => {
-  const map: Record<string, string> = { pending: '待处理', completed: '已完成', failed: '失败' }
-  return map[status] || status
-}
+  const map: Record<string, string> = {
+    pending: "待处理",
+    completed: "已完成",
+    failed: "失败",
+  };
+  return map[status] || status;
+};
 
 const getPaymentMethodText = (method: string) => {
-  const map: Record<string, string> = { cash: '现金', bank_transfer: '银行转账', check: '支票', credit_card: '信用卡', other: '其他' }
-  return map[method] || method
-}
+  const map: Record<string, string> = {
+    cash: "现金",
+    bank_transfer: "银行转账",
+    check: "支票",
+    credit_card: "信用卡",
+    other: "其他",
+  };
+  return map[method] || method;
+};
 
 const getInvoicePaidAmount = (invoice: any) => {
-  if (!invoice.payments || !Array.isArray(invoice.payments) || invoice.payments.length === 0) return 0
+  if (
+    !invoice.payments ||
+    !Array.isArray(invoice.payments) ||
+    invoice.payments.length === 0
+  )
+    return 0;
   return invoice.payments
-    .filter((p: any) => p.status === 'completed')
-    .reduce((sum: number, p: any) => sum + safeNumber(p.amount), 0)
-}
+    .filter((p: any) => p.status === "completed")
+    .reduce((sum: number, p: any) => sum + safeNumber(p.amount), 0);
+};
 
 const parseDate = (dateStr: string): Date | null => {
-  if (!dateStr) return null
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return null
-  return date
-}
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  return date;
+};
 
 const formatDate = (date: Date | string | null): string => {
-  if (!date) return ''
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return ''
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const fetchContract = async () => {
-  if (!isEdit.value) return
+  if (!isEdit.value) return;
   try {
-    loading.value = true
+    loading.value = true;
     const response = await contractApi.getContractById(contractId.value, {
       viewAll: kitStore.viewAllKits,
-    })
+    });
     if (response.success && response.data) {
-      const contract = response.data
-      contractData.value = contract
-      selectedCustomer.value = contract.customer || null
+      const contract = response.data;
+      contractData.value = contract;
+      selectedCustomer.value = contract.customer || null;
       Object.assign(form, {
         ...contract,
         start_date: parseDate(contract.start_date),
         end_date: parseDate(contract.end_date),
         is_renewable: contract.is_renewable || false,
-        renewal_reminder_days: contract.renewal_reminder_days || '30',
-        contract_type: contract.contract_type || 'main',
-      })
+        renewal_reminder_days: contract.renewal_reminder_days || "30",
+        contract_type: contract.contract_type || "main",
+      });
       if (contract.previous_contract_id) {
-        previousContractId.value = contract.previous_contract_id
+        previousContractId.value = contract.previous_contract_id;
       }
     }
   } catch (error) {
-    console.error('Failed to fetch contract:', error)
-    ElMessage.error('获取合同信息失败')
+    console.error("Failed to fetch contract:", error);
+    ElMessage.error("获取合同信息失败");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const fetchOldContracts = async () => {
   if (!form.customer_id) {
-    oldContracts.value = []
-    return
+    oldContracts.value = [];
+    return;
   }
   try {
-    oldContractsLoading.value = true
+    oldContractsLoading.value = true;
     const response = await contractApi.getPreviousContractOptions({
       customerId: form.customer_id,
       currentContractId: isEdit.value ? contractId.value : undefined,
       viewAll: kitStore.viewAllKits,
-    })
+    });
     if (response.success && response.data) {
       oldContracts.value = (response.data as Contract[]).map((c) => ({
         id: c.id,
         contract_number: c.contract_number,
         title: c.title,
-      }))
+      }));
     }
   } catch (error) {
-    console.error('Failed to fetch old contracts:', error)
+    console.error("Failed to fetch old contracts:", error);
   } finally {
-    oldContractsLoading.value = false
+    oldContractsLoading.value = false;
   }
-}
+};
 
 watch(
   () => form.contract_type,
   (type) => {
-    if (type !== 'renewal') {
-      if (!isEdit.value) previousContractId.value = null
+    if (type !== "renewal") {
+      if (!isEdit.value) previousContractId.value = null;
     }
-  }
-)
+  },
+);
 
 const validateStep = async (s: number): Promise<boolean> => {
-  if (!formRef.value) return true
+  if (!formRef.value) return true;
   if (s === 0) {
     if (!form.contract_type) {
-      ElMessage.warning('请选择合同用途')
-      return false
+      ElMessage.warning("请选择合同用途");
+      return false;
     }
-    return true
+    return true;
   }
   try {
-    await formRef.value.validate()
-    return true
+    await formRef.value.validate();
+    return true;
   } catch {
-    return false
+    return false;
   }
-}
+};
 
 const nextStep = async () => {
-  const ok = await validateStep(step.value)
-  if (!ok) return
-  step.value++
-}
+  const ok = await validateStep(step.value);
+  if (!ok) return;
+  step.value++;
+};
 
 const prevStep = () => {
-  if (step.value > 0) step.value--
-}
+  if (step.value > 0) step.value--;
+};
 
 const handleSubmit = async () => {
   if (!isEdit.value && step.value < 2) {
-    const ok = await validateStep(step.value)
-    if (!ok) return
-    step.value++
-    return
+    const ok = await validateStep(step.value);
+    if (!ok) return;
+    step.value++;
+    return;
   }
-  if (!formRef.value) return
+  if (!formRef.value) return;
   try {
-    await formRef.value.validate()
+    await formRef.value.validate();
   } catch {
-    return
+    return;
   }
   try {
-    submitting.value = true
+    submitting.value = true;
     const submitData: any = {
       ...form,
       start_date: formatDate(form.start_date),
       end_date: formatDate(form.end_date),
-    }
-    submitData.previous_contract_id = previousContractId.value || null
+    };
+    submitData.previous_contract_id = previousContractId.value || null;
 
-    let response
+    let response;
     if (isEdit.value) {
       response = await contractApi.updateContract(
         contractId.value,
         submitData as UpdateContractDto,
-        { viewAll: kitStore.viewAllKits }
-      )
+        { viewAll: kitStore.viewAllKits },
+      );
     } else {
-      response = await contractApi.createContract(submitData)
+      response = await contractApi.createContract(submitData);
     }
 
     if (response.success) {
-      ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
-      router.push('/contracts')
+      ElMessage.success(isEdit.value ? "更新成功" : "创建成功");
+      router.push("/contracts");
     } else {
-      ElMessage.error(response.message || '保存失败，输入已保留，请修改后重试')
+      ElMessage.error(response.message || "保存失败，输入已保留，请修改后重试");
     }
   } catch (error: any) {
-    console.error('Failed to submit form:', error)
-    ElMessage.error(error?.message || '保存失败，输入已保留，请修改后重试')
+    console.error("Failed to submit form:", error);
+    ElMessage.error(error?.message || "保存失败，输入已保留，请修改后重试");
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
-const goToViewInvoice = (invoiceId: number) => router.push(`/invoices/${invoiceId}`)
-const goBack = () => router.go(-1)
+const goToViewInvoice = (invoiceId: number) =>
+  router.push(`/invoices/${invoiceId}`);
+const goBack = () => router.go(-1);
 
 const fetchAttachments = async () => {
-  if (!isEdit.value) return
+  if (!isEdit.value) return;
   try {
-    attachmentsLoading.value = true
-    const response = await attachmentApi.getContractAttachments(contractId.value)
-    if (response.success && response.data) attachments.value = response.data
+    attachmentsLoading.value = true;
+    const response = await attachmentApi.getContractAttachments(
+      contractId.value,
+    );
+    if (response.success && response.data) attachments.value = response.data;
   } catch (error) {
-    console.error('Failed to fetch attachments:', error)
-    ElMessage.error('获取附件列表失败')
+    console.error("Failed to fetch attachments:", error);
+    ElMessage.error("获取附件列表失败");
   } finally {
-    attachmentsLoading.value = false
+    attachmentsLoading.value = false;
   }
-}
+};
 
 const handleAttachmentUpload = (attachment: Attachment) => {
-  attachments.value.unshift(attachment)
-  ElMessage.success('附件上传成功')
-}
+  attachments.value.unshift(attachment);
+  ElMessage.success("附件上传成功");
+};
 
 const handleUploadError = (error: any) => {
-  console.error('Upload error:', error)
-  ElMessage.error('附件上传失败')
-}
+  console.error("Upload error:", error);
+  ElMessage.error("附件上传失败");
+};
 
 const handleDeleteAttachment = async (attachmentId: number) => {
   try {
-    const response = await attachmentApi.deleteContractAttachment(contractId.value, attachmentId)
+    const response = await attachmentApi.deleteContractAttachment(
+      contractId.value,
+      attachmentId,
+    );
     if (response.success) {
-      attachments.value = attachments.value.filter(item => item.attachment_id !== attachmentId)
-      ElMessage.success('附件删除成功')
+      attachments.value = attachments.value.filter(
+        (item) => item.attachment_id !== attachmentId,
+      );
+      ElMessage.success("附件删除成功");
     } else {
-      ElMessage.error(response.message || '删除失败')
+      ElMessage.error(response.message || "删除失败");
     }
   } catch (error) {
-    console.error('Delete error:', error)
-    ElMessage.error('删除附件失败')
+    console.error("Delete error:", error);
+    ElMessage.error("删除附件失败");
   }
-}
+};
 
 onMounted(async () => {
   if (isEdit.value) {
-    await fetchContract()
-    await fetchOldContracts()
-    await fetchAttachments()
+    await fetchContract();
+    await fetchOldContracts();
+    await fetchAttachments();
   } else if (form.customer_id) {
-    await fetchOldContracts()
+    await fetchOldContracts();
   }
-})
+});
 </script>
 
 <style scoped>
-/* 表单容器 */
 .contract-form-container {
   max-width: 1100px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.06);
+  background: var(--color-bg-container);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-base);
+  box-shadow: 0 1px 3px rgba(13, 37, 61, 0.04);
   padding: 28px 32px 36px;
+  font-family:
+    "IBM Plex Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
 }
 
 .form-header {
   margin-bottom: 24px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--color-border-base);
   padding-bottom: 16px;
 }
 
 .form-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  color: #303133;
-  margin: 0 0 8px 0;
+  color: var(--color-text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
 }
 
 .form-description {
   font-size: 14px;
-  color: #909399;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
 .wizard-steps {
   margin-bottom: 28px;
+  padding: 16px;
+  background: var(--color-bg-page);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-base);
+}
+
+.wizard-steps :deep(.el-step__title) {
+  color: var(--color-text-regular);
+  font-weight: 500;
+}
+
+.wizard-steps :deep(.el-step__description) {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.wizard-steps :deep(.el-step__head.is-finish .el-step__icon),
+.wizard-steps :deep(.el-step__head.is-process .el-step__icon) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.wizard-steps :deep(.el-step__head.is-finish .el-step__title),
+.wizard-steps :deep(.el-step__head.is-process .el-step__title) {
+  color: var(--color-primary);
+}
+
+.wizard-steps :deep(.el-step__line) {
+  background-color: var(--color-border-base);
+}
+
+.wizard-steps :deep(.el-step__head.is-finish .el-step__line) {
+  background-color: var(--color-primary);
 }
 
 .form-section {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   padding: 20px 24px;
-  background: #fafafa;
-  border-radius: 6px;
+  background: var(--color-bg-container);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-base);
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #303133;
-  margin: 0 0 18px 0;
+  color: var(--color-text-primary);
+  margin: 0 0 16px 0;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+.section-title .el-icon {
+  color: var(--color-primary);
+}
+
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
 }
 
 .form-item-full {
   grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-muted);
   margin-top: 4px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
+  line-height: 1.5;
 }
 
 .currency-symbol {
-  color: #909399;
+  color: var(--color-text-muted);
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .purpose-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
 .purpose-group .el-radio-button {
@@ -899,77 +1163,140 @@ onMounted(async () => {
 .purpose-group :deep(.el-radio-button__inner) {
   width: 100%;
   text-align: left;
-  border-radius: 6px !important;
-  border: 1px solid #dcdfe6 !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--color-border-base) !important;
   box-shadow: none !important;
-  padding: 14px 18px;
+  padding: 14px 16px;
+  background: var(--color-bg-container);
+  color: var(--color-text-regular);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  white-space: normal;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.purpose-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: #ecf5ff;
-  border-color: #409eff !important;
-  color: #409eff;
+.purpose-group :deep(.el-radio-button__inner):hover {
+  border-color: var(--color-primary-light) !important;
+}
+
+.purpose-group
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: var(--color-bg-active);
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary);
+  box-shadow: none !important;
+}
+
+.purpose-label {
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .purpose-desc {
   font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
-  font-weight: normal;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.purpose-group
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner)
+  .purpose-desc {
+  color: var(--color-primary);
+  opacity: 0.8;
 }
 
 .step-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--color-border-base);
+}
+
+.step-actions :deep(.el-button),
+.form-actions :deep(.el-button) {
+  border-radius: 999px;
+  font-weight: 500;
+  padding: 8px 20px;
+}
+
+.step-actions :deep(.el-button--primary),
+.form-actions :deep(.el-button--primary) {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.step-actions :deep(.el-button--primary:hover),
+.form-actions :deep(.el-button--primary:hover) {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-light);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--color-border-base);
 }
 
 .stats-container {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
   margin-bottom: 20px;
 }
 
 .stat-card {
-  padding: 16px;
-  border-radius: 6px;
+  padding: 16px 12px;
+  border-radius: 12px;
   text-align: center;
-  color: #fff;
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-base);
+  color: var(--color-text-regular);
 }
 
-.stat-card-blue { background: #409eff; }
-.stat-card-green { background: #67c23a; }
-.stat-card-purple { background: #9b59b6; }
-.stat-card-orange { background: #e6a23c; }
-.stat-card-red { background: #f56c6c; }
-
 .stat-label {
-  font-size: 13px;
-  opacity: 0.9;
+  font-size: 12px;
+  color: var(--color-text-muted);
   margin-bottom: 6px;
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card-blue .stat-value {
+  color: var(--color-primary);
+}
+.stat-card-green .stat-value {
+  color: var(--el-color-success);
+}
+.stat-card-purple .stat-value {
+  color: var(--color-accent);
+}
+.stat-card-orange .stat-value {
+  color: var(--el-color-warning);
+}
+.stat-card-red .stat-value {
+  color: var(--el-color-danger);
 }
 
 .payment-item {
-  padding: 8px 0;
-  border-bottom: 1px dashed #ebeef5;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-base);
 }
 
 .payment-item:last-child {
@@ -980,6 +1307,8 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .payment-amount {
@@ -990,12 +1319,14 @@ onMounted(async () => {
 
 .amount-text {
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .date-text {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .payment-tags {
@@ -1005,35 +1336,213 @@ onMounted(async () => {
 
 .reference-number {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-muted);
   margin-top: 4px;
 }
 
 .payment-summary {
   font-size: 12px;
-  color: #606266;
+  color: var(--color-text-regular);
   margin-top: 6px;
+  font-variant-numeric: tabular-nums;
 }
 
 .invoice-link {
   font-weight: 500;
+  color: var(--color-primary);
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.25s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.mt-8 { margin-top: 32px; }
-.mb-4 { margin-bottom: 16px; }
-.py-8 { padding-top: 32px; padding-bottom: 32px; }
-.text-center { text-align: center; }
-.text-lg { font-size: 18px; }
-.text-sm { font-size: 13px; }
-.font-semibold { font-weight: 600; }
-.text-gray-500 { color: #909399; }
+:deep(.el-descriptions) {
+  --el-descriptions-item-bordered-label-background: var(--color-bg-page);
+}
+
+:deep(.el-descriptions__label) {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+:deep(.el-descriptions__content) {
+  color: var(--color-text-regular);
+}
+
+:deep(.el-input-number) {
+  width: 100%;
+}
+
+:deep(.el-form-item__label) {
+  color: var(--color-text-regular);
+  font-weight: 500;
+}
+:deep(.el-radio__label),
+:deep(.el-checkbox__label) {
+  color: var(--color-text-regular);
+  white-space: normal;
+  word-break: break-word;
+}
+
+:deep(.el-radio__input.is-checked .el-radio__inner) {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+:deep(.el-radio__input.is-checked + .el-radio__label) {
+  color: var(--color-primary);
+}
+
+:deep(.el-divider__text) {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  background: var(--color-bg-container);
+}
+
+:deep(.el-table) {
+  --el-table-border-color: var(--color-border-base);
+  --el-table-header-bg-color: var(--color-bg-page);
+  --el-table-header-text-color: var(--color-text-regular);
+  --el-table-text-color: var(--color-text-regular);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.el-table th.el-table__cell) {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+:deep(.el-tag) {
+  border-radius: 999px;
+}
+
+.mt-8 {
+  margin-top: 32px;
+}
+.mb-4 {
+  margin-bottom: 16px;
+}
+.py-8 {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+.text-center {
+  text-align: center;
+}
+.text-lg {
+  font-size: 16px;
+}
+.text-sm {
+  font-size: 13px;
+}
+.font-semibold {
+  font-weight: 600;
+}
+@media (max-width: 768px) {
+  .contract-form-container {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .form-title {
+    font-size: 18px;
+  }
+
+  .form-section {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  :deep(.el-form-item) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  :deep(.el-form-item__label) {
+    width: auto !important;
+    margin-bottom: 4px;
+  }
+
+  :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  :deep(.el-radio-group) {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  :deep(.el-radio) {
+    margin-right: 0;
+  }
+
+  .purpose-group {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .step-actions,
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wizard-steps {
+    padding: 12px;
+  }
+
+  .wizard-steps :deep(.el-step__title) {
+    font-size: 13px;
+  }
+
+  .wizard-steps :deep(.el-step__description) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .contract-form-container {
+    padding: 12px;
+  }
+
+  .form-section {
+    padding: 12px;
+  }
+
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

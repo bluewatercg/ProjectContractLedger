@@ -8,7 +8,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
@@ -17,10 +18,24 @@ html, body {
   background-color: var(--color-bg-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01";
+  font-variant-numeric: tabular-nums;
 }
 
 #app {
   height: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 /* ==================== 布局系统 Layout System ==================== */
@@ -59,11 +74,9 @@ html, body {
 
 /* ==================== 页面容器 Page Container ==================== */
 .page-container {
-  background: var(--color-bg-container);
-  border-radius: var(--radius-base);
-  padding: var(--spacing-6);
-  box-shadow: var(--shadow-base);
-  transition: var(--transition-all);
+  min-width: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .page-header {
@@ -80,18 +93,27 @@ html, body {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.page-description {
+  margin-top: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--spacing-3);
 }
 
 /* ==================== 表格容器 Table Container ==================== */
 .table-container {
   background: var(--color-bg-container);
-  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-base);
   overflow: hidden;
 }
@@ -179,11 +201,10 @@ html, body {
   padding: var(--spacing-6);
   box-shadow: var(--shadow-base);
   transition: var(--transition-all);
-  cursor: pointer;
+  cursor: default;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
 }
 
@@ -351,38 +372,94 @@ html, body {
 }
 
 /* Margin utilities */
-.m-0 { margin: var(--spacing-0); }
-.m-1 { margin: var(--spacing-1); }
-.m-2 { margin: var(--spacing-2); }
-.m-3 { margin: var(--spacing-3); }
-.m-4 { margin: var(--spacing-4); }
-.m-5 { margin: var(--spacing-5); }
-.m-6 { margin: var(--spacing-6); }
+.m-0 {
+  margin: var(--spacing-0);
+}
+.m-1 {
+  margin: var(--spacing-1);
+}
+.m-2 {
+  margin: var(--spacing-2);
+}
+.m-3 {
+  margin: var(--spacing-3);
+}
+.m-4 {
+  margin: var(--spacing-4);
+}
+.m-5 {
+  margin: var(--spacing-5);
+}
+.m-6 {
+  margin: var(--spacing-6);
+}
 
-.mt-0 { margin-top: var(--spacing-0); }
-.mt-1 { margin-top: var(--spacing-1); }
-.mt-2 { margin-top: var(--spacing-2); }
-.mt-3 { margin-top: var(--spacing-3); }
-.mt-4 { margin-top: var(--spacing-4); }
-.mt-5 { margin-top: var(--spacing-5); }
-.mt-6 { margin-top: var(--spacing-6); }
+.mt-0 {
+  margin-top: var(--spacing-0);
+}
+.mt-1 {
+  margin-top: var(--spacing-1);
+}
+.mt-2 {
+  margin-top: var(--spacing-2);
+}
+.mt-3 {
+  margin-top: var(--spacing-3);
+}
+.mt-4 {
+  margin-top: var(--spacing-4);
+}
+.mt-5 {
+  margin-top: var(--spacing-5);
+}
+.mt-6 {
+  margin-top: var(--spacing-6);
+}
 
-.mb-0 { margin-bottom: var(--spacing-0); }
-.mb-1 { margin-bottom: var(--spacing-1); }
-.mb-2 { margin-bottom: var(--spacing-2); }
-.mb-3 { margin-bottom: var(--spacing-3); }
-.mb-4 { margin-bottom: var(--spacing-4); }
-.mb-5 { margin-bottom: var(--spacing-5); }
-.mb-6 { margin-bottom: var(--spacing-6); }
+.mb-0 {
+  margin-bottom: var(--spacing-0);
+}
+.mb-1 {
+  margin-bottom: var(--spacing-1);
+}
+.mb-2 {
+  margin-bottom: var(--spacing-2);
+}
+.mb-3 {
+  margin-bottom: var(--spacing-3);
+}
+.mb-4 {
+  margin-bottom: var(--spacing-4);
+}
+.mb-5 {
+  margin-bottom: var(--spacing-5);
+}
+.mb-6 {
+  margin-bottom: var(--spacing-6);
+}
 
 /* Padding utilities */
-.p-0 { padding: var(--spacing-0); }
-.p-1 { padding: var(--spacing-1); }
-.p-2 { padding: var(--spacing-2); }
-.p-3 { padding: var(--spacing-3); }
-.p-4 { padding: var(--spacing-4); }
-.p-5 { padding: var(--spacing-5); }
-.p-6 { padding: var(--spacing-6); }
+.p-0 {
+  padding: var(--spacing-0);
+}
+.p-1 {
+  padding: var(--spacing-1);
+}
+.p-2 {
+  padding: var(--spacing-2);
+}
+.p-3 {
+  padding: var(--spacing-3);
+}
+.p-4 {
+  padding: var(--spacing-4);
+}
+.p-5 {
+  padding: var(--spacing-5);
+}
+.p-6 {
+  padding: var(--spacing-6);
+}
 
 /* ==================== 响应式设计 Responsive Design ==================== */
 @media (max-width: 768px) {
@@ -395,7 +472,7 @@ html, body {
   }
 
   .page-container {
-    padding: var(--spacing-4);
+    padding: 0;
   }
 
   .page-header {

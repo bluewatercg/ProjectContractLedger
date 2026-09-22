@@ -29,7 +29,7 @@
               />
             </el-select>
           </div>
-          
+
           <el-dropdown @command="handleCommand">
             <div class="user-info">
               <el-avatar :src="userAvatar" :size="32" />
@@ -40,7 +40,9 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人资料</el-dropdown-item>
                 <el-dropdown-item command="settings">系统设置</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item divided command="logout"
+                  >退出登录</el-dropdown-item
+                >
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -52,11 +54,7 @@
     <div class="layout-content">
       <!-- 侧边栏 -->
       <div class="layout-sidebar animate-slide-in-left">
-        <el-menu
-          :default-active="activeMenu"
-          class="sidebar-menu"
-          router
-        >
+        <el-menu :default-active="activeMenu" class="sidebar-menu" router>
           <el-menu-item index="/dashboard">
             <el-icon><Odometer /></el-icon>
             <span>仪表板</span>
@@ -124,84 +122,87 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
-import { useKitStore } from '@/stores/kit'
-import MobileBottomNav from '@/components/MobileBottomNav.vue'
+import { computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useAuthStore } from "@/stores/auth";
+import { useKitStore } from "@/stores/kit";
+import MobileBottomNav from "@/components/MobileBottomNav.vue";
 
-const router = useRouter()
-const route = useRoute()
-const authStore = useAuthStore()
-const kitStore = useKitStore()
+const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
+const kitStore = useKitStore();
 
 // 计算属性
-const activeMenu = computed(() => route.path)
-const userAvatar = computed(() => `https://api.dicebear.com/7.x/avataaars/svg?seed=${authStore.user?.username}`)
+const activeMenu = computed(() => route.path);
+const userAvatar = computed(
+  () =>
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${authStore.user?.username}`,
+);
 
 const kitRouteFallbackMap: Record<string, string> = {
-  CustomerDetail: '/customers',
-  CustomerEdit: '/customers',
-  ContractDetail: '/contracts',
-  ContractEdit: '/contracts',
-  InvoiceDetail: '/invoices',
-  InvoiceEdit: '/invoices',
-  PaymentDetail: '/payments',
-  PaymentEdit: '/payments',
-  ReconciliationDetail: '/reconciliations',
-  SubscriptionDetail: '/subscriptions',
-}
+  CustomerDetail: "/customers",
+  CustomerEdit: "/customers",
+  ContractDetail: "/contracts",
+  ContractEdit: "/contracts",
+  InvoiceDetail: "/invoices",
+  InvoiceEdit: "/invoices",
+  PaymentDetail: "/payments",
+  PaymentEdit: "/payments",
+  ReconciliationDetail: "/reconciliations",
+  SubscriptionDetail: "/subscriptions",
+};
 
 // 处理套装切换
 const handleKitChange = async (kitId: number) => {
   if (kitStore.switchKit(kitId)) {
     if (kitId === 0) {
-      ElMessage.success('已切换到查看全部套账')
+      ElMessage.success("已切换到查看全部套账");
     } else {
-      ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`)
+      ElMessage.success(`已切换到套装: ${kitStore.currentKit?.name}`);
     }
 
-    const routeName = route.name ? String(route.name) : ''
-    const fallbackPath = kitRouteFallbackMap[routeName]
+    const routeName = route.name ? String(route.name) : "";
+    const fallbackPath = kitRouteFallbackMap[routeName];
     if (fallbackPath && route.path !== fallbackPath) {
       try {
-        await router.replace(fallbackPath)
+        await router.replace(fallbackPath);
       } catch (error) {
-        console.error('Route fallback failed on kit switch:', error)
+        console.error("Route fallback failed on kit switch:", error);
       }
     }
 
     // 立即强制刷新页面，避免显示混合状态
-    window.location.reload()
+    window.location.reload();
   }
-}
+};
 
 // 处理用户菜单命令
 const handleCommand = async (command: string) => {
   switch (command) {
-    case 'profile':
-      ElMessage.info('个人资料功能开发中')
-      break
-    case 'settings':
-      router.push('/settings')
-      break
-    case 'logout':
+    case "profile":
+      ElMessage.info("个人资料功能开发中");
+      break;
+    case "settings":
+      router.push("/settings");
+      break;
+    case "logout":
       try {
-        await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        authStore.logout()
-        router.push('/login')
-        ElMessage.success('已退出登录')
+        await ElMessageBox.confirm("确定要退出登录吗？", "提示", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning",
+        });
+        authStore.logout();
+        router.push("/login");
+        ElMessage.success("已退出登录");
       } catch {
         // 用户取消
       }
-      break
+      break;
   }
-}
+};
 </script>
 
 <style scoped>
@@ -218,9 +219,9 @@ const handleCommand = async (command: string) => {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(13, 37, 61, 0.04);
+  border-bottom: 1px solid var(--color-border-base, #e3e8ee);
+  transition: box-shadow 0.2s ease;
 }
 
 .header-content {
@@ -231,24 +232,35 @@ const handleCommand = async (command: string) => {
   height: 64px;
   max-width: 1920px;
   margin: 0 auto;
+  min-width: 0;
+  gap: 12px;
+}
+
+.header-left {
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .header-left h1 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-text-primary, #1e293b);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #0d253d);
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .kit-selector {
-  margin-right: 8px;
+  margin-right: 4px;
 }
 
 .current-kit {
@@ -258,104 +270,101 @@ const handleCommand = async (command: string) => {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 6px 10px;
+  border-radius: 999px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
   border: 1px solid transparent;
 }
 
 .user-info:hover {
-  background: var(--color-bg-hover, #f8fafc);
-  border-color: var(--color-border-light, #e2e8f0);
+  background: var(--color-bg-active, #f0edff);
+  border-color: var(--color-border-base, #e3e8ee);
 }
 
 .username {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary, #1e293b);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-regular, #273951);
+  font-variant-numeric: tabular-nums;
 }
 
 .layout-content {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0;
 }
 
 .layout-sidebar {
-  width: 250px;
-  background: white;
-  box-shadow: 1px 0 0 rgba(15, 23, 42, 0.06);
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--color-bg-container, #fff);
+  border-right: 1px solid var(--color-border-base, #e3e8ee);
   overflow-y: auto;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
 }
 
 .sidebar-menu {
   border-right: none;
   height: 100%;
-  padding: 16px 12px;
+  padding: 12px 10px;
+  background: transparent;
 }
 
-/* 优化菜单项样式 */
 .sidebar-menu :deep(.el-menu-item) {
-  border-radius: 8px;
-  margin-bottom: 4px;
+  border-radius: 6px;
+  margin-bottom: 2px;
   font-weight: 500;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.875rem;
+  color: var(--color-text-regular, #273951);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+  height: 40px;
+  line-height: 40px;
 }
 
 .sidebar-menu :deep(.el-menu-item:hover) {
-  background: var(--color-bg-hover, #f8fafc);
-  color: var(--color-text-primary, #1e293b);
+  background: var(--color-bg-page, #f6f9fc);
+  color: var(--color-text-primary, #0d253d);
 }
 
 .sidebar-menu :deep(.el-menu-item.is-active) {
-  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-  color: var(--color-accent, #3b82f6);
+  background: var(--color-bg-active, #f0edff);
+  color: var(--color-primary, #533afd);
   font-weight: 600;
-  position: relative;
 }
 
 .sidebar-menu :deep(.el-menu-item.is-active::before) {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--color-accent, #3b82f6);
-  border-radius: 0 2px 2px 0;
+  display: none;
 }
 
 .sidebar-menu :deep(.el-menu-item .el-icon) {
-  font-size: 20px;
-  margin-right: 12px;
+  font-size: 18px;
+  margin-right: 10px;
 }
 
 .layout-main {
   flex: 1;
+  min-width: 0;
   padding: 24px;
   overflow-y: auto;
-  background: var(--color-bg-primary, #f8fafc);
+  background: var(--color-bg-page, #f6f9fc);
   scroll-behavior: smooth;
 }
 
-/* 移动端底部导航适配 */
 @media (max-width: 767px) {
   .layout-sidebar {
-    display: none; /* 隐藏侧边栏，使用底部导航 */
-  }
-
-  .layout-main {
-    padding-bottom: calc(24px + 72px); /* 原padding + 底部导航高度 */
+    display: none;
   }
 }
 
-/* 自定义滚动条样式 */
 .layout-main::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .layout-main::-webkit-scrollbar-track {
@@ -363,75 +372,75 @@ const handleCommand = async (command: string) => {
 }
 
 .layout-main::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
+  background: var(--color-border-base, #e3e8ee);
+  border-radius: 3px;
 }
 
 .layout-main::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--color-text-muted, #64748d);
 }
 
-/* 页面过渡动画 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .fade-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(6px);
 }
 
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-6px);
 }
 
-/* 滑动过渡 */
 .slide-left-enter-active,
 .slide-left-leave-active,
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .slide-left-enter-from {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateX(20px);
 }
 
 .slide-left-leave-to {
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateX(-20px);
 }
 
 .slide-right-enter-from {
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateX(-20px);
 }
 
 .slide-right-leave-to {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateX(20px);
 }
 
-/* 缩放过渡 */
 .scale-enter-active,
 .scale-leave-active {
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .scale-enter-from {
   opacity: 0;
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 
 .scale-leave-to {
   opacity: 0;
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
 @media (max-width: 768px) {
@@ -448,7 +457,7 @@ const handleCommand = async (command: string) => {
   }
 
   .header-left h1 {
-    font-size: 1.125rem;
+    font-size: 1rem;
   }
 }
 
@@ -459,17 +468,35 @@ const handleCommand = async (command: string) => {
     top: 64px;
     bottom: 0;
     z-index: 999;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: left 0.2s ease;
   }
 
   .layout-sidebar.show {
     left: 0;
-    box-shadow: 2px 0 8px rgba(15, 23, 42, 0.15);
+    box-shadow: 2px 0 8px rgba(13, 37, 61, 0.1);
+  }
+
+  .header-content {
+    padding: 0 12px;
+    gap: 8px;
   }
 
   .header-left h1 {
-    font-size: 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
+
+  .username {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .layout-main {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 }
 </style>
-
