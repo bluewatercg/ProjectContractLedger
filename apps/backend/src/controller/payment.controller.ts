@@ -90,11 +90,17 @@ export class PaymentController {
    */
   @Get('/')
   async getPayments(
-    @Query() query: PaginationQuery & { invoiceId?: number; status?: string; viewAll?: string }
+    @Query()
+    query: PaginationQuery & {
+      invoiceId?: number;
+      status?: string;
+      viewAll?: string;
+    }
   ): Promise<ApiResponse> {
     try {
       // 如果 viewAll=true，则不传 kitId（查看全部套账）
-      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId =
+        query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const result = await this.paymentService.getPayments(query, kitId);
       return {
         success: true,
@@ -149,11 +155,10 @@ export class PaymentController {
   @Validate()
   async updatePayment(
     @Param('id') id: number,
-    @Body() updatePaymentDto: UpdatePaymentDto,
-    @Query('viewAll') viewAll?: string
+    @Body() updatePaymentDto: UpdatePaymentDto
   ): Promise<ApiResponse> {
     try {
-      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId = this.ctx.state?.kitId;
       if (!kitId) {
         return {
           success: false,
@@ -189,7 +194,11 @@ export class PaymentController {
 
       // DTO 未声明 payer_customer_id，但 service 通过展开透传到 entity，结构兼容
       const updateDto = mergedDto as unknown as UpdatePaymentDto;
-      const payment = await this.paymentService.updatePayment(id, updateDto, kitId);
+      const payment = await this.paymentService.updatePayment(
+        id,
+        updateDto,
+        kitId
+      );
       if (!payment) {
         return {
           success: false,
@@ -215,12 +224,11 @@ export class PaymentController {
    * 删除支付记录
    */
   @Del('/:id')
-  async deletePayment(
-    @Param('id') id: number,
-    @Query('viewAll') viewAll?: string
-  ): Promise<ApiResponse> {
+  async deletePayment(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId || !this.ctx.state?.user?.id)
+        throw new Error('请登录并选择当前套账');
       const success = await this.paymentService.deletePayment(id, kitId);
       if (!success) {
         return {
@@ -268,7 +276,9 @@ export class PaymentController {
         };
       }
 
-      const payments = await this.paymentService.getPaymentsByInvoiceId(invoiceId);
+      const payments = await this.paymentService.getPaymentsByInvoiceId(
+        invoiceId
+      );
       return {
         success: true,
         data: payments,
@@ -292,7 +302,8 @@ export class PaymentController {
   ): Promise<ApiResponse> {
     try {
       // 如果 viewAll=true，则不传 kitId（查看全部套账）
-      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId =
+        query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const stats = await this.paymentService.getPaymentStats(undefined, kitId);
       return {
         success: true,

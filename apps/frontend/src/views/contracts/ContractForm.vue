@@ -515,11 +515,14 @@
                     参考号: {{ payment.reference_number }}
                   </div>
                 </div>
-                <div class="payment-summary">
+                <div
+                  v-if="scope.row.status !== 'cancelled'"
+                  class="payment-summary"
+                >
                   已收: ¥{{ formatCurrency(getInvoicePaidAmount(scope.row)) }} /
                   未收: ¥{{
                     formatCurrency(
-                      scope.row.total_amount - getInvoicePaidAmount(scope.row),
+                      scope.row.total_amount - getInvoicePaidAmount(scope.row)
                     )
                   }}
                 </div>
@@ -643,16 +646,18 @@ const invoiceStats = computed(() => {
         : 0,
     };
   }
-  const invoices = contractData.value.invoices;
+  const invoices = contractData.value.invoices.filter(
+    (invoice) => invoice.status !== "cancelled"
+  );
   const contractAmount = safeNumber(contractData.value.total_amount);
   const totalCount = invoices.length;
   const totalAmount = invoices.reduce(
     (sum: number, invoice: any) => sum + safeNumber(invoice.total_amount),
-    0,
+    0
   );
   const paidAmount = invoices.reduce(
     (sum: number, invoice: any) => sum + getInvoicePaidAmount(invoice),
-    0,
+    0
   );
   const unpaidAmount = totalAmount - paidAmount;
   const uninvoicedAmount = contractAmount - totalAmount;
@@ -705,7 +710,7 @@ const contractTypeText = computed(() => {
 
 const renewalOldContractTitle = computed(() => {
   const found = oldContracts.value.find(
-    (c) => c.id === previousContractId.value,
+    (c) => c.id === previousContractId.value
   );
   return found ? `${found.contract_number} - ${found.title}` : "-";
 });
@@ -726,7 +731,7 @@ const businessCategoryName = computed(() => {
 
 const handleCustomerChange = (
   _customerId: number | null,
-  customer: Customer | null,
+  customer: Customer | null
 ) => {
   form.customer_id = _customerId || 0;
   selectedCustomer.value = customer;
@@ -762,7 +767,7 @@ const getInvoiceStatusText = (status: string) => {
     sent: "已开票",
     paid: "已付款",
     overdue: "逾期",
-    cancelled: "已取消",
+    cancelled: "已作废",
   };
   return map[status] || status;
 };
@@ -888,7 +893,7 @@ watch(
     if (type !== "renewal") {
       if (!isEdit.value) previousContractId.value = null;
     }
-  },
+  }
 );
 
 const validateStep = async (s: number): Promise<boolean> => {
@@ -945,7 +950,7 @@ const handleSubmit = async () => {
       response = await contractApi.updateContract(
         contractId.value,
         submitData as UpdateContractDto,
-        { viewAll: kitStore.viewAllKits },
+        { viewAll: kitStore.viewAllKits }
       );
     } else {
       response = await contractApi.createContract(submitData);
@@ -974,7 +979,7 @@ const fetchAttachments = async () => {
   try {
     attachmentsLoading.value = true;
     const response = await attachmentApi.getContractAttachments(
-      contractId.value,
+      contractId.value
     );
     if (response.success && response.data) attachments.value = response.data;
   } catch (error) {
@@ -999,11 +1004,11 @@ const handleDeleteAttachment = async (attachmentId: number) => {
   try {
     const response = await attachmentApi.deleteContractAttachment(
       contractId.value,
-      attachmentId,
+      attachmentId
     );
     if (response.success) {
       attachments.value = attachments.value.filter(
-        (item) => item.attachment_id !== attachmentId,
+        (item) => item.attachment_id !== attachmentId
       );
       ElMessage.success("附件删除成功");
     } else {
@@ -1035,13 +1040,8 @@ onMounted(async () => {
   border: 1px solid var(--color-border-base);
   box-shadow: 0 1px 3px rgba(13, 37, 61, 0.04);
   padding: 28px 32px 36px;
-  font-family:
-    "IBM Plex Sans",
-    -apple-system,
-    BlinkMacSystemFont,
-    "PingFang SC",
-    "Microsoft YaHei",
-    sans-serif;
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
 }
 
 .form-header {
@@ -1169,9 +1169,7 @@ onMounted(async () => {
   padding: 14px 16px;
   background: var(--color-bg-container);
   color: var(--color-text-regular);
-  transition:
-    border-color 0.15s,
-    background 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   white-space: normal;
   line-height: 1.4;
   display: flex;

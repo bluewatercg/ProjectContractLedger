@@ -3,6 +3,7 @@ import { CustomerService } from './customer.service';
 import { ContractService } from './contract.service';
 import { InvoiceService } from './invoice.service';
 import { PaymentService } from './payment.service';
+import { ReportService } from './report.service';
 
 // 简单的内存缓存接口
 interface CacheItem {
@@ -58,6 +59,9 @@ export class StatisticsService {
   @Inject()
   paymentService: PaymentService;
 
+  @Inject()
+  reportService: ReportService;
+
   // 缓存实例
   private cache = new SimpleCache();
 
@@ -66,8 +70,12 @@ export class StatisticsService {
    */
   async getDashboardStats(year?: number, kitId?: number): Promise<any> {
     const cacheKey = kitId
-      ? (year ? `dashboard_stats_${kitId}_${year}` : `dashboard_stats_${kitId}`)
-      : (year ? `dashboard_stats_${year}` : 'dashboard_stats');
+      ? year
+        ? `dashboard_stats_${kitId}_${year}`
+        : `dashboard_stats_${kitId}`
+      : year
+      ? `dashboard_stats_${year}`
+      : 'dashboard_stats';
 
     // 在获取统计数据前，触发合同状态检查（自动完成已到期且结清的合同）
     try {
@@ -80,13 +88,17 @@ export class StatisticsService {
     const cachedData = this.cache.get(cacheKey);
     if (cachedData) {
       console.log(
-        `Dashboard stats served from cache${year ? ` (${year})` : ''} for kit ${kitId}`
+        `Dashboard stats served from cache${
+          year ? ` (${year})` : ''
+        } for kit ${kitId}`
       );
       return cachedData;
     }
 
     console.log(
-      `Fetching fresh dashboard stats from database${year ? ` for year ${year}` : ''} for kit ${kitId}`
+      `Fetching fresh dashboard stats from database${
+        year ? ` for year ${year}` : ''
+      } for kit ${kitId}`
     );
     const startTime = Date.now();
 
@@ -174,6 +186,7 @@ export class StatisticsService {
    */
   invalidateInvoiceCache(): void {
     this.invalidateDashboardCache();
+    this.reportService.clearCache();
     console.log('Invoice-related cache invalidated');
   }
 
@@ -191,12 +204,13 @@ export class StatisticsService {
   async getMonthlyRevenueTrend(year: number, kitId?: number): Promise<any[]> {
     const result = [];
 
-    // 统计发票面额总计（应收）
+    // 统计发票面额总计（应收）- 排除已作废发票
     const invoiceQuery = this.invoiceService.invoiceRepository
       .createQueryBuilder('invoice')
       .select("DATE_FORMAT(invoice.issue_date, '%Y-%m')", 'month')
       .addSelect('SUM(invoice.total_amount)', 'total')
-      .where('YEAR(invoice.issue_date) = :year', { year });
+      .where('YEAR(invoice.issue_date) = :year', { year })
+      .andWhere('invoice.status != :cancelled', { cancelled: 'cancelled' });
 
     if (kitId) {
       invoiceQuery.andWhere('invoice.kit_id = :kitId', { kitId });
@@ -210,10 +224,12 @@ export class StatisticsService {
     // 统计支付总计（实收）
     const paymentQuery = this.paymentService.paymentRepository
       .createQueryBuilder('payment')
+      .innerJoin('payment.invoice', 'invoice')
       .select("DATE_FORMAT(payment.payment_date, '%Y-%m')", 'month')
       .addSelect('SUM(payment.amount)', 'total')
       .where('YEAR(payment.payment_date) = :year', { year })
-      .andWhere("payment.status = 'completed'");
+      .andWhere("payment.status = 'completed'")
+      .andWhere("invoice.status <> 'cancelled'");
 
     if (kitId) {
       paymentQuery.andWhere('payment.kit_id = :kitId', { kitId });
@@ -245,14 +261,19 @@ export class StatisticsService {
   /**
    * 获取客户分布统计
    */
-  async getCustomerContribution(year: number, kitId?: number, limit = 5): Promise<any[]> {
+  async getCustomerContribution(
+    year: number,
+    kitId?: number,
+    limit = 5
+  ): Promise<any[]> {
     const query = this.invoiceService.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoin('invoice.contract', 'contract')
       .leftJoin('contract.customer', 'customer')
       .select('customer.name', 'name')
       .addSelect('SUM(invoice.total_amount)', 'total')
-      .where('YEAR(invoice.issue_date) = :year', { year });
+      .where('YEAR(invoice.issue_date) = :year', { year })
+      .andWhere('invoice.status != :cancelled', { cancelled: 'cancelled' });
 
     if (kitId) {
       query.andWhere('invoice.kit_id = :kitId', { kitId });
@@ -273,24 +294,36 @@ export class StatisticsService {
   /**
    * 获取合同状态分布
    */
-  async getContractStatusDistribution(year: number, kitId?: number): Promise<any> {
+  async getContractStatusDistribution(
+    year: number,
+    kitId?: number
+  ): Promise<any> {
     const stats = await this.contractService.getContractStats(year, kitId);
 
     return [
       {
         status: '草稿',
         count: stats.draft,
-        percentage: stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.draft / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
       {
         status: '执行中',
         count: stats.active,
-        percentage: stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.active / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
       {
         status: '已完成',
         count: stats.completed,
-        percentage: stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.completed / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
     ];
   }
@@ -298,29 +331,44 @@ export class StatisticsService {
   /**
    * 获取发票状态分布
    */
-  async getInvoiceStatusDistribution(year: number, kitId?: number): Promise<any> {
+  async getInvoiceStatusDistribution(
+    year: number,
+    kitId?: number
+  ): Promise<any> {
     const stats = await this.invoiceService.getInvoiceStats(year, kitId);
 
     return [
       {
         status: '草稿',
         count: stats.draft,
-        percentage: stats.total > 0 ? ((stats.draft / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.draft / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
       {
         status: '已发送',
         count: stats.sent,
-        percentage: stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.sent / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
       {
         status: '已支付',
         count: stats.paid,
-        percentage: stats.total > 0 ? ((stats.paid / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.paid / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
       {
         status: '逾期',
         count: stats.overdue,
-        percentage: stats.total > 0 ? ((stats.overdue / stats.total) * 100).toFixed(1) : '0.0',
+        percentage:
+          stats.total > 0
+            ? ((stats.overdue / stats.total) * 100).toFixed(1)
+            : '0.0',
       },
     ];
   }

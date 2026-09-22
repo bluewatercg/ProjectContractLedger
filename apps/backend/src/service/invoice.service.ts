@@ -26,8 +26,6 @@ export class InvoiceService {
   @InjectEntityModel(InvoicePaymentAllocation)
   allocationRepository: Repository<InvoicePaymentAllocation>;
 
-
-
   @InjectDataSource()
   dataSource: DataSource;
 
@@ -63,7 +61,27 @@ export class InvoiceService {
     createInvoiceDto: CreateInvoiceDto,
     kitId: number
   ): Promise<any> {
+    if (!kitId) throw new Error('请选择当前套账');
+    const allowedFields = [
+      'contract_id',
+      'plan_id',
+      'amount',
+      'tax_rate',
+      'issue_date',
+      'due_date',
+      'description',
+      'notes',
+    ];
+    if (
+      Object.keys(createInvoiceDto).some(key => !allowedFields.includes(key))
+    ) {
+      throw new Error('创建发票包含不允许的字段');
+    }
     return await this.dataSource.transaction(async manager => {
+      const contract = await manager.findOne(Contract, {
+        where: { id: createInvoiceDto.contract_id, kit_id: kitId },
+      });
+      if (!contract) throw new Error('合同不存在或不属于当前套账');
       // 检查并更新合同状态
       await this.checkAndUpdateContractStatusOnInvoiceCreate(
         manager,
@@ -240,16 +258,51 @@ export class InvoiceService {
     updateInvoiceDto: UpdateInvoiceDto,
     kitId?: number
   ): Promise<any | null> {
+    if (!kitId) throw new Error('请选择当前套账');
+    const allowedFields = [
+      'contract_id',
+      'plan_id',
+      'amount',
+      'tax_rate',
+      'issue_date',
+      'due_date',
+      'description',
+      'notes',
+      'status',
+      'tax_amount',
+      'total_amount',
+    ];
+    if (
+      Object.keys(updateInvoiceDto).some(key => !allowedFields.includes(key))
+    ) {
+      throw new Error('更新发票包含不允许的字段');
+    }
+    if (
+      updateInvoiceDto.status !== undefined &&
+      !['draft', 'sent', 'paid', 'overdue'].includes(updateInvoiceDto.status)
+    ) {
+      throw new Error('请使用专用的发票作废或坏账操作');
+    }
     return await this.dataSource.transaction(async manager => {
       const whereCondition: any = { id };
       if (kitId) {
         whereCondition.kit_id = kitId;
       }
 
-      const invoice = await manager.findOne(Invoice, { where: whereCondition });
+      const invoice = await manager.findOne(Invoice, {
+        where: whereCondition,
+        lock: { mode: 'pessimistic_write' },
+      });
 
       if (!invoice) {
         return null;
+      }
+      if (invoice.status === 'cancelled') throw new Error('已作废发票不可编辑');
+      if (updateInvoiceDto.contract_id !== undefined) {
+        const contract = await manager.findOne(Contract, {
+          where: { id: updateInvoiceDto.contract_id, kit_id: kitId },
+        });
+        if (!contract) throw new Error('合同不存在或不属于当前套账');
       }
 
       const oldPlanId = invoice.plan_id;
@@ -257,14 +310,19 @@ export class InvoiceService {
       // 处理日期字段
       const updateData = { ...updateInvoiceDto } as any;
       if (updateData.issue_date) {
-        updateData.issue_date = DateUtil.parseDate(updateData.issue_date) as any;
+        updateData.issue_date = DateUtil.parseDate(
+          updateData.issue_date
+        ) as any;
       }
       if (updateData.due_date) {
         updateData.due_date = DateUtil.parseDate(updateData.due_date) as any;
       }
 
       // 如果更新了金额或税率，重新计算
-      if (updateData.amount !== undefined || updateData.tax_rate !== undefined) {
+      if (
+        updateData.amount !== undefined ||
+        updateData.tax_rate !== undefined
+      ) {
         const amount = updateData.amount ?? invoice.amount;
         const tax_rate = updateData.tax_rate ?? invoice.tax_rate;
         const tax_amount = amount * (tax_rate / 100);
@@ -319,10 +377,60 @@ export class InvoiceService {
     });
   }
 
+  async voidInvoice(
+    id: number,
+    reason: unknown,
+    kitId: number,
+    userId: number
+  ): Promise<Invoice | null> {
+    if (!kitId || !userId) throw new Error('请登录并选择当前套账');
+    if (
+      typeof reason !== 'string' ||
+      !reason.trim() ||
+      reason.trim().length > 500
+    ) {
+      throw new Error('作废原因必填且不能超过500字');
+    }
+    const result = await this.dataSource.transaction(async manager => {
+      const invoice = await manager.findOne(Invoice, {
+        where: { id, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!invoice || invoice.status === 'cancelled') return invoice;
+      if (
+        invoice.status === 'bad_debt' ||
+        Number(invoice.bad_debt_amount) > 0
+      ) {
+        throw new Error('请先撤销坏账处理后再作废');
+      }
+      const paymentCount = await manager.count(Payment, {
+        where: { invoice_id: id, status: In(['pending', 'completed']) },
+      });
+      if (invoice.status === 'paid' || paymentCount > 0) {
+        throw new Error('发票存在已完成或待处理收款，请先处理收款记录');
+      }
+      invoice.status = 'cancelled';
+      invoice.void_reason = reason.trim();
+      invoice.voided_by = userId;
+      invoice.voided_at = new Date();
+      await manager.save(Invoice, invoice);
+      if (invoice.plan_id) {
+        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
+          invoice.plan_id,
+          manager
+        );
+      }
+      return invoice;
+    });
+    if (result) this.statisticsService?.invalidateInvoiceCache();
+    return result;
+  }
+
   /**
    * 删除发票
    */
   async deleteInvoice(id: number, kitId?: number): Promise<boolean> {
+    if (!kitId) throw new Error('请选择当前套账');
     return await this.dataSource.transaction(async manager => {
       const whereCondition: any = { id };
       if (kitId) {
@@ -332,17 +440,23 @@ export class InvoiceService {
       // 先获取发票以获得 contract_id 和 plan_id
       const invoice = await manager.findOne(Invoice, {
         where: whereCondition,
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!invoice) {
         return false;
       }
+      if (invoice.status === 'cancelled')
+        throw new Error('已作废发票不可删除，请保留审计记录');
 
       const planId = invoice.plan_id;
       const result = await manager.delete(Invoice, whereCondition);
 
       // 清除相关缓存
-      if (result.affected > 0 && this.statisticsService?.invalidateInvoiceCache) {
+      if (
+        result.affected > 0 &&
+        this.statisticsService?.invalidateInvoiceCache
+      ) {
         this.statisticsService.invalidateInvoiceCache();
       }
 
@@ -433,7 +547,8 @@ export class InvoiceService {
       .createQueryBuilder('payment')
       .leftJoin('payment.invoice', 'invoice')
       .select('SUM(payment.amount)', 'total')
-      .where("payment.status = 'completed'");
+      .where("payment.status = 'completed'")
+      .andWhere("invoice.status <> 'cancelled'");
 
     if (kitId) {
       paymentsQueryBuilder.andWhere('payment.kit_id = :kitId', { kitId });
@@ -532,8 +647,10 @@ export class InvoiceService {
     const newStatus = hasAttachments ? 'sent' : 'draft';
 
     if (invoice.status !== newStatus) {
-      invoice.status = newStatus;
-      await this.invoiceRepository.save(invoice);
+      await this.invoiceRepository.update(
+        { id: invoiceId, status: invoice.status },
+        { status: newStatus }
+      );
 
       // 清除相关缓存
       if (this.statisticsService?.invalidateInvoiceCache) {
@@ -549,16 +666,21 @@ export class InvoiceService {
   /**
    * 获取发票的付款承担方分摊
    */
-  async getInvoiceAllocations(invoiceId: number, kitId: number): Promise<Array<{
-    id: number;
-    invoice_id: number;
-    payer_customer_id: number;
-    payer_customer_name: string | null;
-    allocated_amount: number;
-    allocated_ratio: number;
-    created_at: Date;
-    updated_at: Date;
-  }>> {
+  async getInvoiceAllocations(
+    invoiceId: number,
+    kitId: number
+  ): Promise<
+    Array<{
+      id: number;
+      invoice_id: number;
+      payer_customer_id: number;
+      payer_customer_name: string | null;
+      allocated_amount: number;
+      allocated_ratio: number;
+      created_at: Date;
+      updated_at: Date;
+    }>
+  > {
     const allocations = await this.allocationRepository.find({
       where: { invoice_id: invoiceId, kit_id: kitId },
       relations: ['payer_customer'],
@@ -584,23 +706,32 @@ export class InvoiceService {
    */
   async saveInvoiceAllocations(
     invoiceId: number,
-    allocations: Array<{ payer_customer_id: number; allocated_amount: number; allocated_ratio: number }>,
+    allocations: Array<{
+      payer_customer_id: number;
+      allocated_amount: number;
+      allocated_ratio: number;
+    }>,
     kitId: number
-  ): Promise<Array<{
-    id: number;
-    invoice_id: number;
-    payer_customer_id: number;
-    allocated_amount: number;
-    allocated_ratio: number;
-  }>> {
+  ): Promise<
+    Array<{
+      id: number;
+      invoice_id: number;
+      payer_customer_id: number;
+      allocated_amount: number;
+      allocated_ratio: number;
+    }>
+  > {
     return await this.dataSource.transaction(async manager => {
       const invoice = await manager.findOne(Invoice, {
         where: { id: invoiceId, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!invoice) {
         throw new Error('发票不存在');
       }
+      if (invoice.status === 'cancelled')
+        throw new Error('已作废发票不可修改分摊');
 
       if (!allocations || allocations.length === 0) {
         throw new Error('至少需要一个付款承担方');
@@ -635,7 +766,9 @@ export class InvoiceService {
       const totalAmountCents = Math.round(totalAmount * 100);
       if (sumAmountCents !== totalAmountCents) {
         throw new Error(
-          `分摊金额总和(${(sumAmountCents / 100).toFixed(2)})必须等于发票总额(${totalAmount.toFixed(2)})`
+          `分摊金额总和(${(sumAmountCents / 100).toFixed(
+            2
+          )})必须等于发票总额(${totalAmount.toFixed(2)})`
         );
       }
 
@@ -645,11 +778,16 @@ export class InvoiceService {
         0
       );
       if (sumRatioCents !== 10000) {
-        throw new Error(`分摊比例总和(${(sumRatioCents / 100).toFixed(2)}%)必须等于100%`);
+        throw new Error(
+          `分摊比例总和(${(sumRatioCents / 100).toFixed(2)}%)必须等于100%`
+        );
       }
 
       // 删除旧的分摊记录
-      await manager.delete(InvoicePaymentAllocation, { invoice_id: invoiceId, kit_id: kitId });
+      await manager.delete(InvoicePaymentAllocation, {
+        invoice_id: invoiceId,
+        kit_id: kitId,
+      });
 
       // 创建新的分摊记录
       const newAllocations = allocations.map(alloc =>
@@ -677,11 +815,23 @@ export class InvoiceService {
   /**
    * 删除发票的所有付款承担方分摊
    */
-  async deleteInvoiceAllocations(invoiceId: number, kitId: number): Promise<boolean> {
-    const result = await this.allocationRepository.delete({
-      invoice_id: invoiceId,
-      kit_id: kitId,
+  async deleteInvoiceAllocations(
+    invoiceId: number,
+    kitId: number
+  ): Promise<boolean> {
+    return this.dataSource.transaction(async manager => {
+      const invoice = await manager.findOne(Invoice, {
+        where: { id: invoiceId, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!invoice) throw new Error('发票不存在');
+      if (invoice.status === 'cancelled')
+        throw new Error('已作废发票不可修改分摊');
+      const result = await manager.delete(InvoicePaymentAllocation, {
+        invoice_id: invoiceId,
+        kit_id: kitId,
+      });
+      return (result.affected || 0) > 0;
     });
-    return (result.affected || 0) > 0;
   }
 }

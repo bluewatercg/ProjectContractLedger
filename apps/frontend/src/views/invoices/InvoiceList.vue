@@ -7,7 +7,7 @@
         新建发票
       </el-button>
     </div>
-    
+
     <div class="table-container">
       <div class="table-toolbar">
         <div class="table-search">
@@ -17,51 +17,88 @@
             width="250px"
             @change="handleContractFilter"
           />
-          <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleFilter">
+          <el-select
+            v-model="statusFilter"
+            placeholder="状态筛选"
+            style="width: 120px"
+            @change="handleFilter"
+          >
             <el-option label="全部" value="" />
             <el-option label="草稿" value="draft" />
             <el-option label="已开票" value="sent" />
             <el-option label="已支付" value="paid" />
             <el-option label="逾期" value="overdue" />
-            <el-option label="已取消" value="cancelled" />
+            <el-option label="已作废" value="cancelled" />
             <el-option label="坏账" value="bad_debt" />
           </el-select>
         </div>
       </div>
-      
-      <SkeletonLoader v-if="loading && currentPage === 1" type="table" :rows="10" :columns="8" />
-      <div v-else class="table-infinite-container" v-infinite-scroll="loadMore" :infinite-scroll-disabled="disabled">
-        <el-table
-          :data="invoices"
-          style="width: 100%"
+
+      <SkeletonLoader
+        v-if="loading && currentPage === 1"
+        type="table"
+        :rows="10"
+        :columns="8"
+      />
+      <div
+        v-else
+        class="table-infinite-container"
+        v-infinite-scroll="loadMore"
+        :infinite-scroll-disabled="disabled"
       >
-        <el-table-column prop="invoice_number" label="发票编号" width="150" />
-        <el-table-column prop="contract.title" label="合同标题" />
-        <el-table-column prop="contract.customer.name" label="客户名称" />
-        <el-table-column prop="total_amount" label="发票金额" width="120">
-          <template #default="{ row }">
-            ¥{{ formatCurrency(row.total_amount) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="issue_date" label="开票日期" width="120" />
-        <el-table-column prop="due_date" label="到期日期" width="120" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200">
-          <template #default="{ row }">
-            <el-button size="small" @click="viewInvoice(row.id)">查看</el-button>
-            <el-button size="small" type="primary" @click="editInvoice(row.id)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deleteInvoice(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+        <el-table :data="invoices" style="width: 100%">
+          <el-table-column prop="invoice_number" label="发票编号" width="150" />
+          <el-table-column prop="contract.title" label="合同标题" />
+          <el-table-column prop="contract.customer.name" label="客户名称" />
+          <el-table-column prop="total_amount" label="发票金额" width="120">
+            <template #default="{ row }">
+              ¥{{ formatCurrency(row.total_amount) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="issue_date" label="开票日期" width="120" />
+          <el-table-column prop="due_date" label="到期日期" width="120" />
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getStatusType(row.status)">
+                {{ getStatusText(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="280">
+            <template #default="{ row }">
+              <el-button size="small" @click="viewInvoice(row.id)"
+                >查看</el-button
+              >
+              <el-button
+                v-if="row.status !== 'cancelled'"
+                size="small"
+                type="primary"
+                @click="editInvoice(row.id)"
+                >编辑</el-button
+              >
+              <el-button
+                v-if="row.status !== 'cancelled'"
+                size="small"
+                type="warning"
+                :disabled="!canVoidInvoice(row) || voidLoading"
+                :loading="voidLoading"
+                :title="!canVoidInvoice(row) ? getVoidDisabledReason(row) : ''"
+                @click="handleVoidInvoice(row)"
+              >
+                作废
+              </el-button>
+              <el-button
+                v-if="row.status !== 'cancelled'"
+                size="small"
+                type="danger"
+                @click="deleteInvoice(row.id)"
+                >删除</el-button
+              >
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
-      
+
       <div class="load-more-status" v-if="invoices.length > 0">
         <p v-if="loading">加载中...</p>
         <p v-if="noMore">没有更多数据了</p>
@@ -71,181 +108,251 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { invoiceApi } from '@/api'
-import { useKitStore } from '@/stores/kit'
-import type { Invoice, Contract } from '@/api/types'
-import ContractSelect from '@/components/ContractSelect.vue'
-import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { invoiceApi } from "@/api";
+import { useKitStore } from "@/stores/kit";
+import type { Invoice, Contract } from "@/api/types";
+import ContractSelect from "@/components/ContractSelect.vue";
+import SkeletonLoader from "@/components/SkeletonLoader.vue";
 
-const router = useRouter()
-const route = useRoute()
-const kitStore = useKitStore()
+const router = useRouter();
+const route = useRoute();
+const kitStore = useKitStore();
 
 // 状态
-const loading = ref(false)
-const invoices = ref<Invoice[]>([])
-const contractFilter = ref<number | null>(null)
-const statusFilter = ref('')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const total = ref(0)
-const noMore = ref(false)
+const loading = ref(false);
+const invoices = ref<Invoice[]>([]);
+const contractFilter = ref<number | null>(null);
+const statusFilter = ref("");
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const noMore = ref(false);
 
-const disabled = computed(() => loading.value || noMore.value)
+const disabled = computed(() => loading.value || noMore.value);
 
 watch([() => kitStore.viewAllKits, () => kitStore.currentKitId], () => {
-  fetchInvoices(false)
-})
+  fetchInvoices(false);
+});
 
 // 格式化货币
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN').format(amount)
-}
+  return new Intl.NumberFormat("zh-CN").format(amount);
+};
 
 // 获取状态类型
 const getStatusType = (status: string) => {
   const statusMap = {
-    draft: 'info',
-    sent: 'warning',
-    paid: 'success',
-    overdue: 'danger',
-    cancelled: 'primary',
-    bad_debt: 'danger'
-  }
-  return statusMap[status] || 'info'
-}
+    draft: "info",
+    sent: "warning",
+    paid: "success",
+    overdue: "danger",
+    cancelled: "primary",
+    bad_debt: "danger",
+  };
+  return statusMap[status] || "info";
+};
 
 // 获取状态文本
 const getStatusText = (status: string) => {
   const statusMap = {
-    draft: '草稿',
-    sent: '已开票',
-    paid: '已支付',
-    overdue: '逾期',
-    cancelled: '已取消',
-    bad_debt: '坏账'
-  }
-  return statusMap[status] || status
-}
+    draft: "草稿",
+    sent: "已开票",
+    paid: "已支付",
+    overdue: "逾期",
+    cancelled: "已作废",
+    bad_debt: "坏账",
+  };
+  return statusMap[status] || status;
+};
 
 // 获取发票列表
 const fetchInvoices = async (append = false) => {
   try {
     if (!append) {
-      currentPage.value = 1
-      invoices.value = []
-      noMore.value = false
+      currentPage.value = 1;
+      invoices.value = [];
+      noMore.value = false;
     }
-    
-    loading.value = true
+
+    loading.value = true;
     const response = await invoiceApi.getInvoices({
       page: currentPage.value,
       limit: pageSize.value,
       contractId: contractFilter.value || undefined,
       status: statusFilter.value,
-      viewAll: kitStore.viewAllKits
-    })
+      viewAll: kitStore.viewAllKits,
+    });
 
     if (response.success && response.data) {
-      const newItems = response.data.items || []
-      const totalCount = response.data.total
-      
+      const newItems = response.data.items || [];
+      const totalCount = response.data.total;
+
       if (append) {
-        invoices.value = [...invoices.value, ...newItems]
+        invoices.value = [...invoices.value, ...newItems];
       } else {
-        invoices.value = newItems
+        invoices.value = newItems;
       }
-      
-      total.value = totalCount
-      if (invoices.value.length >= totalCount || newItems.length < pageSize.value) {
-        noMore.value = true
+
+      total.value = totalCount;
+      if (
+        invoices.value.length >= totalCount ||
+        newItems.length < pageSize.value
+      ) {
+        noMore.value = true;
       }
     }
   } catch (error) {
-    console.error('Failed to fetch invoices:', error)
-    noMore.value = true // 出错时停止无限滚动，防止无限重试
+    console.error("Failed to fetch invoices:", error);
+    noMore.value = true; // 出错时停止无限滚动，防止无限重试
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 合同筛选处理
 const handleContractFilter = (contractId: number | null, contract: any) => {
-  contractFilter.value = contractId
-  fetchInvoices(false)
-}
+  contractFilter.value = contractId;
+  fetchInvoices(false);
+};
 
 // 筛选处理
 const handleFilter = () => {
-  fetchInvoices(false)
-}
+  fetchInvoices(false);
+};
 
 // 无限滚动加载更多
 const loadMore = () => {
-  if (disabled.value) return
-  currentPage.value++
-  fetchInvoices(true)
-}
-
-// 查看发票
-const viewInvoice = (id: number) => {
-  router.push(`/invoices/${id}`)
-}
+  if (disabled.value) return;
+  currentPage.value++;
+  fetchInvoices(true);
+};
 
 // 编辑发票
 const editInvoice = (id: number) => {
-  router.push(`/invoices/${id}/edit`)
-}
+  router.push(`/invoices/${id}/edit`);
+};
 
-// 删除发票
-const deleteInvoice = async (id: number) => {
+const viewInvoice = (id: number) => router.push(`/invoices/${id}`);
+
+// 判断是否可以作废发票（只检查 pending/completed 支付，failed 不阻止）
+const canVoidInvoice = (invoice: Invoice): boolean => {
+  // 全套账查看模式下禁用
+  if (kitStore.viewAllKits) return false;
+  // 已作废、已支付、坏账状态禁用
+  if (["cancelled", "paid", "bad_debt"].includes(invoice.status)) return false;
+  // 有坏账金额禁用
+  if (invoice.bad_debt_amount && Number(invoice.bad_debt_amount) > 0)
+    return false;
+  // 只检查 pending/completed 支付记录
+  const activePayments =
+    invoice.payments?.filter((p) =>
+      ["pending", "completed"].includes(p.status || "")
+    ) || [];
+  if (activePayments.length > 0) return false;
+  return true;
+};
+// 获取作废按钮禁用原因（只检查 pending/completed 支付）
+const getVoidDisabledReason = (invoice: Invoice): string => {
+  if (kitStore.viewAllKits) return "请切换到对应套账后操作";
+  if (invoice.status === "cancelled") return "发票已作废";
+  if (invoice.status === "paid") return "发票已支付";
+  if (invoice.status === "bad_debt") return "发票已标记坏账";
+  if (invoice.bad_debt_amount && Number(invoice.bad_debt_amount) > 0)
+    return "存在坏账金额";
+  // 只检查 pending/completed 支付记录
+  const activePayments =
+    invoice.payments?.filter((p) =>
+      ["pending", "completed"].includes(p.status || "")
+    ) || [];
+  if (activePayments.length > 0) return "存在收款记录";
+  return "";
+};
+
+// 处理作废发票
+const voidLoading = ref(false);
+
+const handleVoidInvoice = async (invoice: Invoice) => {
+  if (!canVoidInvoice(invoice) || voidLoading.value) return;
+  voidLoading.value = true;
+
   try {
-    await ElMessageBox.confirm('确定要删除这张发票吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    const response = await invoiceApi.deleteInvoice(id, {
-      viewAll: kitStore.viewAllKits,
-    })
+    const { value: reason } = await ElMessageBox.prompt(
+      "请输入作废原因（此操作仅作废台账记录，不影响税务发票）",
+      "作废发票",
+      {
+        confirmButtonText: "确认作废",
+        cancelButtonText: "取消",
+        inputValidator: (val) => {
+          const trimmed = (val || "").trim();
+          if (!trimmed) return "原因不能为空";
+          if (trimmed.length > 500) return "原因不能超过500字符";
+          return true;
+        },
+        inputPlaceholder: "请输入作废原因",
+        type: "warning",
+      }
+    );
+
+    const response = await invoiceApi.voidInvoice(invoice.id, reason.trim());
     if (response.success) {
-      ElMessage.success('删除成功')
-      fetchInvoices()
+      ElMessage.success("发票已作废");
+      await fetchInvoices();
+    } else {
+      ElMessage.error(response.message || "作废失败");
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('Failed to delete invoice:', error)
+    if (error !== "cancel" && error !== "close") {
+      console.error("Failed to void invoice:", error);
+      ElMessage.error("作废失败");
+    }
+  } finally {
+    voidLoading.value = false;
+  }
+};
+
+const deleteInvoice = async (id: number) => {
+  try {
+    await ElMessageBox.confirm("确定删除该发票吗？", "删除发票", {
+      type: "warning",
+    });
+    const response = await invoiceApi.deleteInvoice(id);
+    if (response.success) {
+      ElMessage.success("删除成功");
+      fetchInvoices();
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("Failed to delete invoice:", error);
     }
   }
-}
+};
 
 // 初始化URL参数
 const initFromUrlParams = () => {
   // 从URL查询参数初始化筛选条件（用于从Dashboard跳转）
-  const { status, contractId } = route.query
-  
-  if (status && typeof status === 'string') {
-    statusFilter.value = status
+  const { status, contractId } = route.query;
+
+  if (status && typeof status === "string") {
+    statusFilter.value = status;
   }
-  
+
   if (contractId) {
-    const id = parseInt(contractId as string, 10)
+    const id = parseInt(contractId as string, 10);
     if (!isNaN(id)) {
-      contractFilter.value = id
+      contractFilter.value = id;
     }
   }
-}
+};
 
 // 组件挂载时获取数据
 onMounted(() => {
   // 先初始化URL参数，再获取数据
-  initFromUrlParams()
-  fetchInvoices()
-})
+  initFromUrlParams();
+  fetchInvoices();
+});
 </script>
 
 <style scoped>

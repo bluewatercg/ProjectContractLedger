@@ -149,44 +149,58 @@ export class ContractInvoicePlanService {
    * 重新计算计划的实际开票金额和状态
    * - 汇总该计划下未取消发票的 total_amount
    * - 根据 planned_amount 对比设置 status
+   *
+   * 并发安全：有 manager 时锁定 plan 行和发票集合，避免旧快照覆盖
    */
   async recalcPlanAmountAndStatus(
     planId: number,
     manager?: EntityManager
   ): Promise<void> {
-    const planRepo = manager
-      ? manager.getRepository(ContractInvoicePlan)
-      : this.planRepository;
-    const invoiceRepo = manager
-      ? manager.getRepository(Invoice)
-      : this.invoiceRepository;
+    const execute = async (mgr: EntityManager) => {
+      const planRepo = mgr.getRepository(ContractInvoicePlan);
+      const invoiceRepo = mgr.getRepository(Invoice);
 
-    const plan = await planRepo.findOne({ where: { id: planId } });
-    if (!plan) {
-      return;
-    }
+      // 锁定 plan 行，防止并发修改
+      const plan = await planRepo
+        .createQueryBuilder('plan')
+        .where('plan.id = :id', { id: planId })
+        .setLock('pessimistic_write')
+        .getOne();
 
-    const invoices = await invoiceRepo.find({
-      where: {
-        plan_id: planId,
-      },
-    });
+      if (!plan) {
+        return;
+      }
 
-    const actual = invoices
-      .filter(inv => inv.status !== 'cancelled')
-      .reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
+      // 锁定发票集合，确保读到最新提交
+      const invoices = await invoiceRepo
+        .createQueryBuilder('invoice')
+        .where('invoice.plan_id = :planId', { planId })
+        .setLock('pessimistic_write')
+        .getMany();
 
-    plan.actual_invoiced_amount = actual;
+      const actual = invoices
+        .filter(inv => inv.status !== 'cancelled')
+        .reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
 
-    if (actual <= 0) {
-      plan.status = 'pending';
-    } else if (actual < Number(plan.planned_amount || 0)) {
-      plan.status = 'partial_invoiced';
+      plan.actual_invoiced_amount = actual;
+
+      if (actual <= 0) {
+        plan.status = 'pending';
+      } else if (actual < Number(plan.planned_amount || 0)) {
+        plan.status = 'partial_invoiced';
+      } else {
+        plan.status = 'invoiced';
+      }
+
+      await planRepo.save(plan);
+    };
+
+    // 有 manager 时直接使用（已在事务中），无 manager 时开启事务
+    if (manager) {
+      await execute(manager);
     } else {
-      plan.status = 'invoiced';
+      await this.dataSource.transaction(execute);
     }
-
-    await planRepo.save(plan);
   }
 
   /**

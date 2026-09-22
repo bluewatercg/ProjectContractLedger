@@ -223,8 +223,11 @@ erDiagram
   - 支持作废和终止状态
 
 发票状态流转:
-  - 待开票 → 已开票 → 已邮寄 → 已签收
-  - 支持作废状态
+  - draft / sent / paid / overdue / bad_debt / cancelled
+  - cancelled 为不可恢复的台账作废终态，专用 API 记录首次原因、操作人和时间
+  - 作废与收款、坏账、对账、附件、分摊写入在事务内锁定同一发票并校验终态
+  - 有效金额排除 cancelled，原票及关联历史保留；关联计划在事务内重算
+  - 发票失效入口同时清除 StatisticsService 和 ReportService 缓存；支付、对账聚合关联发票并排除 cancelled，支付方式分布遵守 kit_id 隔离
 
 付款状态流转:
   - 待确认 → 已确认 → 已核销

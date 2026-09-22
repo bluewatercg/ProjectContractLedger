@@ -248,6 +248,7 @@ export class AttachmentController {
     @Param('invoiceId') invoiceId: number,
     @Files() files: UploadFileInfo<string>[]
   ): Promise<ApiResponse> {
+    let filePath: string | null = null;
     try {
       if (!files || files.length === 0) {
         return {
@@ -256,10 +257,15 @@ export class AttachmentController {
           code: 400,
         };
       }
-
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请登录并选择当前套账',
+          code: 400,
+        };
+      }
       const file = files[0];
-
-      // 验证文件类型
       if (!this.invoiceAttachmentService.validateFileType(file.filename)) {
         return {
           success: false,
@@ -267,8 +273,6 @@ export class AttachmentController {
           code: 400,
         };
       }
-
-      // 验证文件大小
       const fileSize = fs.statSync(file.data).size;
       if (!this.invoiceAttachmentService.validateFileSize(fileSize)) {
         return {
@@ -277,14 +281,10 @@ export class AttachmentController {
           code: 400,
         };
       }
-
-      // 生成存储路径
-      const filePath = this.invoiceAttachmentService.generateFilePath(
+      filePath = this.invoiceAttachmentService.generateFilePath(
         invoiceId,
         file.filename
       );
-
-      // 添加调试日志
       console.log('发票文件上传调试信息:', {
         originalFile: file.data,
         targetPath: filePath,
@@ -292,24 +292,17 @@ export class AttachmentController {
         targetDirExists: fs.existsSync(path.dirname(filePath)),
         fileSize: fileSize,
       });
-
-      // 确保目标目录存在
       const targetDir = path.dirname(filePath);
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
         console.log('创建发票目标目录:', targetDir);
       }
-
-      // 移动文件到目标位置
       try {
         fs.copyFileSync(file.data, filePath);
         console.log('发票文件复制成功:', filePath);
-
-        // 验证文件是否真的被复制
         if (!fs.existsSync(filePath)) {
           throw new Error('文件复制后不存在于目标位置');
         }
-
         const copiedFileSize = fs.statSync(filePath).size;
         if (copiedFileSize !== fileSize) {
           throw new Error(
@@ -318,38 +311,50 @@ export class AttachmentController {
         }
       } catch (copyError) {
         console.error('发票文件复制失败:', copyError);
+        if (filePath && fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (cleanupError) {
+            console.warn('清理失败文件失败:', cleanupError.message);
+          }
+        }
         throw new Error(`文件保存失败: ${copyError.message}`);
       }
-
-      // 创建附件记录
-      const attachment = await this.invoiceAttachmentService.createAttachment(
-        invoiceId,
-        {
-          file_name: file.filename,
-          file_path: filePath,
-          file_type: path.extname(file.filename).toLowerCase(),
-          file_size: fileSize,
+      let attachment;
+      try {
+        attachment = await this.invoiceAttachmentService.createAttachment(
+          invoiceId,
+          {
+            file_name: file.filename,
+            file_path: filePath,
+            file_type: path.extname(file.filename).toLowerCase(),
+            file_size: fileSize,
+          },
+          kitId
+        );
+        console.log('发票附件记录创建成功:', attachment);
+      } catch (dbError) {
+        console.error('创建附件记录失败:', dbError.message);
+        if (filePath && fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (cleanupError) {
+            console.warn('回滚文件失败:', cleanupError.message);
+          }
         }
-      );
-
-      console.log('发票附件记录创建成功:', attachment);
-
-      // 清理临时文件
+        throw dbError;
+      }
       try {
         fs.unlinkSync(file.data);
         console.log('发票临时文件清理成功:', file.data);
       } catch (cleanupError) {
         console.warn('发票临时文件清理失败:', cleanupError.message);
       }
-
-      // 自动更新发票状态：有附件 -> sent（已开票）
       try {
         await this.invoiceService.updateInvoiceStatusByAttachments(invoiceId);
       } catch (statusError) {
         console.error('更新发票状态失败:', statusError.message);
-        // 不影响附件上传的成功，只记录错误
       }
-
       return {
         success: true,
         data: attachment,
@@ -376,7 +381,6 @@ export class AttachmentController {
         await this.invoiceAttachmentService.getAttachmentsByInvoiceId(
           invoiceId
         );
-
       return {
         success: true,
         data: attachments,
@@ -399,26 +403,40 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      const success = await this.invoiceAttachmentService.deleteAttachment(
-        attachmentId
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请登录并选择当前套账',
+          code: 400,
+        };
+      }
+      const result = await this.invoiceAttachmentService.deleteAttachment(
+        attachmentId,
+        kitId
       );
-
-      if (!success) {
+      if (!result.deleted) {
         return {
           success: false,
           message: '附件不存在',
           code: 404,
         };
       }
-
-      // 自动更新发票状态：无附件 -> draft（草稿）
+      if (result.filePath) {
+        try {
+          if (fs.existsSync(result.filePath)) {
+            fs.unlinkSync(result.filePath);
+            console.log('附件物理文件删除成功:', result.filePath);
+          }
+        } catch (fileError) {
+          console.error('删除物理文件失败:', fileError.message);
+        }
+      }
       try {
         await this.invoiceService.updateInvoiceStatusByAttachments(invoiceId);
       } catch (statusError) {
         console.error('更新发票状态失败:', statusError.message);
-        // 不影响附件删除的成功，只记录错误
       }
-
       return {
         success: true,
         message: '附件删除成功',

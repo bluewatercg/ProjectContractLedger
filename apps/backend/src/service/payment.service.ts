@@ -1,6 +1,6 @@
 import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { Payment } from '../entity/payment.entity';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
@@ -47,7 +47,9 @@ export class PaymentService {
   /**
    * 获取发票对应的合同客户ID（用于默认付款方）
    */
-  private async getContractCustomerId(invoiceId: number): Promise<number | null> {
+  private async getContractCustomerId(
+    invoiceId: number
+  ): Promise<number | null> {
     const invoice = await this.invoiceRepository.findOne({
       where: { id: invoiceId },
       relations: ['contract'],
@@ -58,11 +60,35 @@ export class PaymentService {
   /**
    * 校验客户是否属于同一kit
    */
-  private async validateCustomerInKit(customerId: number, kitId: number): Promise<boolean> {
+  private async validateCustomerInKit(
+    customerId: number,
+    kitId: number
+  ): Promise<boolean> {
     const customer = await this.customerRepository.findOne({
       where: { id: customerId, kit_id: kitId },
     });
     return !!customer;
+  }
+
+  /**
+   * 锁定发票并校验作废终态（事务内使用）
+   */
+  private async lockInvoiceOrThrow(
+    manager: EntityManager,
+    invoiceId: number,
+    kitId: number
+  ): Promise<Invoice> {
+    const invoice = await manager.findOne(Invoice, {
+      where: { id: invoiceId, kit_id: kitId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!invoice) {
+      throw new Error('发票不存在');
+    }
+    if (invoice.status === 'cancelled') {
+      throw new Error('该发票已作废，无法操作');
+    }
+    return invoice;
   }
 
   /**
@@ -81,11 +107,24 @@ export class PaymentService {
     createPaymentDto: CreatePaymentDto & { payer_customer_id?: number },
     kitId: number
   ): Promise<any> {
+    if (!kitId) {
+      throw new Error('kitId 不能为空');
+    }
+
     return await this.dataSource.transaction(async manager => {
+      // 锁定发票并校验终态
+      await this.lockInvoiceOrThrow(
+        manager,
+        createPaymentDto.invoice_id,
+        kitId
+      );
+
       // 默认付款方为合同客户
       let payerCustomerId = createPaymentDto.payer_customer_id ?? null;
       if (payerCustomerId == null) {
-        payerCustomerId = await this.getContractCustomerId(createPaymentDto.invoice_id);
+        payerCustomerId = await this.getContractCustomerId(
+          createPaymentDto.invoice_id
+        );
       }
 
       // 同kit校验
@@ -96,11 +135,16 @@ export class PaymentService {
         }
       }
 
+      // 显式字段白名单，防止 raw body 注入
       const payment = this.paymentRepository.create({
-        ...createPaymentDto,
+        invoice_id: createPaymentDto.invoice_id,
+        amount: createPaymentDto.amount,
+        payment_date: DateUtil.parseDate(createPaymentDto.payment_date),
+        payment_method: createPaymentDto.payment_method,
+        reference_number: createPaymentDto.reference_number,
+        notes: createPaymentDto.notes,
         payer_customer_id: payerCustomerId,
         kit_id: kitId,
-        payment_date: DateUtil.parseDate(createPaymentDto.payment_date),
       });
       const savedPayment = await manager.save(payment);
 
@@ -196,7 +240,12 @@ export class PaymentService {
 
     return await this.paymentRepository.findOne({
       where: whereCondition,
-      relations: ['invoice', 'invoice.contract', 'invoice.contract.customer', 'payer_customer'],
+      relations: [
+        'invoice',
+        'invoice.contract',
+        'invoice.contract.customer',
+        'payer_customer',
+      ],
     });
   }
 
@@ -206,9 +255,13 @@ export class PaymentService {
   async updatePayment(
     id: number,
     updatePaymentDto: UpdatePaymentDto & { payer_customer_id?: number },
-    kitId?: number
+    kitId: number
   ): Promise<Payment | null> {
+    if (!kitId) {
+      throw new Error('kitId 不能为空');
+    }
     return await this.dataSource.transaction(async manager => {
+      // 先通过payment找到invoice_id并锁定
       const whereCondition: any = { id };
       if (kitId) {
         whereCondition.kit_id = kitId;
@@ -220,20 +273,60 @@ export class PaymentService {
         return null;
       }
 
+      // 锁定发票并校验终态
+      await this.lockInvoiceOrThrow(manager, payment.invoice_id, kitId);
+
+      // 锁后重新读取 payment，避免并发 delete 后旧 payment save 复活
+      const currentPayment = await manager.findOne(Payment, {
+        where: { id, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!currentPayment) {
+        return null;
+      }
+
+      // 如果 DTO 包含 invoice_id，必须与原值一致
+      if (
+        updatePaymentDto.invoice_id !== undefined &&
+        updatePaymentDto.invoice_id !== currentPayment.invoice_id
+      ) {
+        throw new Error('不允许修改发票ID');
+      }
+
       // 同kit校验（如果修改了payer_customer_id）
-      if (updatePaymentDto.payer_customer_id != null && kitId) {
-        const valid = await this.validateCustomerInKit(updatePaymentDto.payer_customer_id, kitId);
+      if (updatePaymentDto.payer_customer_id != null) {
+        const valid = await this.validateCustomerInKit(
+          updatePaymentDto.payer_customer_id,
+          kitId
+        );
         if (!valid) {
           throw new Error('付款方客户不属于当前套账');
         }
-        payment.payer_customer_id = updatePaymentDto.payer_customer_id;
+        currentPayment.payer_customer_id = updatePaymentDto.payer_customer_id;
       }
 
-      Object.assign(payment, updatePaymentDto);
-      const updatedPayment = await manager.save(payment);
+      // 显式字段白名单
+      const allowedFields = [
+        'amount',
+        'payment_date',
+        'payment_method',
+        'reference_number',
+        'status',
+        'notes',
+        'payer_customer_id',
+      ];
+      for (const field of allowedFields) {
+        if (updatePaymentDto[field] !== undefined) {
+          Object.assign(currentPayment, { [field]: updatePaymentDto[field] });
+        }
+      }
+      const updatedPayment = await manager.save(currentPayment);
 
-      // 如果支付金额发生变化，更新发票状态
-      if (updatePaymentDto.amount !== undefined) {
+      // 如果支付金额或状态发生变化，更新发票状态
+      if (
+        updatePaymentDto.amount !== undefined ||
+        updatePaymentDto.status !== undefined
+      ) {
         await this.updateInvoiceStatusWithManager(manager, payment.invoice_id);
         // 检查并更新合同状态
         await this.checkAndUpdateContractStatusWithManager(
@@ -259,19 +352,31 @@ export class PaymentService {
   /**
    * 删除支付记录
    */
-  async deletePayment(id: number, kitId?: number): Promise<boolean> {
+  async deletePayment(id: number, kitId: number): Promise<boolean> {
+    if (!kitId) {
+      throw new Error('kitId 不能为空');
+    }
     return await this.dataSource.transaction(async manager => {
-      const whereCondition: any = { id };
-      if (kitId) {
-        whereCondition.kit_id = kitId;
-      }
-
-      const payment = await manager.findOne(Payment, { where: whereCondition });
+      const payment = await manager.findOne(Payment, {
+        where: { id, kit_id: kitId },
+      });
       if (!payment) {
         return false;
       }
 
-      const result = await manager.delete(Payment, whereCondition);
+      // 锁定发票并校验终态
+      await this.lockInvoiceOrThrow(manager, payment.invoice_id, kitId);
+
+      // 锁后重新读取 payment，避免并发操作后使用过期数据
+      const currentPayment = await manager.findOne(Payment, {
+        where: { id, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!currentPayment) {
+        return false;
+      }
+
+      const result = await manager.delete(Payment, { id, kit_id: kitId });
 
       // 更新发票状态
       if (result.affected > 0) {
@@ -306,7 +411,7 @@ export class PaymentService {
    * 更新发票支付状态（带事务管理器）
    */
   private async updateInvoiceStatusWithManager(
-    manager: any,
+    manager: EntityManager,
     invoiceId: number
   ): Promise<void> {
     const invoice = await manager.findOne(Invoice, {
@@ -314,6 +419,11 @@ export class PaymentService {
     });
 
     if (!invoice) {
+      return;
+    }
+
+    // 作废发票状态不可变
+    if (invoice.status === 'cancelled') {
       return;
     }
 
@@ -352,7 +462,7 @@ export class PaymentService {
    * 检查并更新合同状态（带事务管理器）
    */
   private async checkAndUpdateContractStatusWithManager(
-    manager: any,
+    manager: EntityManager,
     invoiceId: number
   ): Promise<void> {
     // 获取发票信息
@@ -402,7 +512,7 @@ export class PaymentService {
    * 3. 发票总额达到或超过合同金额
    */
   private async shouldCompleteContractWithManager(
-    manager: any,
+    manager: EntityManager,
     contractId: number
   ): Promise<boolean> {
     // 获取合同信息
@@ -428,8 +538,13 @@ export class PaymentService {
       }
     }
 
-    // 检查所有发票是否都已付款
-    const allInvoicesPaid = contract.invoices.every(
+    // 排除已作废的发票
+    const activeInvoices = contract.invoices.filter(
+      invoice => invoice.status !== 'cancelled'
+    );
+
+    // 检查所有有效发票是否都已付款
+    const allInvoicesPaid = activeInvoices.every(
       invoice => invoice.status === 'paid'
     );
 
@@ -437,8 +552,8 @@ export class PaymentService {
       return false;
     }
 
-    // 计算发票总额
-    const totalInvoiceAmount = contract.invoices.reduce((sum, invoice) => {
+    // 计算有效发票总额（排除已作废）
+    const totalInvoiceAmount = activeInvoices.reduce((sum, invoice) => {
       return sum + parseFloat(invoice.total_amount.toString());
     }, 0);
 
@@ -455,16 +570,18 @@ export class PaymentService {
     // 基础统计信息
     const basicStatsQueryBuilder = this.paymentRepository
       .createQueryBuilder('payment')
+      .innerJoin('payment.invoice', 'invoice')
       .select([
         'COUNT(*) as total',
         "SUM(CASE WHEN payment.status = 'completed' THEN 1 ELSE 0 END) as completed",
         "SUM(CASE WHEN payment.status = 'pending' THEN 1 ELSE 0 END) as pending",
         "SUM(CASE WHEN payment.status = 'failed' THEN 1 ELSE 0 END) as failed",
         "SUM(CASE WHEN payment.status = 'completed' THEN payment.amount ELSE 0 END) as totalAmount",
-      ]);
+      ])
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
-      basicStatsQueryBuilder.where('payment.kit_id = :kitId', { kitId });
+      basicStatsQueryBuilder.andWhere('payment.kit_id = :kitId', { kitId });
     }
 
     if (year) {
@@ -478,10 +595,16 @@ export class PaymentService {
     // 按支付方式统计
     const paymentMethodQueryBuilder = this.paymentRepository
       .createQueryBuilder('payment')
+      .innerJoin('payment.invoice', 'invoice')
       .select('payment.payment_method', 'method')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(payment.amount)', 'amount')
-      .where('payment.status = :status', { status: 'completed' });
+      .where('payment.status = :status', { status: 'completed' })
+      .andWhere("invoice.status <> 'cancelled'");
+
+    if (kitId) {
+      paymentMethodQueryBuilder.andWhere('payment.kit_id = :kitId', { kitId });
+    }
 
     if (year) {
       paymentMethodQueryBuilder.andWhere('YEAR(payment.payment_date) = :year', {

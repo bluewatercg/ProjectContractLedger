@@ -15,6 +15,7 @@ import { InvoiceService } from '../service/invoice.service';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,
+  VoidInvoiceDto,
   PaginationQuery,
   ApiResponse,
 } from '../interface';
@@ -36,18 +37,7 @@ export class InvoiceController {
     @Body() createInvoiceDto: CreateInvoiceDto
   ): Promise<ApiResponse> {
     try {
-      // 优先使用合同的 kit_id，如果没有则使用当前用户的 kit_id
-      let kitId = this.ctx.state?.kitId;
-
-      // 如果提供了 contract_id，获取合同的 kit_id
-      if (createInvoiceDto.contract_id) {
-        const contract = await this.invoiceService.getContractById(
-          createInvoiceDto.contract_id
-        );
-        if (contract && contract.kit_id) {
-          kitId = contract.kit_id;
-        }
-      }
+      const kitId = this.ctx.state?.kitId;
 
       if (!kitId) {
         return {
@@ -57,7 +47,10 @@ export class InvoiceController {
         };
       }
 
-      const invoice = await this.invoiceService.createInvoice(createInvoiceDto, kitId);
+      const invoice = await this.invoiceService.createInvoice(
+        createInvoiceDto,
+        kitId
+      );
       return {
         success: true,
         data: invoice,
@@ -77,11 +70,17 @@ export class InvoiceController {
    */
   @Get('/')
   async getInvoices(
-    @Query() query: PaginationQuery & { contractId?: number; status?: string; viewAll?: string }
+    @Query()
+    query: PaginationQuery & {
+      contractId?: number;
+      status?: string;
+      viewAll?: string;
+    }
   ): Promise<ApiResponse> {
     try {
       // 如果 viewAll=true，则不传 kitId（查看全部套账）
-      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId =
+        query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const result = await this.invoiceService.getInvoices(query, kitId);
       return {
         success: true,
@@ -136,11 +135,12 @@ export class InvoiceController {
   @Validate()
   async updateInvoice(
     @Param('id') id: number,
-    @Body() updateInvoiceDto: UpdateInvoiceDto,
-    @Query('viewAll') viewAll?: string
+    @Body() updateInvoiceDto: UpdateInvoiceDto
   ): Promise<ApiResponse> {
     try {
-      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId || !this.ctx.state?.user?.id)
+        throw new Error('请登录并选择当前套账');
       const invoice = await this.invoiceService.updateInvoice(
         id,
         updateInvoiceDto,
@@ -171,12 +171,11 @@ export class InvoiceController {
    * 删除发票
    */
   @Del('/:id')
-  async deleteInvoice(
-    @Param('id') id: number,
-    @Query('viewAll') viewAll?: string
-  ): Promise<ApiResponse> {
+  async deleteInvoice(@Param('id') id: number): Promise<ApiResponse> {
     try {
-      const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId || !this.ctx.state?.user?.id)
+        throw new Error('请登录并选择当前套账');
       const success = await this.invoiceService.deleteInvoice(id, kitId);
       if (!success) {
         return {
@@ -198,6 +197,33 @@ export class InvoiceController {
     }
   }
 
+  @Post('/:id/void')
+  @Validate()
+  async voidInvoice(
+    @Param('id') id: number,
+    @Body() dto: VoidInvoiceDto
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      const userId = this.ctx.state?.user?.id;
+      if (!kitId || !userId) throw new Error('请登录并选择当前套账');
+      const invoice = await this.invoiceService.voidInvoice(
+        id,
+        dto?.reason,
+        kitId,
+        userId
+      );
+      if (!invoice) return { success: false, message: '发票不存在', code: 404 };
+      return { success: true, data: invoice, message: '发票已在台账中作废' };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '发票作废失败',
+        code: 400,
+      };
+    }
+  }
+
   /**
    * 获取发票统计信息
    */
@@ -207,7 +233,8 @@ export class InvoiceController {
   ): Promise<ApiResponse> {
     try {
       // 如果 viewAll=true，则不传 kitId（查看全部套账）
-      const kitId = query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
+      const kitId =
+        query.viewAll === 'true' ? undefined : this.ctx.state?.kitId;
       const stats = await this.invoiceService.getInvoiceStats(undefined, kitId);
       return {
         success: true,

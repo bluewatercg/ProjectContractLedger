@@ -64,7 +64,9 @@ export class ContractService {
   }
 
   private createChain(items: any[], currentContractId?: number): any {
-    const timelineItems = items.map(item => this.toTimelineItem(item, currentContractId));
+    const timelineItems = items.map(item =>
+      this.toTimelineItem(item, currentContractId)
+    );
     const totalAmount = items.reduce(
       (sum, item) => sum + parseFloat(item.total_amount?.toString() || '0'),
       0
@@ -130,15 +132,21 @@ export class ContractService {
     return hasCycle;
   }
 
-  public buildContractHistory(contracts: any[], currentContractId?: number): any {
+  public buildContractHistory(
+    contracts: any[],
+    currentContractId?: number
+  ): any {
     const scopeSource =
-      contracts.find(contract => contract.id === currentContractId) || contracts[0];
+      contracts.find(contract => contract.id === currentContractId) ||
+      contracts[0];
     const scopedContracts = scopeSource
       ? contracts
-        .filter(contract => this.sameScope(contract, scopeSource))
-        .sort((a, b) => this.compareContracts(a, b))
+          .filter(contract => this.sameScope(contract, scopeSource))
+          .sort((a, b) => this.compareContracts(a, b))
       : [];
-    const contractById = new Map(scopedContracts.map(contract => [contract.id, contract]));
+    const contractById = new Map(
+      scopedContracts.map(contract => [contract.id, contract])
+    );
     const successorsByPreviousId = new Map<number, any[]>();
 
     scopedContracts.forEach(contract => {
@@ -155,7 +163,9 @@ export class ContractService {
     const standaloneContracts = scopedContracts
       .filter(contract => {
         const hasPrevious = Boolean(contract.previous_contract_id);
-        const hasSuccessor = Boolean(successorsByPreviousId.get(contract.id)?.length);
+        const hasSuccessor = Boolean(
+          successorsByPreviousId.get(contract.id)?.length
+        );
         return !hasPrevious && !hasSuccessor;
       })
       .sort((a, b) => this.compareContracts(b, a));
@@ -190,7 +200,10 @@ export class ContractService {
     }
 
     for (const contract of scopedContracts) {
-      if (visited.has(contract.id) || standaloneContracts.some(item => item.id === contract.id)) {
+      if (
+        visited.has(contract.id) ||
+        standaloneContracts.some(item => item.id === contract.id)
+      ) {
         continue;
       }
       const items: any[] = [];
@@ -228,7 +241,10 @@ export class ContractService {
     };
   }
 
-  public buildContractTimeline(contracts: any[], currentContractId: number): any {
+  public buildContractTimeline(
+    contracts: any[],
+    currentContractId: number
+  ): any {
     const history = this.buildContractHistory(contracts, currentContractId);
     const chain = history.contractChains.find(item =>
       item.items.some(contract => contract.id === currentContractId)
@@ -240,7 +256,9 @@ export class ContractService {
     const current = history.standaloneContracts.find(
       contract => contract.id === currentContractId
     );
-    const items = current ? [this.toTimelineItem(current, currentContractId)] : [];
+    const items = current
+      ? [this.toTimelineItem(current, currentContractId)]
+      : [];
     return {
       chainId: current ? String(current.id) : '',
       items,
@@ -394,7 +412,9 @@ export class ContractService {
         }
 
         // 优先级相同，按创建时间排序
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       });
 
       // 手动分页
@@ -520,13 +540,19 @@ export class ContractService {
     const invoiceStats = [];
 
     if (contract.invoices && Array.isArray(contract.invoices)) {
-      invoiceCount = contract.invoices.length;
-      contract.invoices.forEach((invoice: any) => {
+      // 排除已作废发票，只统计有效发票
+      const validInvoices = contract.invoices.filter(
+        (inv: any) => inv.status !== 'cancelled'
+      );
+      invoiceCount = validInvoices.length;
+      validInvoices.forEach((invoice: any) => {
         const invAmount = parseFloat(invoice.total_amount?.toString() || '0');
         invoicedAmount += invAmount;
 
         // 累加坏账金额
-        const invBadDebt = parseFloat(invoice.bad_debt_amount?.toString() || '0');
+        const invBadDebt = parseFloat(
+          invoice.bad_debt_amount?.toString() || '0'
+        );
         if (invBadDebt > 0) {
           badDebtAmount += invBadDebt;
         }
@@ -556,7 +582,10 @@ export class ContractService {
     const uninvoicedAmount = Math.max(0, contractAmount - invoicedAmount);
 
     // 计算总已收款金额
-    const totalPaidAmount = invoiceStats.reduce((sum, inv) => sum + inv.paidAmount, 0);
+    const totalPaidAmount = invoiceStats.reduce(
+      (sum, inv) => sum + inv.paidAmount,
+      0
+    );
 
     // 计算总未收款金额（基于已开票金额：已开票额 - 已收额）
     const unpaidAmount = Math.max(0, invoicedAmount - totalPaidAmount);
@@ -604,7 +633,13 @@ export class ContractService {
 
     const contract = await this.contractRepository.findOne({
       where: whereCondition,
-      relations: ['customer', 'invoices', 'invoices.payments', 'invoice_plans', 'businessCategory'],
+      relations: [
+        'customer',
+        'invoices',
+        'invoices.payments',
+        'invoice_plans',
+        'businessCategory',
+      ],
     });
 
     if (!contract) {
@@ -617,7 +652,10 @@ export class ContractService {
         kit_id: contract.kit_id,
       } as any,
     });
-    const contractTimeline = this.buildContractTimeline(relatedContracts, contract.id);
+    const contractTimeline = this.buildContractTimeline(
+      relatedContracts,
+      contract.id
+    );
 
     const relations = kitId
       ? await this.getContractRelations(contract.id, kitId)
@@ -643,7 +681,9 @@ export class ContractService {
       whereCondition.kit_id = kitId;
     }
 
-    const contract = await this.contractRepository.findOne({ where: whereCondition });
+    const contract = await this.contractRepository.findOne({
+      where: whereCondition,
+    });
 
     if (!contract) {
       return null;
@@ -783,7 +823,7 @@ export class ContractService {
       if (stats.billingStatus === 'completed') {
         await this.contractRepository.update(contract.id, {
           status: 'completed',
-          updated_at: new Date()
+          updated_at: new Date(),
         });
         completedCount++;
 
@@ -838,7 +878,11 @@ export class ContractService {
       }
 
       console.log(
-        `Contract #${contractId} status updated: ${contract.status} -> ${newStatus} (attachments: ${contract.attachments?.length || 0}, invoices: ${contract.invoices?.length || 0})`
+        `Contract #${contractId} status updated: ${
+          contract.status
+        } -> ${newStatus} (attachments: ${
+          contract.attachments?.length || 0
+        }, invoices: ${contract.invoices?.length || 0})`
       );
     }
   }
@@ -852,7 +896,9 @@ export class ContractService {
     kitId: number,
     userId: number
   ): Promise<any> {
-    const contract = await this.contractRepository.findOne({ where: { id: contractId, kit_id: kitId } });
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId, kit_id: kitId },
+    });
     if (!contract) {
       throw new Error('合同不存在');
     }
@@ -892,7 +938,9 @@ export class ContractService {
     kitId: number,
     userId: number
   ): Promise<any> {
-    const contract = await this.contractRepository.findOne({ where: { id: contractId, kit_id: kitId } });
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId, kit_id: kitId },
+    });
     if (!contract) {
       throw new Error('合同不存在');
     }
@@ -977,8 +1025,12 @@ export class ContractService {
     }
 
     const [source, target] = await Promise.all([
-      this.contractRepository.findOne({ where: { id: sourceContractId, kit_id: kitId } }),
-      this.contractRepository.findOne({ where: { id: targetContractId, kit_id: kitId } }),
+      this.contractRepository.findOne({
+        where: { id: sourceContractId, kit_id: kitId },
+      }),
+      this.contractRepository.findOne({
+        where: { id: targetContractId, kit_id: kitId },
+      }),
     ]);
     if (!source || !target) {
       throw new Error('合同不存在');
@@ -1017,7 +1069,11 @@ export class ContractService {
   async getContractRelations(
     contractId: number,
     kitId: number
-  ): Promise<Array<ContractRelation & { sourceContract: Contract; targetContract: Contract }>> {
+  ): Promise<
+    Array<
+      ContractRelation & { sourceContract: Contract; targetContract: Contract }
+    >
+  > {
     return await this.contractRelationRepository.find({
       where: [
         { kit_id: kitId, source_contract_id: contractId },
@@ -1045,7 +1101,10 @@ export class ContractService {
   async getContractGroup(
     mainContractId: number,
     kitId: number
-  ): Promise<{ main: Contract; related: Array<{ relation: ContractRelation; contract: Contract }> }> {
+  ): Promise<{
+    main: Contract;
+    related: Array<{ relation: ContractRelation; contract: Contract }>;
+  }> {
     const main = await this.contractRepository.findOne({
       where: { id: mainContractId, kit_id: kitId },
     });
@@ -1075,7 +1134,10 @@ export class ContractService {
       main,
       related: relations
         .filter(r => targetMap.has(r.target_contract_id))
-        .map(r => ({ relation: r, contract: targetMap.get(r.target_contract_id) })),
+        .map(r => ({
+          relation: r,
+          contract: targetMap.get(r.target_contract_id),
+        })),
     };
   }
 }

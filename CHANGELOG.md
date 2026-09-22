@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- 新增发票台账作废入口及专用 API，记录首次原因、操作人和时间，作废后保留原票及历史且不可恢复。
+- 收款、坏账、对账、附件及分摊写入与作废共用事务行锁；待处理或已完成收款及坏账阻止作废。
+- 合同、报表、统计及计划有效金额排除已作废发票；新增迁移 `004-invoice-void.sql`，发布前需单独执行。
+- 修复合同详情与编辑页、支付方式分布、对账和坏账统计遗漏作废过滤的问题；报表汇总、趋势和分布统一过滤，作废同步清除报表缓存。合同历史行保留原金额，隐藏作废票收款入口。
+
 ## [3.0.0] - 2026-01-13
 
 ### 👤 用户与套账管理 (User & Ledger Management)

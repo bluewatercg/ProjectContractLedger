@@ -1,6 +1,6 @@
 import { Provide, Config } from '@midwayjs/core';
-import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { InvoiceAttachment } from '../entity/invoice-attachment.entity';
 import { Invoice } from '../entity/invoice.entity';
 import { CreateAttachmentDto, AttachmentResponse } from '../interface';
@@ -18,39 +18,40 @@ export class InvoiceAttachmentService {
   @Config('upload')
   uploadConfig: any;
 
+  @InjectDataSource()
+  dataSource: DataSource;
+
   /**
    * 创建发票附件记录
    */
   async createAttachment(
     invoiceId: number,
-    attachmentData: CreateAttachmentDto
+    attachmentData: CreateAttachmentDto,
+    kitId: number
   ): Promise<AttachmentResponse> {
-    // 验证发票是否存在
-    const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
+    if (!kitId) throw new Error('请登录并选择当前套账');
+    return await this.dataSource.transaction(async manager => {
+      const invoice = await manager.findOne(Invoice, {
+        where: { id: invoiceId, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!invoice) throw new Error('发票不存在');
+      if (invoice.status === 'cancelled')
+        throw new Error('已作废发票不可上传附件');
+      const attachment = manager.create(InvoiceAttachment, {
+        invoice_id: invoiceId,
+        ...attachmentData,
+      });
+      const saved = await manager.save(InvoiceAttachment, attachment);
+      return {
+        attachment_id: saved.attachment_id,
+        file_name: saved.file_name,
+        file_path: saved.file_path,
+        file_type: saved.file_type,
+        file_size: saved.file_size,
+        uploaded_at: saved.uploaded_at,
+      };
     });
-
-    if (!invoice) {
-      throw new Error('发票不存在');
-    }
-
-    const attachment = this.invoiceAttachmentRepository.create({
-      invoice_id: invoiceId,
-      ...attachmentData,
-    });
-
-    const savedAttachment = await this.invoiceAttachmentRepository.save(
-      attachment
-    );
-
-    return {
-      attachment_id: savedAttachment.attachment_id,
-      file_name: savedAttachment.file_name,
-      file_path: savedAttachment.file_path,
-      file_type: savedAttachment.file_type,
-      file_size: savedAttachment.file_size,
-      uploaded_at: savedAttachment.uploaded_at,
-    };
   }
 
   /**
@@ -63,7 +64,6 @@ export class InvoiceAttachmentService {
       where: { invoice_id: invoiceId },
       order: { uploaded_at: 'DESC' },
     });
-
     return attachments.map(attachment => ({
       attachment_id: attachment.attachment_id,
       file_name: attachment.file_name,
@@ -88,27 +88,26 @@ export class InvoiceAttachmentService {
   /**
    * 删除附件
    */
-  async deleteAttachment(attachmentId: number): Promise<boolean> {
-    const attachment = await this.invoiceAttachmentRepository.findOne({
-      where: { attachment_id: attachmentId },
+  async deleteAttachment(
+    attachmentId: number,
+    kitId: number
+  ): Promise<{ deleted: boolean; filePath: string | null }> {
+    if (!kitId) throw new Error('请登录并选择当前套账');
+    return await this.dataSource.transaction(async manager => {
+      const attachment = await manager.findOne(InvoiceAttachment, {
+        where: { attachment_id: attachmentId },
+      });
+      if (!attachment) return { deleted: false, filePath: null };
+      const invoice = await manager.findOne(Invoice, {
+        where: { id: attachment.invoice_id, kit_id: kitId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!invoice) throw new Error('发票不存在');
+      if (invoice.status === 'cancelled')
+        throw new Error('已作废发票不可删除附件');
+      await manager.remove(InvoiceAttachment, attachment);
+      return { deleted: true, filePath: attachment.file_path };
     });
-
-    if (!attachment) {
-      return false;
-    }
-
-    // 删除物理文件
-    try {
-      if (fs.existsSync(attachment.file_path)) {
-        fs.unlinkSync(attachment.file_path);
-      }
-    } catch (error) {
-      console.error('删除文件失败:', error);
-    }
-
-    // 删除数据库记录
-    await this.invoiceAttachmentRepository.remove(attachment);
-    return true;
   }
 
   /**

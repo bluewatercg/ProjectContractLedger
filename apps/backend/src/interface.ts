@@ -671,6 +671,11 @@ export class CreateInvoiceDto {
   notes?: string;
 }
 
+export class VoidInvoiceDto {
+  @ApiProperty({ description: '台账作废原因', minLength: 1, maxLength: 500 })
+  reason: string;
+}
+
 export class UpdateInvoiceDto {
   @ApiPropertyOptional({
     description: '合同ID',
@@ -732,8 +737,8 @@ export class UpdateInvoiceDto {
 
   @ApiPropertyOptional({
     description: '发票状态',
-    example: 'issued',
-    enum: ['draft', 'issued', 'paid', 'overdue', 'cancelled'],
+    example: 'sent',
+    enum: ['draft', 'sent', 'paid', 'overdue'],
   })
   status?: string;
 
@@ -1126,7 +1131,8 @@ export class MoveNodeDto {
   targetId: number;
 
   @ApiProperty({
-    description: '放置类型：prev-放在目标前面，inner-放入目标内部，next-放在目标后面',
+    description:
+      '放置类型：prev-放在目标前面，inner-放入目标内部，next-放在目标后面',
     example: 'inner',
     enum: ['prev', 'inner', 'next'],
   })
@@ -1202,125 +1208,270 @@ export class CreateSubscriptionDto {
   @ApiProperty({ description: '事项类型ID', example: 1, type: 'integer' })
   type_id: number;
 
-  @ApiProperty({ description: '事项名称', example: 'example.com SSL证书', maxLength: 200 })
+  @ApiProperty({
+    description: '事项名称',
+    example: 'example.com SSL证书',
+    maxLength: 200,
+  })
   name: string;
 
-  @ApiProperty({ description: '主体：账号/域名/公司名', example: 'example.com', maxLength: 200 })
+  @ApiProperty({
+    description: '主体：账号/域名/公司名',
+    example: 'example.com',
+    maxLength: 200,
+  })
   subject: string;
 
-  @ApiPropertyOptional({ description: '供应商/服务商', example: '腾讯云', maxLength: 100 })
+  @ApiPropertyOptional({
+    description: '供应商/服务商',
+    example: '腾讯云',
+    maxLength: 100,
+  })
   provider?: string;
 
-  @ApiPropertyOptional({ description: '续费方式', example: 'https://console.cloud.tencent.com/ssl 或线下转账', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '续费方式',
+    example: 'https://console.cloud.tencent.com/ssl 或线下转账',
+    maxLength: 500,
+  })
   renewal_url?: string;
 
-  @ApiPropertyOptional({ description: '订阅起始日期', example: '2026-09-13', format: 'date', nullable: true })
+  @ApiPropertyOptional({
+    description: '订阅起始日期',
+    example: '2026-09-13',
+    format: 'date',
+    nullable: true,
+  })
   start_date?: string | null;
 
-  @ApiProperty({ description: '当前到期日', example: '2026-12-31', format: 'date' })
+  @ApiProperty({
+    description: '当前到期日',
+    example: '2026-12-31',
+    format: 'date',
+  })
   current_expiry_date: string;
 
-  @ApiPropertyOptional({ description: '下次提醒开始日，不填时按当前到期日和提前提醒天数自动计算', example: '2026-12-01', format: 'date' })
+  @ApiPropertyOptional({
+    description: '下次提醒开始日，不填时按当前到期日和提前提醒天数自动计算',
+    example: '2026-12-01',
+    format: 'date',
+  })
   next_reminder_start_date?: string;
 
   @ApiProperty({ description: '续费周期数值', example: 1, type: 'integer' })
   renewal_period_value: number;
 
-  @ApiProperty({ description: '续费周期单位', example: 'year', enum: ['day', 'month', 'year'] })
+  @ApiProperty({
+    description: '续费周期单位',
+    example: 'year',
+    enum: ['day', 'month', 'year'],
+  })
   renewal_period_unit: 'day' | 'month' | 'year';
 
   @ApiProperty({ description: '提前提醒天数', example: 30, type: 'integer' })
   remind_days_before: number;
 
-  @ApiPropertyOptional({ description: '提醒方式', example: 'daily', enum: ['once', 'daily'] })
+  @ApiPropertyOptional({
+    description: '提醒方式',
+    example: 'daily',
+    enum: ['once', 'daily'],
+  })
   reminder_mode?: 'once' | 'daily';
 
   @ApiProperty({ description: '主负责人名称', example: '张三', maxLength: 100 })
   owner_name: string;
 
-  @ApiPropertyOptional({ description: '历史主负责人用户ID', example: 1, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '历史主负责人用户ID',
+    example: 1,
+    type: 'integer',
+  })
   owner_user_id?: number;
 
-  @ApiPropertyOptional({ description: '其他负责人名称', example: '李四、王五', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '其他负责人名称',
+    example: '李四、王五',
+    maxLength: 500,
+  })
   cc_names?: string;
 
-  @ApiPropertyOptional({ description: '历史抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '历史抄送人ID列表',
+    example: [2, 3],
+    isArray: true,
+    type: 'integer',
+  })
   cc_user_ids?: number[];
 
-  @ApiPropertyOptional({ description: '年费/单次费用', example: 1999.0, type: 'number', format: 'decimal' })
+  @ApiPropertyOptional({
+    description: '年费/单次费用',
+    example: 1999.0,
+    type: 'number',
+    format: 'decimal',
+  })
   fee?: number;
 
-  @ApiPropertyOptional({ description: '备注', example: '自动续费需提前确认发票', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '备注',
+    example: '自动续费需提前确认发票',
+    maxLength: 500,
+  })
   notes?: string;
 
-  @ApiPropertyOptional({ description: '状态', example: 'active', enum: ['active', 'inactive'] })
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'inactive'],
+  })
   status?: 'active' | 'inactive';
 }
 
 export class UpdateSubscriptionDto {
-  @ApiPropertyOptional({ description: '事项类型ID', example: 1, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '事项类型ID',
+    example: 1,
+    type: 'integer',
+  })
   type_id?: number;
 
-  @ApiPropertyOptional({ description: '事项名称', example: 'example.com SSL证书', maxLength: 200 })
+  @ApiPropertyOptional({
+    description: '事项名称',
+    example: 'example.com SSL证书',
+    maxLength: 200,
+  })
   name?: string;
 
-  @ApiPropertyOptional({ description: '主体：账号/域名/公司名', example: 'example.com', maxLength: 200 })
+  @ApiPropertyOptional({
+    description: '主体：账号/域名/公司名',
+    example: 'example.com',
+    maxLength: 200,
+  })
   subject?: string;
 
-  @ApiPropertyOptional({ description: '供应商/服务商', example: '腾讯云', maxLength: 100 })
+  @ApiPropertyOptional({
+    description: '供应商/服务商',
+    example: '腾讯云',
+    maxLength: 100,
+  })
   provider?: string;
 
-  @ApiPropertyOptional({ description: '续费方式', example: 'https://console.cloud.tencent.com/ssl 或线下转账', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '续费方式',
+    example: 'https://console.cloud.tencent.com/ssl 或线下转账',
+    maxLength: 500,
+  })
   renewal_url?: string;
 
-  @ApiPropertyOptional({ description: '订阅起始日期', example: '2026-09-13', format: 'date', nullable: true })
+  @ApiPropertyOptional({
+    description: '订阅起始日期',
+    example: '2026-09-13',
+    format: 'date',
+    nullable: true,
+  })
   start_date?: string | null;
 
-  @ApiPropertyOptional({ description: '当前到期日', example: '2026-12-31', format: 'date' })
+  @ApiPropertyOptional({
+    description: '当前到期日',
+    example: '2026-12-31',
+    format: 'date',
+  })
   current_expiry_date?: string;
 
-  @ApiPropertyOptional({ description: '下次提醒开始日，不填时按当前到期日和提前提醒天数自动计算', example: '2026-12-01', format: 'date' })
+  @ApiPropertyOptional({
+    description: '下次提醒开始日，不填时按当前到期日和提前提醒天数自动计算',
+    example: '2026-12-01',
+    format: 'date',
+  })
   next_reminder_start_date?: string;
 
-  @ApiPropertyOptional({ description: '续费周期数值', example: 1, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '续费周期数值',
+    example: 1,
+    type: 'integer',
+  })
   renewal_period_value?: number;
 
-  @ApiPropertyOptional({ description: '续费周期单位', example: 'year', enum: ['day', 'month', 'year'] })
+  @ApiPropertyOptional({
+    description: '续费周期单位',
+    example: 'year',
+    enum: ['day', 'month', 'year'],
+  })
   renewal_period_unit?: 'day' | 'month' | 'year';
 
-  @ApiPropertyOptional({ description: '提前提醒天数', example: 30, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '提前提醒天数',
+    example: 30,
+    type: 'integer',
+  })
   remind_days_before?: number;
 
-  @ApiPropertyOptional({ description: '提醒方式', example: 'daily', enum: ['once', 'daily'] })
+  @ApiPropertyOptional({
+    description: '提醒方式',
+    example: 'daily',
+    enum: ['once', 'daily'],
+  })
   reminder_mode?: 'once' | 'daily';
 
-  @ApiPropertyOptional({ description: '主负责人名称', example: '张三', maxLength: 100 })
+  @ApiPropertyOptional({
+    description: '主负责人名称',
+    example: '张三',
+    maxLength: 100,
+  })
   owner_name?: string;
 
-  @ApiPropertyOptional({ description: '历史主负责人用户ID', example: 1, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '历史主负责人用户ID',
+    example: 1,
+    type: 'integer',
+  })
   owner_user_id?: number;
 
-  @ApiPropertyOptional({ description: '其他负责人名称', example: '李四、王五', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '其他负责人名称',
+    example: '李四、王五',
+    maxLength: 500,
+  })
   cc_names?: string;
 
-  @ApiPropertyOptional({ description: '历史抄送人ID列表', example: [2, 3], isArray: true, type: 'integer' })
+  @ApiPropertyOptional({
+    description: '历史抄送人ID列表',
+    example: [2, 3],
+    isArray: true,
+    type: 'integer',
+  })
   cc_user_ids?: number[];
 
-  @ApiPropertyOptional({ description: '年费/单次费用', example: 1999.0, type: 'number', format: 'decimal' })
+  @ApiPropertyOptional({
+    description: '年费/单次费用',
+    example: 1999.0,
+    type: 'number',
+    format: 'decimal',
+  })
   fee?: number;
 
-  @ApiPropertyOptional({ description: '备注', example: '自动续费需提前确认发票', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '备注',
+    example: '自动续费需提前确认发票',
+    maxLength: 500,
+  })
   notes?: string;
 
-  @ApiPropertyOptional({ description: '状态', example: 'active', enum: ['active', 'inactive'] })
+  @ApiPropertyOptional({
+    description: '状态',
+    example: 'active',
+    enum: ['active', 'inactive'],
+  })
   status?: 'active' | 'inactive';
 }
 
 export class RenewSubscriptionDto {
-  @ApiPropertyOptional({ description: '续费备注', example: '已完成续费', maxLength: 500 })
+  @ApiPropertyOptional({
+    description: '续费备注',
+    example: '已完成续费',
+    maxLength: 500,
+  })
   remarks?: string;
 }
-
 
 // 续费记录相关接口
 export interface CreateSubscriptionRenewalRecordDto {
@@ -1387,7 +1538,13 @@ export class CreateContractRelationDto {
   @ApiProperty({
     description: '关系类型',
     example: 'main_operation',
-    enum: ['main_operation', 'main_supplement', 'renewal', 'replacement', 'related'],
+    enum: [
+      'main_operation',
+      'main_supplement',
+      'renewal',
+      'replacement',
+      'related',
+    ],
   })
   relation_type: string;
 }
@@ -1444,4 +1601,3 @@ export class UpdateInvoiceAllocationDto {
   })
   allocated_ratio?: number;
 }
-

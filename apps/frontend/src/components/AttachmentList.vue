@@ -31,8 +31,12 @@
             {{ attachment.file_name }}
           </div>
           <div class="file-meta">
-            <span class="file-size">{{ formatFileSize(attachment.file_size) }}</span>
-            <span class="upload-time">{{ formatDate(attachment.uploaded_at) }}</span>
+            <span class="file-size">{{
+              formatFileSize(attachment.file_size)
+            }}</span>
+            <span class="upload-time">{{
+              formatDate(attachment.uploaded_at)
+            }}</span>
           </div>
         </div>
 
@@ -55,6 +59,7 @@
             预览
           </el-button>
           <el-button
+            v-if="!props.readOnly"
             type="danger"
             size="small"
             :icon="Delete"
@@ -66,104 +71,117 @@
         </div>
       </div>
     </div>
-
-      </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, Picture, Download, View, Delete } from '@element-plus/icons-vue'
-import { attachmentApi } from '@/api/attachment'
+import { ref, computed } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import {
+  Document,
+  Picture,
+  Download,
+  View,
+  Delete,
+} from "@element-plus/icons-vue";
+import { attachmentApi } from "@/api/attachment";
 
 // Types
 interface Attachment {
-  attachment_id: number
-  file_name: string
-  file_path: string
-  file_type?: string
-  file_size?: number
-  uploaded_at: string
+  attachment_id: number;
+  file_name: string;
+  file_path: string;
+  file_type?: string;
+  file_size?: number;
+  uploaded_at: string;
 }
 
 // Props
 interface Props {
-  attachments: Attachment[]
-  loading?: boolean
-  attachmentType?: 'contract' | 'invoice' // 新增附件类型参数
+  attachments: Attachment[];
+  loading?: boolean;
+  attachmentType?: "contract" | "invoice";
+  readOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
-  attachmentType: 'contract' // 默认为合同附件
-})
+  attachmentType: "contract",
+  readOnly: false,
+});
 
 // Emits
 interface Emits {
-  (e: 'delete', attachmentId: number): void
-  (e: 'refresh'): void
+  (e: "delete", attachmentId: number): void;
+  (e: "refresh"): void;
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Refs
-const deleting = ref(false)
+const deleting = ref(false);
 
 // Methods
 const isPdf = (fileName: string): boolean => {
-  return fileName.toLowerCase().endsWith('.pdf')
-}
+  return fileName.toLowerCase().endsWith(".pdf");
+};
 
 const isImage = (fileName: string): boolean => {
-  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
-  return imageExts.some(ext => fileName.toLowerCase().endsWith(ext))
-}
+  const imageExts = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"];
+  return imageExts.some((ext) => fileName.toLowerCase().endsWith(ext));
+};
 
 const showPreview = (fileName: string): boolean => {
-  return isPdf(fileName) || isImage(fileName)
-}
+  return isPdf(fileName) || isImage(fileName);
+};
 
 const formatFileSize = (size?: number): string => {
-  if (!size) return '-'
-  
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
+  if (!size) return "-";
+
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleString('zh-CN')
-}
+  return new Date(dateString).toLocaleString("zh-CN");
+};
 
 const downloadFile = async (attachment: Attachment) => {
   try {
-    const blob = await attachmentApi.downloadAttachment(attachment.attachment_id, props.attachmentType)
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = attachment.file_name
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    const blob = await attachmentApi.downloadAttachment(
+      attachment.attachment_id,
+      props.attachmentType
+    );
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = attachment.file_name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
 
-    ElMessage.success('文件下载成功')
+    ElMessage.success("文件下载成功");
   } catch (error) {
-    console.error('Download error:', error)
-    ElMessage.error('文件下载失败')
+    console.error("Download error:", error);
+    ElMessage.error("文件下载失败");
   }
-}
+};
 
 const previewFile = async (attachment: Attachment) => {
   // 对于图片，使用统一API进行预览
   if (isImage(attachment.file_name)) {
     try {
-      const blob = await attachmentApi.downloadAttachment(attachment.attachment_id, props.attachmentType);
+      const blob = await attachmentApi.downloadAttachment(
+        attachment.attachment_id,
+        props.attachmentType
+      );
       const imageUrl = URL.createObjectURL(blob);
-      window.open(imageUrl, '_blank');
+      window.open(imageUrl, "_blank");
     } catch (error) {
-      console.error('Image preview error:', error);
-      ElMessage.error('无法加载图片预览');
+      console.error("Image preview error:", error);
+      ElMessage.error("无法加载图片预览");
     }
     return;
   }
@@ -173,39 +191,39 @@ const previewFile = async (attachment: Attachment) => {
     try {
       // 直接跳转到新的PDF预览页面，传递附件ID和类型
       const previewPageUrl = `/simple-pdf-preview?attachmentId=${attachment.attachment_id}&type=${props.attachmentType}`;
-      window.open(previewPageUrl, '_blank');
+      window.open(previewPageUrl, "_blank");
     } catch (error) {
-      console.error('PDF preview error:', error);
-      const message = error instanceof Error ? error.message : '无法打开 PDF 预览';
+      console.error("PDF preview error:", error);
+      const message =
+        error instanceof Error ? error.message : "无法打开 PDF 预览";
       ElMessage.error(message);
     }
   }
 };
 
-
 const deleteFile = async (attachment: Attachment) => {
   try {
     await ElMessageBox.confirm(
       `确定要删除文件 "${attachment.file_name}" 吗？`,
-      '确认删除',
+      "确认删除",
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
       }
-    )
+    );
 
-    deleting.value = true
-    emit('delete', attachment.attachment_id)
+    deleting.value = true;
+    emit("delete", attachment.attachment_id);
   } catch {
     // 用户取消删除
   }
-}
+};
 
 // 暴露方法给父组件
 defineExpose({
-  refreshList: () => emit('refresh')
-})
+  refreshList: () => emit("refresh"),
+});
 </script>
 
 <style scoped>

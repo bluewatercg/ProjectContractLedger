@@ -205,14 +205,17 @@
                       </div>
 
                       <!-- 收款汇总和操作按钮 -->
-                      <div class="payment-summary">
+                      <div
+                        v-if="scope.row.status !== 'cancelled'"
+                        class="payment-summary"
+                      >
                         已收: ¥{{
                           formatCurrency(getInvoicePaidAmount(scope.row))
                         }}
                         / 未收: ¥{{
                           formatCurrency(
                             scope.row.total_amount -
-                              getInvoicePaidAmount(scope.row),
+                              getInvoicePaidAmount(scope.row)
                           )
                         }}
                         <el-button
@@ -382,7 +385,9 @@ const invoiceStats = computed(() => {
     };
   }
 
-  const invoices = contract.value.invoices;
+  const invoices = contract.value.invoices.filter(
+    (invoice) => invoice.status !== "cancelled"
+  );
   const contractAmount = safeNumber(contract.value.total_amount);
   const totalCount = invoices.length;
   const totalAmount = invoices.reduce((sum, invoice) => {
@@ -457,7 +462,7 @@ const getInvoiceStatusText = (status: string) => {
     sent: "已开票",
     paid: "已付款",
     overdue: "逾期",
-    cancelled: "已取消",
+    cancelled: "已作废",
     bad_debt: "坏账",
   };
   return statusMap[status] || status;
@@ -605,7 +610,7 @@ const fetchAttachments = async () => {
   try {
     attachmentsLoading.value = true;
     const response = await attachmentApi.getContractAttachments(
-      contractId.value,
+      contractId.value
     );
 
     if (response.success && response.data) {
@@ -636,12 +641,12 @@ const handleDeleteAttachment = async (attachmentId: number) => {
   try {
     const response = await attachmentApi.deleteContractAttachment(
       contractId.value,
-      attachmentId,
+      attachmentId
     );
 
     if (response.success) {
       attachments.value = attachments.value.filter(
-        (item) => item.attachment_id !== attachmentId,
+        (item) => item.attachment_id !== attachmentId
       );
       ElMessage.success("附件删除成功");
     } else {

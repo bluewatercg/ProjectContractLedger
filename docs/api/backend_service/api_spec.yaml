@@ -757,8 +757,8 @@ components:
         status:
           type: string
           maxLength: 20
-          description: 发票当前状态 (例如：待开票, 已开票, 已收款)。
-          enum: ["待开票", "已开票", "已收款"]
+          description: cancelled 表示不可恢复的台账作废，必须使用专用作废接口。
+          enum: [draft, sent, paid, overdue, cancelled, bad_debt]
         notes:
           type: string
           format: text
@@ -768,6 +768,22 @@ components:
           type: string
           format: date-time
           description: 发票创建时间戳。
+          readOnly: true
+        void_reason:
+          type: string
+          maxLength: 500
+          nullable: true
+          readOnly: true
+          description: 首次台账作废原因，历史数据可能为空。
+        voided_by:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 首次作废操作人 ID。
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
           readOnly: true
       required:
         - contract_id
@@ -1958,6 +1974,56 @@ paths:
           description: 发票号码已存在
         500:
           description: 创建发票失败
+  /invoices/{invoiceId}/void:
+    post:
+      summary: 作废发票台账记录
+      description: 不执行税务作废或红冲。当前授权套账内操作，不能用 viewAll 放宽写权限。原因去除首尾空格后为 1–500 字；已支付、存在待处理或已完成收款、坏账状态或坏账金额时拒绝。重复合法请求保留首次审计。
+      tags: [Invoices]
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: invoiceId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: X-Kit-Id
+          schema:
+            type: integer
+          description: 当前套账，由中间件校验访问权限。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+      responses:
+        200:
+          description: 返回 ApiResponse；success 为 false 时检查 message 和业务 code，400 表示条件不满足，404 表示当前套账内不存在。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/InvoiceBase'
+                  message:
+                    type: string
+                  code:
+                    type: integer
+        401:
+          description: 未登录。
+        403:
+          description: 无套账访问权限。
   /invoices/{invoiceId}:
     get:
       summary: 获取单个发票

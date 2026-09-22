@@ -230,6 +230,9 @@ export interface Invoice {
   bad_debt_reason?: string
   bad_debt_handler?: number
   bad_debt_marked_at?: string
+  void_reason?: string | null
+  voided_by?: number | null
+  voided_at?: string | null
   created_at: string
   updated_at: string
   contract?: Contract
@@ -251,6 +254,10 @@ export interface UpdateInvoiceDto extends Partial<CreateInvoiceDto> {
   status?: string
   tax_amount?: number
   total_amount?: number
+}
+
+export interface VoidInvoiceDto {
+  reason: string
 }
 
 // 支付相关类型

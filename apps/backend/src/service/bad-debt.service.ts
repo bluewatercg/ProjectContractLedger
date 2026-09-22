@@ -42,14 +42,15 @@ export class BadDebtService {
       const invoice = await manager.findOne(Invoice, {
         where: { id: invoiceId, kit_id: kitId },
         relations: ['payments', 'contract', 'plan'],
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!invoice) {
         throw new Error('发票不存在');
       }
 
-      if (invoice.status === 'bad_debt') {
-        throw new Error('该发票已标记为坏账');
+      if (invoice.status === 'cancelled') {
+        throw new Error('该发票已作废，无法标记坏账');
       }
 
       // 计算未收金额
@@ -64,9 +65,7 @@ export class BadDebtService {
       }
 
       if (dto.bad_debt_amount > unpaidAmount + 0.01) {
-        throw new Error(
-          `坏账金额不能超过未收金额 ¥${unpaidAmount.toFixed(2)}`
-        );
+        throw new Error(`坏账金额不能超过未收金额 ¥${unpaidAmount.toFixed(2)}`);
       }
 
       // 更新发票坏账字段
@@ -113,14 +112,15 @@ export class BadDebtService {
       const invoice = await manager.findOne(Invoice, {
         where: { id: invoiceId, kit_id: kitId },
         relations: ['plan'],
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!invoice) {
         throw new Error('发票不存在');
       }
 
-      if (!invoice.bad_debt_amount || Number(invoice.bad_debt_amount) <= 0) {
-        throw new Error('该发票未标记坏账');
+      if (invoice.status === 'cancelled') {
+        throw new Error('该发票已作废，无法撤销坏账');
       }
 
       // 恢复状态
@@ -164,7 +164,11 @@ export class BadDebtService {
       where: { id: invoiceId, kit_id: kitId },
     });
 
-    if (!invoice || !invoice.bad_debt_amount || Number(invoice.bad_debt_amount) <= 0) {
+    if (
+      !invoice ||
+      !invoice.bad_debt_amount ||
+      Number(invoice.bad_debt_amount) <= 0
+    ) {
       return null;
     }
 
@@ -185,14 +189,17 @@ export class BadDebtService {
   async getBadDebtStats(kitId: number, year?: number): Promise<any> {
     const queryBuilder = this.invoiceRepository
       .createQueryBuilder('invoice')
-      .where('invoice.bad_debt_amount > 0');
+      .where('invoice.bad_debt_amount > 0')
+      .andWhere("invoice.status <> 'cancelled'");
 
     if (kitId) {
       queryBuilder.andWhere('invoice.kit_id = :kitId', { kitId });
     }
 
     if (year) {
-      queryBuilder.andWhere('YEAR(invoice.bad_debt_marked_at) = :year', { year });
+      queryBuilder.andWhere('YEAR(invoice.bad_debt_marked_at) = :year', {
+        year,
+      });
     }
 
     const invoices = await queryBuilder.getMany();
@@ -219,10 +226,15 @@ export class BadDebtService {
     }
 
     // 按月份分组
-    const byMonth: Record<string, { month: string; amount: number; count: number }> = {};
+    const byMonth: Record<
+      string,
+      { month: string; amount: number; count: number }
+    > = {};
     for (const inv of invoices) {
       if (inv.bad_debt_marked_at) {
-        const month = new Date(inv.bad_debt_marked_at).toISOString().slice(0, 7);
+        const month = new Date(inv.bad_debt_marked_at)
+          .toISOString()
+          .slice(0, 7);
         if (!byMonth[month]) {
           byMonth[month] = { month, amount: 0, count: 0 };
         }
@@ -235,7 +247,9 @@ export class BadDebtService {
       totalCount,
       totalAmount,
       byContract: Object.values(byContract),
-      byMonth: Object.values(byMonth).sort((a, b) => a.month.localeCompare(b.month)),
+      byMonth: Object.values(byMonth).sort((a, b) =>
+        a.month.localeCompare(b.month)
+      ),
     };
   }
 
@@ -246,6 +260,7 @@ export class BadDebtService {
     const plan = await manager.findOne(ContractInvoicePlan, {
       where: { id: planId },
       relations: ['invoices'],
+      lock: { mode: 'pessimistic_write' },
     });
 
     if (!plan || !plan.invoices || plan.invoices.length === 0) return;

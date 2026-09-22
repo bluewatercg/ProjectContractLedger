@@ -88,7 +88,7 @@
 
 ### 5. 发票 (Invoices)
 
-- **API 资源**: `/invoices`, `/invoices/{invoiceId}`
+- **API 资源**: `/invoices`, `/invoices/{invoiceId}`, `POST /invoices/{invoiceId}/void`
 - **数据库表**: `invoices`
 - **API Schemas**: `Invoice`, `InvoiceCreate`, `InvoiceUpdate`
 - **字段映射**:
@@ -103,6 +103,10 @@
     - `Invoice.notes` -> `invoices.notes`
     - `Invoice.created_at` -> `invoices.created_at`
     - `Invoice.updated_at` -> `invoices.updated_at`
+    - `Invoice.void_reason` -> `invoices.void_reason`，首次作废原因
+    - `Invoice.voided_by` -> `invoices.voided_by`，登录上下文操作人 ID
+    - `Invoice.voided_at` -> `invoices.voided_at`，服务器作废时间
+- **作废约束**: 请求体仅需 `reason`；套账取授权上下文。迁移 `004-invoice-void.sql` 新增审计字段。普通更新不能进入或离开 `cancelled`，重复作废保留首次审计；有效金额统计排除 `cancelled`。
 - **核心查询利用**: 
     - 列表查询 (`GET /invoices`) 可能利用 `queries.sql` 中的 `get_invoices_with_filters` (如果存在)。
     - `queries.sql` 中的 `get_invoice_details_by_id` 可用于 `GET /invoices/{invoiceId}`。

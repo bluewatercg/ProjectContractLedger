@@ -1,6 +1,6 @@
 import { Provide, Inject } from '@midwayjs/core';
-import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { Reconciliation } from '../entity/reconciliation.entity';
 import { ReconciliationDetail } from '../entity/reconciliation-detail.entity';
 import { Invoice } from '../entity/invoice.entity';
@@ -24,6 +24,9 @@ export class ReconciliationService {
   @Inject()
   ctx: Context;
 
+  @InjectDataSource()
+  dataSource: DataSource;
+
   /**
    * 生成对账单号
    */
@@ -39,105 +42,124 @@ export class ReconciliationService {
   }
 
   /**
-   * 自动对账 - 单张发票
+   * 锁定发票并校验作废终态（事务内使用）
    */
-  async autoReconcile(invoiceId: number, userId: number, kitId: number): Promise<Reconciliation> {
-    // 1. 获取发票信息及其支付记录
-    const invoice = await this.invoiceRepository.findOne({
+  private async lockInvoiceOrThrow(
+    manager: EntityManager,
+    invoiceId: number,
+    kitId: number
+  ): Promise<Invoice> {
+    const invoice = await manager.findOne(Invoice, {
       where: { id: invoiceId, kit_id: kitId },
-      relations: ['payments'],
+      lock: { mode: 'pessimistic_write' },
     });
-
     if (!invoice) {
       throw new Error('发票不存在');
     }
-
-    // 2. 计算已支付总额（只计算已完成的支付）
-    const paidAmount = invoice.payments
-      .filter(p => p.status === 'completed')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    // 3. 计算差异
-    const invoiceAmount = Number(invoice.total_amount);
-    const difference = Math.abs(invoiceAmount - paidAmount);
-
-    // 4. 判断对账状态
-    let status: string;
-    if (difference === 0) {
-      status = 'matched'; // 完全匹配
-    } else if (paidAmount === 0) {
-      status = 'unmatched'; // 未支付
-    } else if (paidAmount < invoiceAmount) {
-      status = 'underpaid'; // 少付
-    } else if (paidAmount > invoiceAmount) {
-      status = 'overpaid'; // 多付
-    } else {
-      status = 'partial'; // 部分支付
+    if (invoice.status === 'cancelled') {
+      throw new Error('该发票已作废，无法操作');
     }
+    return invoice;
+  }
 
-    // 5. 检查是否已存在对账记录
-    const existingReconciliation = await this.reconciliationRepository.findOne({
-      where: { invoice_id: invoiceId, kit_id: kitId },
-    });
+  /**
+   * 自动对账 - 单张发票
+   */
+  async autoReconcile(
+    invoiceId: number,
+    userId: number,
+    kitId: number
+  ): Promise<Reconciliation> {
+    return await this.dataSource.transaction(async manager => {
+      // 锁定发票并校验终态
+      const invoice = await this.lockInvoiceOrThrow(manager, invoiceId, kitId);
 
-    let reconciliation: Reconciliation;
-
-    if (existingReconciliation) {
-      // 更新现有对账记录
-      existingReconciliation.invoice_amount = invoiceAmount;
-      existingReconciliation.paid_amount = paidAmount;
-      existingReconciliation.difference_amount = difference;
-      existingReconciliation.status = status;
-      existingReconciliation.reconciled_by = userId;
-      existingReconciliation.reconciled_at = new Date();
-
-      reconciliation = await this.reconciliationRepository.save(
-        existingReconciliation
-      );
-
-      // 删除旧的对账明细
-      await this.reconciliationDetailRepository.delete({
-        reconciliation_id: reconciliation.id,
+      // 加载支付记录
+      const payments = await manager.find(Payment, {
+        where: { invoice_id: invoiceId },
       });
-    } else {
-      // 创建新的对账记录
-      reconciliation = new Reconciliation();
-      reconciliation.kit_id = kitId;
-      reconciliation.reconciliation_number = this.generateReconciliationNumber();
-      reconciliation.invoice_id = invoiceId;
-      reconciliation.invoice_amount = invoiceAmount;
-      reconciliation.paid_amount = paidAmount;
-      reconciliation.difference_amount = difference;
-      reconciliation.status = status;
-      reconciliation.reconciled_by = userId;
-      reconciliation.reconciled_at = new Date();
 
-      reconciliation = await this.reconciliationRepository.save(reconciliation);
-    }
+      // 计算已支付总额（只计算已完成的支付）
+      const paidAmount = payments
+        .filter(p => p.status === 'completed')
+        .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // 6. 创建对账明细
-    for (const payment of invoice.payments.filter(
-      p => p.status === 'completed'
-    )) {
-      const detail = new ReconciliationDetail();
-      detail.reconciliation_id = reconciliation.id;
-      detail.payment_id = payment.id;
-      detail.payment_amount = Number(payment.amount);
-      detail.payment_date = payment.payment_date;
-      detail.payment_method = payment.payment_method;
-      detail.reference_number = payment.reference_number;
-      detail.is_matched = true;
+      // 计算差异
+      const invoiceAmount = Number(invoice.total_amount);
+      const difference = Math.abs(invoiceAmount - paidAmount);
 
-      await this.reconciliationDetailRepository.save(detail);
-    }
+      // 判断对账状态
+      let status: string;
+      if (difference === 0) {
+        status = 'matched';
+      } else if (paidAmount === 0) {
+        status = 'unmatched';
+      } else if (paidAmount < invoiceAmount) {
+        status = 'underpaid';
+      } else if (paidAmount > invoiceAmount) {
+        status = 'overpaid';
+      } else {
+        status = 'partial';
+      }
 
-    // 7. 如果完全匹配，自动更新发票状态为已支付
-    if (status === 'matched' && invoice.status !== 'paid') {
-      invoice.status = 'paid';
-      await this.invoiceRepository.save(invoice);
-    }
+      // 检查是否已存在对账记录
+      const existingReconciliation = await manager.findOne(Reconciliation, {
+        where: { invoice_id: invoiceId, kit_id: kitId },
+      });
 
-    return reconciliation;
+      let reconciliation: Reconciliation;
+
+      if (existingReconciliation) {
+        existingReconciliation.invoice_amount = invoiceAmount;
+        existingReconciliation.paid_amount = paidAmount;
+        existingReconciliation.difference_amount = difference;
+        existingReconciliation.status = status;
+        existingReconciliation.reconciled_by = userId;
+        existingReconciliation.reconciled_at = new Date();
+
+        reconciliation = await manager.save(existingReconciliation);
+
+        await manager.delete(ReconciliationDetail, {
+          reconciliation_id: reconciliation.id,
+        });
+      } else {
+        reconciliation = new Reconciliation();
+        reconciliation.kit_id = kitId;
+        reconciliation.reconciliation_number =
+          this.generateReconciliationNumber();
+        reconciliation.invoice_id = invoiceId;
+        reconciliation.invoice_amount = invoiceAmount;
+        reconciliation.paid_amount = paidAmount;
+        reconciliation.difference_amount = difference;
+        reconciliation.status = status;
+        reconciliation.reconciled_by = userId;
+        reconciliation.reconciled_at = new Date();
+
+        reconciliation = await manager.save(reconciliation);
+      }
+
+      // 创建对账明细
+      for (const payment of payments.filter(p => p.status === 'completed')) {
+        const detail = new ReconciliationDetail();
+        detail.reconciliation_id = reconciliation.id;
+        detail.payment_id = payment.id;
+        detail.payment_amount = Number(payment.amount);
+        detail.payment_date = payment.payment_date;
+        detail.payment_method = payment.payment_method;
+        detail.reference_number = payment.reference_number;
+        detail.is_matched = true;
+
+        await manager.save(detail);
+      }
+
+      // 如果完全匹配，自动更新发票状态为已支付
+      if (status === 'matched' && invoice.status !== 'paid') {
+        invoice.status = 'paid';
+        await manager.save(invoice);
+      }
+
+      return reconciliation;
+    });
   }
 
   /**
@@ -154,7 +176,11 @@ export class ReconciliationService {
 
     for (const invoiceId of invoiceIds) {
       try {
-        const reconciliation = await this.autoReconcile(invoiceId, userId, kitId);
+        const reconciliation = await this.autoReconcile(
+          invoiceId,
+          userId,
+          kitId
+        );
         results.push({
           invoiceId,
           success: true,
@@ -185,77 +211,75 @@ export class ReconciliationService {
     userId: number;
     kitId: number;
   }): Promise<Reconciliation> {
-    // 1. 获取发票信息
-    const invoice = await this.invoiceRepository.findOne({
-      where: { id: data.invoiceId, kit_id: data.kitId },
+    return await this.dataSource.transaction(async manager => {
+      // 锁定发票并校验终态
+      const invoice = await this.lockInvoiceOrThrow(
+        manager,
+        data.invoiceId,
+        data.kitId
+      );
+
+      // 获取选中的支付记录
+      const payments = await Promise.all(
+        data.paymentIds.map(id => manager.findOne(Payment, { where: { id } }))
+      );
+
+      if (payments.some(p => !p)) {
+        throw new Error('部分支付记录不存在');
+      }
+
+      // 计算已支付总额
+      const paidAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+      // 计算差异
+      const invoiceAmount = Number(invoice.total_amount);
+      const difference = Math.abs(invoiceAmount - paidAmount);
+
+      // 判断对账状态
+      let status: string;
+      if (difference === 0) {
+        status = 'matched';
+      } else if (paidAmount === 0) {
+        status = 'unmatched';
+      } else if (paidAmount < invoiceAmount) {
+        status = 'underpaid';
+      } else {
+        status = 'overpaid';
+      }
+
+      // 创建对账记录
+      const reconciliation = new Reconciliation();
+      reconciliation.kit_id = data.kitId;
+      reconciliation.reconciliation_number =
+        this.generateReconciliationNumber();
+      reconciliation.invoice_id = data.invoiceId;
+      reconciliation.invoice_amount = invoiceAmount;
+      reconciliation.paid_amount = paidAmount;
+      reconciliation.difference_amount = difference;
+      reconciliation.status = status;
+      reconciliation.difference_reason = data.differenceReason;
+      reconciliation.notes = data.notes;
+      reconciliation.reconciled_by = data.userId;
+      reconciliation.reconciled_at = new Date();
+
+      const savedReconciliation = await manager.save(reconciliation);
+
+      // 创建对账明细
+      for (const payment of payments) {
+        const detail = new ReconciliationDetail();
+        detail.reconciliation_id = savedReconciliation.id;
+        detail.payment_id = payment.id;
+        detail.payment_amount = Number(payment.amount);
+        detail.payment_date = payment.payment_date;
+        detail.payment_method = payment.payment_method;
+        detail.reference_number = payment.reference_number;
+        detail.is_matched = true;
+
+        await manager.save(detail);
+      }
+
+      return savedReconciliation;
     });
-
-    if (!invoice) {
-      throw new Error('发票不存在');
-    }
-
-    // 2. 获取选中的支付记录
-    const payments = await this.paymentRepository.findByIds(data.paymentIds);
-
-    if (payments.length !== data.paymentIds.length) {
-      throw new Error('部分支付记录不存在');
-    }
-
-    // 3. 计算已支付总额
-    const paidAmount = payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0
-    );
-
-    // 4. 计算差异
-    const invoiceAmount = Number(invoice.total_amount);
-    const difference = Math.abs(invoiceAmount - paidAmount);
-
-    // 5. 判断对账状态
-    let status: string;
-    if (difference === 0) {
-      status = 'matched';
-    } else if (paidAmount === 0) {
-      status = 'unmatched';
-    } else if (paidAmount < invoiceAmount) {
-      status = 'underpaid';
-    } else {
-      status = 'overpaid';
-    }
-
-    // 6. 创建对账记录
-    const reconciliation = new Reconciliation();
-    reconciliation.kit_id = data.kitId;
-    reconciliation.reconciliation_number = this.generateReconciliationNumber();
-    reconciliation.invoice_id = data.invoiceId;
-    reconciliation.invoice_amount = invoiceAmount;
-    reconciliation.paid_amount = paidAmount;
-    reconciliation.difference_amount = difference;
-    reconciliation.status = status;
-    reconciliation.difference_reason = data.differenceReason;
-    reconciliation.notes = data.notes;
-    reconciliation.reconciled_by = data.userId;
-    reconciliation.reconciled_at = new Date();
-
-    const savedReconciliation = await this.reconciliationRepository.save(
-      reconciliation
-    );
-
-    // 7. 创建对账明细
-    for (const payment of payments) {
-      const detail = new ReconciliationDetail();
-      detail.reconciliation_id = savedReconciliation.id;
-      detail.payment_id = payment.id;
-      detail.payment_amount = Number(payment.amount);
-      detail.payment_date = payment.payment_date;
-      detail.payment_method = payment.payment_method;
-      detail.reference_number = payment.reference_number;
-      detail.is_matched = true;
-
-      await this.reconciliationDetailRepository.save(detail);
-    }
-
-    return savedReconciliation;
   }
 
   /**
@@ -325,7 +349,10 @@ export class ReconciliationService {
   /**
    * 获取对账详情
    */
-  async getReconciliationById(id: number, kitId: number): Promise<Reconciliation> {
+  async getReconciliationById(
+    id: number,
+    kitId: number
+  ): Promise<Reconciliation> {
     const reconciliation = await this.reconciliationRepository.findOne({
       where: { id, kit_id: kitId },
       relations: [
@@ -356,44 +383,55 @@ export class ReconciliationService {
     userId: number,
     kitId: number
   ): Promise<Reconciliation> {
-    const reconciliation = await this.reconciliationRepository.findOne({
-      where: { id, kit_id: kitId },
-      relations: ['invoice'],
+    return await this.dataSource.transaction(async manager => {
+      const reconciliation = await manager.findOne(Reconciliation, {
+        where: { id, kit_id: kitId },
+        relations: ['invoice'],
+      });
+
+      if (!reconciliation) {
+        throw new Error('对账记录不存在');
+      }
+
+      // 锁定发票并校验终态
+      const invoice = await this.lockInvoiceOrThrow(
+        manager,
+        reconciliation.invoice_id,
+        kitId
+      );
+
+      switch (action) {
+        case 'adjust_invoice':
+          // 调整发票金额为实际支付金额
+          invoice.total_amount = reconciliation.paid_amount;
+          await manager.save(Invoice, invoice);
+          reconciliation.status = 'matched';
+          reconciliation.difference_amount = 0;
+          break;
+
+        case 'refund':
+          // 创建退款记录（这里需要调用支付服务创建负数支付记录）
+          // TODO: 实现退款逻辑
+          reconciliation.status = 'matched';
+          break;
+
+        case 'write_off':
+          // 核销差异，直接标记为已匹配
+          reconciliation.status = 'matched';
+          break;
+
+        case 'wait_payment':
+          // 等待补款，保持当前状态
+          break;
+      }
+
+      reconciliation.difference_reason = reason;
+      reconciliation.notes = `${
+        reconciliation.notes || ''
+      }\n处理方式: ${action}, 处理人: ${userId}, 时间: ${new Date().toISOString()}`;
+
+      return await manager.save(reconciliation);
     });
-
-    if (!reconciliation) {
-      throw new Error('对账记录不存在');
-    }
-
-    switch (action) {
-      case 'adjust_invoice':
-        // 调整发票金额为实际支付金额
-        reconciliation.invoice.total_amount = reconciliation.paid_amount;
-        await this.invoiceRepository.save(reconciliation.invoice);
-        reconciliation.status = 'matched';
-        reconciliation.difference_amount = 0;
-        break;
-
-      case 'refund':
-        // 创建退款记录（这里需要调用支付服务创建负数支付记录）
-        // TODO: 实现退款逻辑
-        reconciliation.status = 'matched';
-        break;
-
-      case 'write_off':
-        // 核销差异，直接标记为已匹配
-        reconciliation.status = 'matched';
-        break;
-
-      case 'wait_payment':
-        // 等待补款，保持当前状态
-        break;
-    }
-
-    reconciliation.difference_reason = reason;
-    reconciliation.notes = `${reconciliation.notes || ''}\n处理方式: ${action}, 处理人: ${userId}, 时间: ${new Date().toISOString()}`;
-
-    return await this.reconciliationRepository.save(reconciliation);
   }
 
   /**
@@ -419,7 +457,9 @@ export class ReconciliationService {
     reconciliation.approved_at = new Date();
 
     if (notes) {
-      reconciliation.notes = `${reconciliation.notes || ''}\n审批意见: ${notes}`;
+      reconciliation.notes = `${
+        reconciliation.notes || ''
+      }\n审批意见: ${notes}`;
     }
 
     return await this.reconciliationRepository.save(reconciliation);
@@ -431,16 +471,19 @@ export class ReconciliationService {
   async getReconciliationStats(kitId: number): Promise<any> {
     const stats = await this.reconciliationRepository
       .createQueryBuilder('reconciliation')
+      .innerJoin('reconciliation.invoice', 'invoice')
       .select('reconciliation.status', 'status')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(reconciliation.difference_amount)', 'totalDifference')
       .where('reconciliation.kit_id = :kitId', { kitId })
+      .andWhere("invoice.status <> 'cancelled'")
       .groupBy('reconciliation.status')
       .getRawMany();
 
-    const totalReconciliations = await this.reconciliationRepository.count({
-      where: { kit_id: kitId },
-    });
+    const totalReconciliations = stats.reduce(
+      (total, row) => total + Number(row.count),
+      0
+    );
 
     return {
       total: totalReconciliations,
@@ -507,7 +550,9 @@ export class ReconciliationService {
       reconciliation_id: reconciliation.id,
     });
 
-    const result = await this.reconciliationRepository.delete(reconciliation.id);
+    const result = await this.reconciliationRepository.delete(
+      reconciliation.id
+    );
     return result.affected > 0;
   }
 }

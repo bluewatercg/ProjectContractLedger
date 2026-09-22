@@ -131,9 +131,7 @@ export class ReportService {
     const trend = await this.getContractTrend(params);
 
     // 获取状态分布
-    const statusDistribution = await this.getContractStatusDistribution(
-      params
-    );
+    const statusDistribution = await this.getContractStatusDistribution(params);
 
     const result = {
       summary,
@@ -150,7 +148,9 @@ export class ReportService {
   /**
    * 获取发票报表
    */
-  async getInvoiceReport(params: ReportQueryParams): Promise<InvoiceReportData> {
+  async getInvoiceReport(
+    params: ReportQueryParams
+  ): Promise<InvoiceReportData> {
     const cacheKey = `invoice_report_${JSON.stringify(params)}`;
     const cachedData = this.cache.get(cacheKey);
     if (cachedData) {
@@ -159,8 +159,10 @@ export class ReportService {
 
     const { startDate, endDate, kitId } = params;
 
-    // 构建基础查询
-    const baseQuery = this.invoiceRepository.createQueryBuilder('invoice');
+    // 构建基础查询 - 财务汇总排除已作废发票
+    const baseQuery = this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.status != :cancelled', { cancelled: 'cancelled' });
 
     if (kitId) {
       baseQuery.andWhere('invoice.kit_id = :kitId', { kitId });
@@ -231,7 +233,9 @@ export class ReportService {
   /**
    * 获取支付报表
    */
-  async getPaymentReport(params: ReportQueryParams): Promise<PaymentReportData> {
+  async getPaymentReport(
+    params: ReportQueryParams
+  ): Promise<PaymentReportData> {
     const cacheKey = `payment_report_${JSON.stringify(params)}`;
     const cachedData = this.cache.get(cacheKey);
     if (cachedData) {
@@ -241,7 +245,10 @@ export class ReportService {
     const { startDate, endDate, kitId } = params;
 
     // 构建基础查询
-    const baseQuery = this.paymentRepository.createQueryBuilder('payment');
+    const baseQuery = this.paymentRepository
+      .createQueryBuilder('payment')
+      .innerJoin('payment.invoice', 'invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       baseQuery.andWhere('payment.kit_id = :kitId', { kitId });
@@ -315,8 +322,10 @@ export class ReportService {
     const { startDate, endDate, kitId } = params;
 
     // 构建基础查询
-    const baseQuery =
-      this.reconciliationRepository.createQueryBuilder('reconciliation');
+    const baseQuery = this.reconciliationRepository
+      .createQueryBuilder('reconciliation')
+      .innerJoin('reconciliation.invoice', 'invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       baseQuery.andWhere('reconciliation.kit_id = :kitId', { kitId });
@@ -346,7 +355,10 @@ export class ReportService {
         "SUM(CASE WHEN reconciliation.status != 'matched' THEN 1 ELSE 0 END)",
         'unmatchedCount'
       )
-      .addSelect('SUM(ABS(reconciliation.difference_amount))', 'totalDifference')
+      .addSelect(
+        'SUM(ABS(reconciliation.difference_amount))',
+        'totalDifference'
+      )
       .getRawOne();
 
     const summary = {
@@ -520,7 +532,8 @@ export class ReportService {
       statusLabel: statusLabels[item.status] || item.status,
       count: parseInt(item.count) || 0,
       amount: parseFloat(item.amount) || 0,
-      percentage: totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
+      percentage:
+        totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
     }));
   }
 
@@ -532,7 +545,10 @@ export class ReportService {
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, groupBy = 'month', kitId } = params;
 
-    const query = this.invoiceRepository.createQueryBuilder('invoice');
+    // 财务趋势排除已作废发票
+    const query = this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.status != :cancelled', { cancelled: 'cancelled' });
 
     if (kitId) {
       query.andWhere('invoice.kit_id = :kitId', { kitId });
@@ -571,7 +587,9 @@ export class ReportService {
   private async getInvoiceStatusDistribution(params: ReportQueryParams) {
     const { startDate, endDate, kitId } = params;
 
-    const query = this.invoiceRepository.createQueryBuilder('invoice');
+    const query = this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       query.andWhere('invoice.kit_id = :kitId', { kitId });
@@ -595,10 +613,11 @@ export class ReportService {
 
     const statusLabels = {
       draft: '草稿',
-      issued: '已开具',
+      sent: '已开票',
+      bad_debt: '坏账',
       paid: '已支付',
       overdue: '逾期',
-      cancelled: '已取消',
+      cancelled: '已作废',
     };
 
     const totalCount = result.reduce(
@@ -611,7 +630,8 @@ export class ReportService {
       statusLabel: statusLabels[item.status] || item.status,
       count: parseInt(item.count) || 0,
       amount: parseFloat(item.amount) || 0,
-      percentage: totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
+      percentage:
+        totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
     }));
   }
 
@@ -623,7 +643,10 @@ export class ReportService {
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, groupBy = 'month', kitId } = params;
 
-    const query = this.paymentRepository.createQueryBuilder('payment');
+    const query = this.paymentRepository
+      .createQueryBuilder('payment')
+      .innerJoin('payment.invoice', 'invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       query.andWhere('payment.kit_id = :kitId', { kitId });
@@ -662,7 +685,10 @@ export class ReportService {
   private async getPaymentMethodDistribution(params: ReportQueryParams) {
     const { startDate, endDate, kitId } = params;
 
-    const query = this.paymentRepository.createQueryBuilder('payment');
+    const query = this.paymentRepository
+      .createQueryBuilder('payment')
+      .innerJoin('payment.invoice', 'invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       query.andWhere('payment.kit_id = :kitId', { kitId });
@@ -702,7 +728,8 @@ export class ReportService {
       methodLabel: methodLabels[item.method] || item.method,
       count: parseInt(item.count) || 0,
       amount: parseFloat(item.amount) || 0,
-      percentage: totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
+      percentage:
+        totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
     }));
   }
 
@@ -714,8 +741,10 @@ export class ReportService {
   ): Promise<ReportDataItem[]> {
     const { startDate, endDate, groupBy = 'month', kitId } = params;
 
-    const query =
-      this.reconciliationRepository.createQueryBuilder('reconciliation');
+    const query = this.reconciliationRepository
+      .createQueryBuilder('reconciliation')
+      .innerJoin('reconciliation.invoice', 'invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       query.andWhere('reconciliation.kit_id = :kitId', { kitId });
@@ -757,8 +786,10 @@ export class ReportService {
   private async getReconciliationStatusDistribution(params: ReportQueryParams) {
     const { startDate, endDate, kitId } = params;
 
-    const query =
-      this.reconciliationRepository.createQueryBuilder('reconciliation');
+    const query = this.reconciliationRepository
+      .createQueryBuilder('reconciliation')
+      .innerJoin('reconciliation.invoice', 'invoice')
+      .where("invoice.status <> 'cancelled'");
 
     if (kitId) {
       query.andWhere('reconciliation.kit_id = :kitId', { kitId });
@@ -798,7 +829,8 @@ export class ReportService {
       status: item.status,
       statusLabel: statusLabels[item.status] || item.status,
       count: parseInt(item.count) || 0,
-      percentage: totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
+      percentage:
+        totalCount > 0 ? (parseInt(item.count) / totalCount) * 100 : 0,
     }));
   }
 

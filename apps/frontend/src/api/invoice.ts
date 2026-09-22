@@ -64,7 +64,17 @@ export const invoiceApi = {
   /**
    * 获取逾期发票
    */
+  /**
+   * 获取逾期发票
+   */
   getOverdueInvoices(): Promise<ApiResponse<Invoice[]>> {
     return apiClient.get('/invoices/overdue/list').then(res => res.data)
+  },
+
+  /**
+   * 作废发票
+   */
+  voidInvoice(id: number, reason: string): Promise<ApiResponse<Invoice>> {
+    return apiClient.post(`/invoices/${id}/void`, { reason }).then(res => res.data)
   }
 }

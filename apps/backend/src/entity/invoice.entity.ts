@@ -56,6 +56,15 @@ export class Invoice {
   })
   status: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  void_reason: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  voided_by: number | null;
+
+  @Column({ type: 'datetime', nullable: true })
+  voided_at: Date | null;
+
   @Column({ type: 'text', nullable: true })
   description: string;
 
@@ -94,7 +103,9 @@ export class Invoice {
   @JoinColumn({ name: 'contract_id' })
   contract: Contract;
 
-  @ManyToOne(() => ContractInvoicePlan, plan => plan.invoices, { nullable: true })
+  @ManyToOne(() => ContractInvoicePlan, plan => plan.invoices, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'plan_id' })
   plan?: ContractInvoicePlan;
 
@@ -104,4 +115,3 @@ export class Invoice {
   @OneToMany(() => InvoiceAttachment, attachment => attachment.invoice)
   attachments: InvoiceAttachment[];
 }
-

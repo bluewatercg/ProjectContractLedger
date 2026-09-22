@@ -8,10 +8,10 @@ import { Payment } from '../entity/payment.entity';
 export interface ReminderItem {
   id: number;
   type:
-  | 'contract_renewal'
-  | 'contract_fulfillment'
-  | 'invoice_needed'
-  | 'payment_collection';
+    | 'contract_renewal'
+    | 'contract_fulfillment'
+    | 'invoice_needed'
+    | 'payment_collection';
   priority: 'high' | 'medium' | 'low';
   title: string;
   description: string;
@@ -96,7 +96,9 @@ export class ReminderService {
    * 一次性合同：剩余天数 <= 15天时产生提醒
    * 已到期合同：只要状态还是active就产生提醒（高优先级）
    */
-  async getContractFulfillmentReminders(kitId?: number): Promise<ReminderItem[]> {
+  async getContractFulfillmentReminders(
+    kitId?: number
+  ): Promise<ReminderItem[]> {
     const today = new Date();
     const futureDate = new Date();
     futureDate.setDate(today.getDate() + 90); // 提前90天检查
@@ -136,9 +138,15 @@ export class ReminderService {
       if (daysUntilDue <= 0) {
         shouldRemind = true;
         priority = 'high';
-        type = contract.is_renewable ? 'contract_renewal' : 'contract_fulfillment';
-        title = contract.is_renewable ? '合同已到期，请确认续签或不续签' : '合同已到期，请确认履约关闭';
-        description = `合同 ${contract.contract_number} 已于 ${Math.abs(daysUntilDue)} 天前到期，目前状态仍为执行中，请及时处理。`;
+        type = contract.is_renewable
+          ? 'contract_renewal'
+          : 'contract_fulfillment';
+        title = contract.is_renewable
+          ? '合同已到期，请确认续签或不续签'
+          : '合同已到期，请确认履约关闭';
+        description = `合同 ${contract.contract_number} 已于 ${Math.abs(
+          daysUntilDue
+        )} 天前到期，目前状态仍为执行中，请及时处理。`;
       }
       // 2. 将到期合（续签）
       else if (contract.is_renewable) {
@@ -209,10 +217,9 @@ export class ReminderService {
 
     for (const contract of activeContracts) {
       const invoicedAmount = contract.invoices
-        ? contract.invoices.reduce(
-          (sum, invoice) => sum + Number(invoice.total_amount),
-          0
-        )
+        ? contract.invoices
+            .filter(invoice => invoice.status !== 'cancelled')
+            .reduce((sum, invoice) => sum + Number(invoice.total_amount), 0)
         : 0;
 
       const contractAmount = Number(contract.total_amount);
@@ -221,7 +228,7 @@ export class ReminderService {
       if (pendingAmount > 0) {
         const daysSinceStart = Math.ceil(
           (Date.now() - new Date(contract.start_date).getTime()) /
-          (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24)
         );
 
         let priority: 'high' | 'medium' | 'low' = 'medium';
@@ -234,10 +241,11 @@ export class ReminderService {
           type: 'invoice_needed',
           priority: priority,
           title: '需要开具发票',
-          description: `合同 ${contract.contract_number
-            } 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(
-              2
-            )}`,
+          description: `合同 ${
+            contract.contract_number
+          } 已生效 ${daysSinceStart} 天，待开票金额 ¥${pendingAmount.toFixed(
+            2
+          )}`,
           targetId: contract.id,
           targetType: 'contract' as const,
           daysUntilDue: daysSinceStart,
@@ -270,7 +278,9 @@ export class ReminderService {
       .where('invoice.status IN (:...statuses)', {
         statuses: ['draft', 'sent', 'paid', 'overdue'],
       })
-      .andWhere('(invoice.bad_debt_amount IS NULL OR invoice.bad_debt_amount = 0 OR invoice.bad_debt_amount < invoice.total_amount)');
+      .andWhere(
+        '(invoice.bad_debt_amount IS NULL OR invoice.bad_debt_amount = 0 OR invoice.bad_debt_amount < invoice.total_amount)'
+      );
 
     if (kitId) {
       queryBuilder.andWhere('invoice.kit_id = :kitId', { kitId });
@@ -283,9 +293,9 @@ export class ReminderService {
     for (const invoice of invoices) {
       const paidAmount = invoice.payments
         ? invoice.payments.reduce(
-          (sum, payment) => sum + Number(payment.amount),
-          0
-        )
+            (sum, payment) => sum + Number(payment.amount),
+            0
+          )
         : 0;
 
       const invoiceAmount = Number(invoice.total_amount);
@@ -293,10 +303,11 @@ export class ReminderService {
 
       // 只有待收款金额大于0.01才需要提醒（考虑浮点数精度）
       if (pendingAmount > 0.01) {
-        const referenceDate = invoice.issue_date || invoice.created_at || new Date();
+        const referenceDate =
+          invoice.issue_date || invoice.created_at || new Date();
         const daysSinceIssue = Math.ceil(
           (Date.now() - new Date(referenceDate).getTime()) /
-          (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24)
         );
 
         let priority: 'high' | 'medium' | 'low' = 'medium';
@@ -309,10 +320,11 @@ export class ReminderService {
           type: 'payment_collection',
           priority: priority,
           title: '需要跟进收款',
-          description: `发票 ${invoice.invoice_number
-            } 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(
-              2
-            )}`,
+          description: `发票 ${
+            invoice.invoice_number
+          } 已开具 ${daysSinceIssue} 天，待收款金额 ¥${pendingAmount.toFixed(
+            2
+          )}`,
           targetId: invoice.id,
           targetType: 'invoice' as const,
           daysUntilDue: daysSinceIssue,
