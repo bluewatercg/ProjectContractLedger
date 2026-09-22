@@ -439,6 +439,14 @@ export class CreateContractDto {
     type: 'integer',
   })
   previous_contract_id?: number | null;
+
+  @ApiPropertyOptional({
+    description: '合同类型',
+    example: 'main',
+    enum: ['main', 'maintenance', 'renewal', 'supplement', 'standalone'],
+    default: 'main',
+  })
+  contract_type?: string;
 }
 
 export class UpdateContractDto {
@@ -533,6 +541,13 @@ export class UpdateContractDto {
     type: 'integer',
   })
   previous_contract_id?: number | null;
+
+  @ApiPropertyOptional({
+    description: '合同类型',
+    example: 'main',
+    enum: ['main', 'maintenance', 'renewal', 'supplement', 'standalone'],
+  })
+  contract_type?: string;
 }
 
 export class ConfirmNonRenewalDto {
@@ -785,6 +800,13 @@ export class CreatePaymentDto {
     maxLength: 500,
   })
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: '实际付款公司ID（代付场景，为空则使用发票合同客户）',
+    example: 2,
+    type: 'integer',
+  })
+  payer_customer_id?: number | null;
 }
 
 export class UpdatePaymentDto {
@@ -837,6 +859,13 @@ export class UpdatePaymentDto {
     enum: ['pending', 'completed', 'failed', 'cancelled'],
   })
   status?: string;
+
+  @ApiPropertyOptional({
+    description: '实际付款公司ID（代付场景）',
+    example: 2,
+    type: 'integer',
+  })
+  payer_customer_id?: number | null;
 }
 
 /**
@@ -1335,5 +1364,84 @@ export interface SubscriptionRenewalRecordResponse {
     id: number;
     username: string;
   };
+}
+
+/**
+ * 合同关系 DTO
+ */
+export class CreateContractRelationDto {
+  @ApiProperty({
+    description: '源合同ID',
+    example: 1,
+    type: 'integer',
+  })
+  source_contract_id: number;
+
+  @ApiProperty({
+    description: '目标合同ID',
+    example: 2,
+    type: 'integer',
+  })
+  target_contract_id: number;
+
+  @ApiProperty({
+    description: '关系类型',
+    example: 'main_operation',
+    enum: ['main_operation', 'main_supplement', 'renewal', 'replacement', 'related'],
+  })
+  relation_type: string;
+}
+
+/**
+ * 发票付款分摊 DTO
+ */
+export class CreateInvoiceAllocationDto {
+  @ApiProperty({
+    description: '付款方客户ID',
+    example: 1,
+    type: 'integer',
+  })
+  payer_customer_id: number;
+
+  @ApiProperty({
+    description: '分摊金额',
+    example: 5000.0,
+    type: 'number',
+    format: 'decimal',
+  })
+  allocated_amount: number;
+
+  @ApiProperty({
+    description: '分摊比例（百分比，0-100；例如 50 表示 50%）',
+    example: 50,
+    type: 'number',
+    format: 'decimal',
+  })
+  allocated_ratio: number;
+}
+
+export class UpdateInvoiceAllocationDto {
+  @ApiPropertyOptional({
+    description: '付款方客户ID',
+    example: 1,
+    type: 'integer',
+  })
+  payer_customer_id?: number;
+
+  @ApiPropertyOptional({
+    description: '分摊金额',
+    example: 5000.0,
+    type: 'number',
+    format: 'decimal',
+  })
+  allocated_amount?: number;
+
+  @ApiPropertyOptional({
+    description: '分摊比例（百分比，0-100；例如 50 表示 50%）',
+    example: 50,
+    type: 'number',
+    format: 'decimal',
+  })
+  allocated_ratio?: number;
 }
 

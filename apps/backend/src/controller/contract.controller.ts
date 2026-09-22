@@ -371,4 +371,99 @@ export class ContractController {
       };
     }
   }
+  /**
+   * 获取合同关联关系列表
+   */
+  @Get('/:id/relations')
+  async getContractRelations(
+    @Param('id') id: number
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套账',
+          code: 400,
+        };
+      }
+
+      const relations = await this.contractService.getContractRelations(id, kitId);
+
+      return {
+        success: true,
+        data: relations,
+        message: '获取合同关联关系成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '获取合同关联关系失败',
+        code: 500,
+      };
+    }
+  }
+
+  /**
+   * 创建合同关联关系
+   */
+  @Post('/:id/relations')
+  async createContractRelation(
+    @Param('id') id: number,
+    @Body() body: { target_contract_id: number; relation_type: string; remarks?: string }
+  ): Promise<ApiResponse> {
+    try {
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套账',
+          code: 400,
+        };
+      }
+
+      if (!body.target_contract_id || !body.relation_type) {
+        return {
+          success: false,
+          message: '请提供目标合同ID和关系类型',
+          code: 400,
+        };
+      }
+
+      const validTypes = ['main_operation', 'main_supplement', 'renewal', 'replacement', 'related'] as const;
+      type RelationType = typeof validTypes[number];
+      
+      if (!validTypes.includes(body.relation_type as RelationType)) {
+        return {
+          success: false,
+          message: `关系类型无效,可选值:${validTypes.join(', ')}`,
+          code: 400,
+        };
+      }
+
+      const relationType = body.relation_type as RelationType;
+      const userId = this.ctx.state?.user?.id || 1;
+
+      const saved = await this.contractService.createContractRelation(
+        id,
+        body.target_contract_id,
+        relationType,
+        kitId,
+        userId,
+        body.remarks
+      );
+
+      return {
+        success: true,
+        data: saved,
+        message: '合同关联关系创建成功',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || '合同关联关系创建失败',
+        code: 400,
+      };
+    }
+  }
 }

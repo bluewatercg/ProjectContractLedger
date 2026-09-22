@@ -50,6 +50,28 @@
             支付信息
           </h3>
           <div class="form-grid">
+            <el-form-item label="本次是谁付款？" class="form-item-full">
+              <el-radio-group v-model="payerType">
+                <el-radio label="contract_customer">合同客户（{{ contractCustomerName || '未选择' }}）</el-radio>
+                <el-radio label="other_company">其他公司代付</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+
+
+            <el-form-item 
+              v-if="payerType === 'other_company'" 
+              label="代付公司" 
+              prop="payer_customer_id" 
+              class="form-item-full"
+            >
+              <CustomerSelect
+                v-model="payerCustomerId"
+                placeholder="请选择代付公司（支持搜索）"
+                @change="handlePayerCustomerChange"
+              />
+            </el-form-item>
+
             <el-form-item label="支付金额" prop="amount">
               <el-input-number
                 v-model="form.amount"
@@ -136,6 +158,11 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const submitting = ref(false)
 const selectedCustomerId = ref<number | null>(null)
+const payerType = ref<'contract_customer' | 'other_company'>('contract_customer')
+const payerCustomerId = ref<number | null>(null)
+const contractCustomerName = ref<string>('')
+
+
 
 // 计算属性
 const isEdit = computed(() => !!route.params.id)
@@ -152,7 +179,7 @@ const form = reactive<CreatePaymentDto>({
 })
 
 // 验证规则
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   invoice_id: [
     { required: true, message: '请选择发票', trigger: 'change' }
   ],
@@ -164,26 +191,43 @@ const rules: FormRules = {
   ],
   payment_method: [
     { required: true, message: '请选择支付方式', trigger: 'change' }
-  ]
-}
+  ],
+  ...(payerType.value === 'other_company' ? {
+    payer_customer_id: [
+      { required: true, message: '请选择代付公司', trigger: 'change' }
+    ]
+  } : {})
+}))
+
 
 // 处理客户选择变化
 const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
   selectedCustomerId.value = customerId
-  // 当客户变化时，重置发票选择
+  contractCustomerName.value = customer?.name || (customerId ? `客户#${customerId}` : '')
   form.invoice_id = 0
-  console.log('Selected customer:', customer)
 }
+
+
 
 // 处理发票选择变化
 const handleInvoiceChange = (invoiceId: number | null, invoice: Invoice | null) => {
   form.invoice_id = invoiceId || 0
-  // 如果选择了发票，自动设置客户
   if (invoice && invoice.contract && invoice.contract.customer) {
     selectedCustomerId.value = invoice.contract.customer.id
+    contractCustomerName.value = invoice.contract.customer.name
   }
-  console.log('Selected invoice:', invoice)
 }
+
+
+
+// 处理代付公司选择变化
+const handlePayerCustomerChange = (customerId: number | null) => {
+  payerCustomerId.value = customerId
+}
+
+
+
+
 
 // 格式化日期为 yyyy-MM-dd 格式
 const formatDate = (date: Date | string | null): string => {
@@ -232,29 +276,47 @@ const fetchPayment = async () => {
 
       // 设置客户信息
       if (paymentData.invoice && paymentData.invoice.contract && paymentData.invoice.contract.customer) {
-        selectedCustomerId.value = paymentData.invoice.contract.customer.id
+        const contractCustomer = paymentData.invoice.contract.customer
+        selectedCustomerId.value = contractCustomer.id
+        contractCustomerName.value = contractCustomer.name
+        
+        // 判断付款方类型
+        if (paymentData.payer_customer_id && paymentData.payer_customer_id !== contractCustomer.id) {
+          // 代付公司
+          payerType.value = 'other_company'
+          payerCustomerId.value = paymentData.payer_customer_id
+        } else {
+          // 合同客户
+          payerType.value = 'contract_customer'
+        }
       }
     }
   } catch (error) {
-    console.error('Failed to fetch payment:', error)
     ElMessage.error('获取支付记录失败')
   } finally {
     loading.value = false
   }
 }
 
+
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
+  if (payerType.value === 'other_company' && !payerCustomerId.value) {
+    ElMessage.warning('请选择代付公司')
+    return
+  }
 
   try {
     await formRef.value.validate()
     submitting.value = true
 
-    // 格式化日期字段
-    const submitData = {
+    const submitData: CreatePaymentDto = {
       ...form,
-      payment_date: formatDate(form.payment_date)
+      payment_date: formatDate(form.payment_date),
+      payer_customer_id: payerType.value === 'other_company'
+        ? payerCustomerId.value!
+        : selectedCustomerId.value || undefined,
     }
 
     let response
@@ -273,7 +335,7 @@ const handleSubmit = async () => {
       router.push('/payments')
     }
   } catch (error) {
-    console.error('Failed to submit form:', error)
+    ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
   } finally {
     submitting.value = false
   }

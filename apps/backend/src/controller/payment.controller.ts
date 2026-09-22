@@ -36,28 +36,41 @@ export class PaymentController {
     @Body() createPaymentDto: CreatePaymentDto
   ): Promise<ApiResponse> {
     try {
-      // 优先使用发票的 kit_id，如果没有则使用当前用户的 kit_id
-      let kitId = this.ctx.state?.kitId;
+      const rawBody = (this.ctx.request.body ?? {}) as Record<string, unknown>;
+      const payerCustomerId =
+        rawBody.payer_customer_id != null
+          ? Number(rawBody.payer_customer_id)
+          : null;
 
-      // 如果提供了 invoice_id，获取发票的 kit_id
-      if (createPaymentDto.invoice_id) {
-        const invoice = await this.paymentService.getInvoiceById(
-          createPaymentDto.invoice_id
-        );
-        if (invoice && invoice.kit_id) {
-          kitId = invoice.kit_id;
-        }
-      }
-
+      const kitId = this.ctx.state?.kitId;
       if (!kitId) {
         return {
           success: false,
-          message: '请选择套装或选择有效的发票',
+          message: '请选择套装',
           code: 400,
         };
       }
 
-      const payment = await this.paymentService.createPayment(createPaymentDto, kitId);
+      // 验证发票属于当前 kit
+      if (createPaymentDto.invoice_id) {
+        const invoice = await this.paymentService.getInvoiceById(
+          createPaymentDto.invoice_id
+        );
+        if (!invoice || invoice.kit_id !== kitId) {
+          return {
+            success: false,
+            message: '发票不属于当前套装',
+            code: 400,
+          };
+        }
+      }
+
+      // DTO 未声明 payer_customer_id，但 service 通过展开透传到 entity，结构兼容
+      const createDto = {
+        ...createPaymentDto,
+        payer_customer_id: payerCustomerId,
+      } as unknown as CreatePaymentDto;
+      const payment = await this.paymentService.createPayment(createDto, kitId);
       return {
         success: true,
         data: payment,
@@ -141,11 +154,42 @@ export class PaymentController {
   ): Promise<ApiResponse> {
     try {
       const kitId = viewAll === 'true' ? undefined : this.ctx.state?.kitId;
-      const payment = await this.paymentService.updatePayment(
-        id,
-        updatePaymentDto,
-        kitId
-      );
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
+      // 若更换发票，验证新发票属于当前 kit
+      if (updatePaymentDto.invoice_id) {
+        const invoice = await this.paymentService.getInvoiceById(
+          updatePaymentDto.invoice_id
+        );
+        if (!invoice || invoice.kit_id !== kitId) {
+          return {
+            success: false,
+            message: '发票不属于当前套装',
+            code: 400,
+          };
+        }
+      }
+
+      const rawBody = (this.ctx.request.body ?? {}) as Record<string, unknown>;
+      const hasPayer = 'payer_customer_id' in rawBody;
+      const payerCustomerId =
+        rawBody.payer_customer_id != null
+          ? Number(rawBody.payer_customer_id)
+          : null;
+
+      const mergedDto = hasPayer
+        ? { ...updatePaymentDto, payer_customer_id: payerCustomerId }
+        : updatePaymentDto;
+
+      // DTO 未声明 payer_customer_id，但 service 通过展开透传到 entity，结构兼容
+      const updateDto = mergedDto as unknown as UpdatePaymentDto;
+      const payment = await this.paymentService.updatePayment(id, updateDto, kitId);
       if (!payment) {
         return {
           success: false,
@@ -206,9 +250,25 @@ export class PaymentController {
     @Param('invoiceId') invoiceId: number
   ): Promise<ApiResponse> {
     try {
-      const payments = await this.paymentService.getPaymentsByInvoiceId(
-        invoiceId
-      );
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
+      const invoice = await this.paymentService.getInvoiceById(invoiceId);
+      if (!invoice || invoice.kit_id !== kitId) {
+        return {
+          success: false,
+          message: '发票不属于当前套装',
+          code: 400,
+        };
+      }
+
+      const payments = await this.paymentService.getPaymentsByInvoiceId(invoiceId);
       return {
         success: true,
         data: payments,

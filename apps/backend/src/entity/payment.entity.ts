@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Invoice } from './invoice.entity';
 import { Kit } from './kit.entity';
+import { Customer } from './customer.entity';
 
 @Entity('payments')
 export class Payment {
@@ -43,6 +44,9 @@ export class Payment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ nullable: true })
+  payer_customer_id: number | null;
+
   @Column({
     type: 'enum',
     enum: ['pending', 'completed', 'failed'],
@@ -63,5 +67,9 @@ export class Payment {
   @ManyToOne(() => Invoice, invoice => invoice.payments)
   @JoinColumn({ name: 'invoice_id' })
   invoice: Invoice;
+
+  @ManyToOne(() => Customer, { nullable: true })
+  @JoinColumn({ name: 'payer_customer_id' })
+  payer_customer: Customer;
 }
 

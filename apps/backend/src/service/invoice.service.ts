@@ -1,9 +1,11 @@
 import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
+import { Customer } from '../entity/customer.entity';
 import { Payment } from '../entity/payment.entity';
+import { InvoicePaymentAllocation } from '../entity/invoice-payment-allocation.entity';
 import {
   CreateInvoiceDto,
   UpdateInvoiceDto,
@@ -20,6 +22,11 @@ export class InvoiceService {
 
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
+
+  @InjectEntityModel(InvoicePaymentAllocation)
+  allocationRepository: Repository<InvoicePaymentAllocation>;
+
+
 
   @InjectDataSource()
   dataSource: DataSource;
@@ -537,5 +544,144 @@ export class InvoiceService {
         `Invoice #${invoiceId} status updated: ${invoice.status} -> ${newStatus} (attachments: ${invoice.attachments.length})`
       );
     }
+  }
+
+  /**
+   * 获取发票的付款承担方分摊
+   */
+  async getInvoiceAllocations(invoiceId: number, kitId: number): Promise<Array<{
+    id: number;
+    invoice_id: number;
+    payer_customer_id: number;
+    payer_customer_name: string | null;
+    allocated_amount: number;
+    allocated_ratio: number;
+    created_at: Date;
+    updated_at: Date;
+  }>> {
+    const allocations = await this.allocationRepository.find({
+      where: { invoice_id: invoiceId, kit_id: kitId },
+      relations: ['payer_customer'],
+      order: { id: 'ASC' },
+    });
+
+    return allocations.map(alloc => ({
+      id: alloc.id,
+      invoice_id: alloc.invoice_id,
+      payer_customer_id: alloc.payer_customer_id,
+      payer_customer_name: alloc.payer_customer?.name || null,
+      allocated_amount: parseFloat(String(alloc.allocated_amount)),
+      allocated_ratio: parseFloat(String(alloc.allocated_ratio)),
+      created_at: alloc.created_at,
+      updated_at: alloc.updated_at,
+    }));
+  }
+
+  /**
+   * 保存发票的付款承担方分摊（全量替换）
+   * 比例契约：百分比 0-100，总和必须等于 100
+   * 金额使用整数分（厘）安全求和，避免浮点误差
+   */
+  async saveInvoiceAllocations(
+    invoiceId: number,
+    allocations: Array<{ payer_customer_id: number; allocated_amount: number; allocated_ratio: number }>,
+    kitId: number
+  ): Promise<Array<{
+    id: number;
+    invoice_id: number;
+    payer_customer_id: number;
+    allocated_amount: number;
+    allocated_ratio: number;
+  }>> {
+    return await this.dataSource.transaction(async manager => {
+      const invoice = await manager.findOne(Invoice, {
+        where: { id: invoiceId, kit_id: kitId },
+      });
+
+      if (!invoice) {
+        throw new Error('发票不存在');
+      }
+
+      if (!allocations || allocations.length === 0) {
+        throw new Error('至少需要一个付款承担方');
+      }
+
+      // 校验：所有付款客户必须属于同一套账
+      const payerIds = allocations.map(a => a.payer_customer_id);
+      const customers = await manager.find(Customer, {
+        where: { id: In(payerIds), kit_id: kitId },
+      });
+
+      if (customers.length !== payerIds.length) {
+        throw new Error('部分付款客户不存在或不属于当前套账');
+      }
+
+      // 校验：每项金额非负、比例在 0-100 之间
+      for (const a of allocations) {
+        if (a.allocated_amount < 0) {
+          throw new Error('分摊金额不能为负数');
+        }
+        if (a.allocated_ratio < 0 || a.allocated_ratio > 100) {
+          throw new Error('分摊比例必须在 0-100 之间');
+        }
+      }
+
+      // 金额使用整数分（×100）安全求和，避免浮点累积误差
+      const totalAmount = parseFloat(String(invoice.total_amount));
+      const sumAmountCents = allocations.reduce(
+        (sum, a) => sum + Math.round(a.allocated_amount * 100),
+        0
+      );
+      const totalAmountCents = Math.round(totalAmount * 100);
+      if (sumAmountCents !== totalAmountCents) {
+        throw new Error(
+          `分摊金额总和(${(sumAmountCents / 100).toFixed(2)})必须等于发票总额(${totalAmount.toFixed(2)})`
+        );
+      }
+
+      // 比例使用整数百分位（×100）安全求和
+      const sumRatioCents = allocations.reduce(
+        (sum, a) => sum + Math.round(a.allocated_ratio * 100),
+        0
+      );
+      if (sumRatioCents !== 10000) {
+        throw new Error(`分摊比例总和(${(sumRatioCents / 100).toFixed(2)}%)必须等于100%`);
+      }
+
+      // 删除旧的分摊记录
+      await manager.delete(InvoicePaymentAllocation, { invoice_id: invoiceId, kit_id: kitId });
+
+      // 创建新的分摊记录
+      const newAllocations = allocations.map(alloc =>
+        manager.create(InvoicePaymentAllocation, {
+          kit_id: kitId,
+          invoice_id: invoiceId,
+          payer_customer_id: alloc.payer_customer_id,
+          allocated_amount: alloc.allocated_amount,
+          allocated_ratio: alloc.allocated_ratio,
+        })
+      );
+
+      const saved = await manager.save(newAllocations);
+
+      return saved.map(alloc => ({
+        id: alloc.id,
+        invoice_id: alloc.invoice_id,
+        payer_customer_id: alloc.payer_customer_id,
+        allocated_amount: parseFloat(String(alloc.allocated_amount)),
+        allocated_ratio: parseFloat(String(alloc.allocated_ratio)),
+      }));
+    });
+  }
+
+  /**
+   * 删除发票的所有付款承担方分摊
+   */
+  async deleteInvoiceAllocations(invoiceId: number, kitId: number): Promise<boolean> {
+    const result = await this.allocationRepository.delete({
+      invoice_id: invoiceId,
+      kit_id: kitId,
+    });
+    return (result.affected || 0) > 0;
   }
 }

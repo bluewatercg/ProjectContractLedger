@@ -132,6 +132,7 @@ export interface Contract {
   notes?: string
   created_at: string
   updated_at: string
+  contract_type?: 'main' | 'maintenance' | 'renewal' | 'supplement' | 'standalone'
   customer?: Customer
   invoices?: Invoice[]
   invoice_plans?: ContractInvoicePlan[]
@@ -197,7 +198,7 @@ export interface CreateContractDto {
   renewal_reminder_days?: string
   terms?: string
   notes?: string
-  previous_contract_id?: number
+  contract_type?: 'main' | 'maintenance' | 'renewal' | 'supplement' | 'standalone'
   business_category_id?: number
 }
 
@@ -260,10 +261,12 @@ export interface Payment {
   payment_date: string
   payment_method: string
   reference_number?: string
+  status?: string
   notes?: string
-  status: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
+  payer_customer_id?: number | null
+  payerCustomer?: Customer
   invoice?: Invoice
 }
 
@@ -273,11 +276,57 @@ export interface CreatePaymentDto {
   payment_date: string
   payment_method: string
   reference_number?: string
-  notes?: string
+  payer_customer_id?: number
 }
 
 export interface UpdatePaymentDto extends Partial<CreatePaymentDto> {
   status?: string
+}
+
+// 合同关系类型
+export type ContractRelationType = 'main_operation' | 'main_supplement' | 'renewal' | 'replacement' | 'related'
+
+export interface ContractRelation {
+  id: number
+  kit_id: number
+  source_contract_id: number
+  target_contract_id: number
+  relation_type: ContractRelationType
+  notes?: string
+  created_at: string
+  updated_at: string
+  sourceContract?: Contract
+  targetContract?: Contract
+}
+
+export interface CreateContractRelationDto {
+  source_contract_id: number
+  target_contract_id: number
+  relation_type: ContractRelationType
+  notes?: string
+}
+
+// 发票付款分摊类型
+export interface InvoicePaymentAllocation {
+  id: number
+  kit_id: number
+  invoice_id: number
+  payer_customer_id: number
+  allocated_amount: number
+  allocated_ratio: number
+  notes?: string
+  created_at: string
+  updated_at: string
+  invoice?: Invoice
+  payerCustomer?: Customer
+}
+
+export interface CreateInvoicePaymentAllocationDto {
+  invoice_id: number
+  payer_customer_id: number
+  allocated_amount: number
+  allocated_ratio: number
+  notes?: string
 }
 
 // 统计相关类型

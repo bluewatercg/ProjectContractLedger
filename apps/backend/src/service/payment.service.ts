@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Payment } from '../entity/payment.entity';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
+import { Customer } from '../entity/customer.entity';
 import {
   CreatePaymentDto,
   UpdatePaymentDto,
@@ -23,6 +24,9 @@ export class PaymentService {
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
 
+  @InjectEntityModel(Customer)
+  customerRepository: Repository<Customer>;
+
   @InjectDataSource()
   dataSource: DataSource;
 
@@ -32,8 +36,33 @@ export class PaymentService {
   /**
    * 格式化支付数据，处理日期字段
    */
-  private formatPaymentResponse(payment: Payment): any {
-    return DateUtil.formatEntityResponse(payment, ['payment_date']);
+  private formatPaymentResponse(payment: any): any {
+    const formatted = DateUtil.formatEntityResponse(payment, ['payment_date']);
+    if (payment.payer_customer) {
+      formatted.payer_customer = payment.payer_customer;
+    }
+    return formatted;
+  }
+
+  /**
+   * 获取发票对应的合同客户ID（用于默认付款方）
+   */
+  private async getContractCustomerId(invoiceId: number): Promise<number | null> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId },
+      relations: ['contract'],
+    });
+    return invoice?.contract?.customer_id ?? null;
+  }
+
+  /**
+   * 校验客户是否属于同一kit
+   */
+  private async validateCustomerInKit(customerId: number, kitId: number): Promise<boolean> {
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId, kit_id: kitId },
+    });
+    return !!customer;
   }
 
   /**
@@ -49,12 +78,27 @@ export class PaymentService {
    * 创建支付记录
    */
   async createPayment(
-    createPaymentDto: CreatePaymentDto,
+    createPaymentDto: CreatePaymentDto & { payer_customer_id?: number },
     kitId: number
   ): Promise<any> {
     return await this.dataSource.transaction(async manager => {
+      // 默认付款方为合同客户
+      let payerCustomerId = createPaymentDto.payer_customer_id ?? null;
+      if (payerCustomerId == null) {
+        payerCustomerId = await this.getContractCustomerId(createPaymentDto.invoice_id);
+      }
+
+      // 同kit校验
+      if (payerCustomerId != null) {
+        const valid = await this.validateCustomerInKit(payerCustomerId, kitId);
+        if (!valid) {
+          throw new Error('付款方客户不属于当前套账');
+        }
+      }
+
       const payment = this.paymentRepository.create({
         ...createPaymentDto,
+        payer_customer_id: payerCustomerId,
         kit_id: kitId,
         payment_date: DateUtil.parseDate(createPaymentDto.payment_date),
       });
@@ -77,8 +121,12 @@ export class PaymentService {
         this.statisticsService.invalidatePaymentCache();
       }
 
-      // 格式化返回数据，处理日期字段
-      return this.formatPaymentResponse(savedPayment);
+      // 重新加载带关系的记录用于返回
+      const fullPayment = await manager.findOne(Payment, {
+        where: { id: savedPayment.id },
+        relations: ['payer_customer'],
+      });
+      return this.formatPaymentResponse(fullPayment || savedPayment);
     });
   }
 
@@ -102,7 +150,8 @@ export class PaymentService {
       .createQueryBuilder('payment')
       .leftJoinAndSelect('payment.invoice', 'invoice')
       .leftJoinAndSelect('invoice.contract', 'contract')
-      .leftJoinAndSelect('contract.customer', 'customer');
+      .leftJoinAndSelect('contract.customer', 'customer')
+      .leftJoinAndSelect('payment.payer_customer', 'payer_customer');
 
     // 按kit_id过滤
     if (kitId) {
@@ -147,7 +196,7 @@ export class PaymentService {
 
     return await this.paymentRepository.findOne({
       where: whereCondition,
-      relations: ['invoice', 'invoice.contract', 'invoice.contract.customer'],
+      relations: ['invoice', 'invoice.contract', 'invoice.contract.customer', 'payer_customer'],
     });
   }
 
@@ -156,7 +205,7 @@ export class PaymentService {
    */
   async updatePayment(
     id: number,
-    updatePaymentDto: UpdatePaymentDto,
+    updatePaymentDto: UpdatePaymentDto & { payer_customer_id?: number },
     kitId?: number
   ): Promise<Payment | null> {
     return await this.dataSource.transaction(async manager => {
@@ -169,6 +218,15 @@ export class PaymentService {
 
       if (!payment) {
         return null;
+      }
+
+      // 同kit校验（如果修改了payer_customer_id）
+      if (updatePaymentDto.payer_customer_id != null && kitId) {
+        const valid = await this.validateCustomerInKit(updatePaymentDto.payer_customer_id, kitId);
+        if (!valid) {
+          throw new Error('付款方客户不属于当前套账');
+        }
+        payment.payer_customer_id = updatePaymentDto.payer_customer_id;
       }
 
       Object.assign(payment, updatePaymentDto);
@@ -189,7 +247,12 @@ export class PaymentService {
         this.statisticsService.invalidatePaymentCache();
       }
 
-      return updatedPayment;
+      // 重新加载带关系的记录用于返回
+      const fullPayment = await manager.findOne(Payment, {
+        where: { id: updatedPayment.id },
+        relations: ['payer_customer'],
+      });
+      return fullPayment || updatedPayment;
     });
   }
 

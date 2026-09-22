@@ -1,8 +1,9 @@
 import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Contract } from '../entity/contract.entity';
 import { Customer } from '../entity/customer.entity';
+import { ContractRelation } from '../entity/contract-relation.entity';
 import {
   CreateContractDto,
   UpdateContractDto,
@@ -19,6 +20,9 @@ export class ContractService {
 
   @InjectEntityModel(Customer)
   customerRepository: Repository<Customer>;
+
+  @InjectEntityModel(ContractRelation)
+  contractRelationRepository: Repository<ContractRelation>;
 
   @Inject()
   statisticsService: any; // 延迟注入避免循环依赖
@@ -615,10 +619,14 @@ export class ContractService {
     });
     const contractTimeline = this.buildContractTimeline(relatedContracts, contract.id);
 
-    // 格式化返回数据，处理日期字段
+    const relations = kitId
+      ? await this.getContractRelations(contract.id, kitId)
+      : [];
+
     return {
       ...this.formatContractResponse(contract),
       contractTimeline,
+      relations,
     };
   }
 
@@ -954,5 +962,120 @@ export class ContractService {
       .execute();
 
     return { updated: result.affected || 0 };
+  }
+
+  async createContractRelation(
+    sourceContractId: number,
+    targetContractId: number,
+    relationType: ContractRelation['relation_type'],
+    kitId: number,
+    createdBy: number,
+    remarks?: string
+  ): Promise<ContractRelation> {
+    if (sourceContractId === targetContractId) {
+      throw new Error('源合同和目标合同不能相同');
+    }
+
+    const [source, target] = await Promise.all([
+      this.contractRepository.findOne({ where: { id: sourceContractId, kit_id: kitId } }),
+      this.contractRepository.findOne({ where: { id: targetContractId, kit_id: kitId } }),
+    ]);
+    if (!source || !target) {
+      throw new Error('合同不存在');
+    }
+
+    const existing = await this.contractRelationRepository.findOne({
+      where: {
+        kit_id: kitId,
+        source_contract_id: sourceContractId,
+        target_contract_id: targetContractId,
+        relation_type: relationType,
+      },
+    });
+    if (existing) {
+      throw new Error('该合同关系已存在');
+    }
+
+    const relation = this.contractRelationRepository.create({
+      kit_id: kitId,
+      source_contract_id: sourceContractId,
+      target_contract_id: targetContractId,
+      relation_type: relationType,
+      remarks: remarks ?? null,
+      created_by: createdBy,
+    });
+
+    const saved = await this.contractRelationRepository.save(relation);
+
+    if (this.statisticsService?.invalidateContractCache) {
+      this.statisticsService.invalidateContractCache();
+    }
+
+    return saved;
+  }
+
+  async getContractRelations(
+    contractId: number,
+    kitId: number
+  ): Promise<Array<ContractRelation & { sourceContract: Contract; targetContract: Contract }>> {
+    return await this.contractRelationRepository.find({
+      where: [
+        { kit_id: kitId, source_contract_id: contractId },
+        { kit_id: kitId, target_contract_id: contractId },
+      ],
+      relations: ['sourceContract', 'targetContract'],
+      order: { created_at: 'ASC' },
+    });
+  }
+
+  async deleteContractRelation(
+    relationId: number,
+    kitId: number
+  ): Promise<boolean> {
+    const result = await this.contractRelationRepository.delete({
+      id: relationId,
+      kit_id: kitId,
+    });
+    if (result.affected && this.statisticsService?.invalidateContractCache) {
+      this.statisticsService.invalidateContractCache();
+    }
+    return result.affected > 0;
+  }
+
+  async getContractGroup(
+    mainContractId: number,
+    kitId: number
+  ): Promise<{ main: Contract; related: Array<{ relation: ContractRelation; contract: Contract }> }> {
+    const main = await this.contractRepository.findOne({
+      where: { id: mainContractId, kit_id: kitId },
+    });
+    if (!main) {
+      throw new Error('主合同不存在');
+    }
+
+    const relations = await this.contractRelationRepository.find({
+      where: {
+        kit_id: kitId,
+        source_contract_id: mainContractId,
+      },
+      order: { created_at: 'ASC' },
+    });
+
+    if (relations.length === 0) {
+      return { main, related: [] };
+    }
+
+    const targetIds = relations.map(r => r.target_contract_id);
+    const targets = await this.contractRepository.find({
+      where: { id: In(targetIds), kit_id: kitId },
+    });
+    const targetMap = new Map(targets.map(c => [c.id, c]));
+
+    return {
+      main,
+      related: relations
+        .filter(r => targetMap.has(r.target_contract_id))
+        .map(r => ({ relation: r, contract: targetMap.get(r.target_contract_id) })),
+    };
   }
 }

@@ -1,190 +1,316 @@
 <template>
   <div class="page-container">
     <div class="contract-form-container animate-fade-in">
-      <!-- 表单头部 -->
       <div class="form-header">
         <h2 class="form-title">{{ isEdit ? '编辑合同' : '新建合同' }}</h2>
         <p class="form-description">
-          {{ isEdit ? '修改合同信息，确保所有必填项准确无误' : '创建新的合同记录，填写完整的合同信息' }}
+          {{ isEdit ? '修改合同信息，确保所有必填项准确无误' : '按向导分三步完成合同录入' }}
         </p>
       </div>
+
+      <!-- 三步向导（仅新建模式） -->
+      <el-steps
+        v-if="!isEdit"
+        :active="step"
+        finish-status="success"
+        align-center
+        class="wizard-steps"
+      >
+        <el-step title="合同用途" description="选择本合同的业务用途" />
+        <el-step title="填写信息" description="按用途录入合同要素" />
+        <el-step title="确认提交" description="核对无误后保存" />
+      </el-steps>
 
       <el-form
         ref="formRef"
         :model="form"
         :rules="rules"
-        label-width="120px"
+        label-width="140px"
         v-loading="loading"
       >
-        <!-- 基本信息 -->
-        <div class="form-section">
+        <!-- Step 1: 合同用途 -->
+        <div v-if="!isEdit && step === 0" class="form-section">
           <h3 class="section-title">
             <el-icon><Document /></el-icon>
-            基本信息
+            合同用途
           </h3>
-          <div class="form-grid">
-            <el-form-item label="客户" prop="customer_id" class="form-item-full">
-              <CustomerSelect
-                v-model="form.customer_id"
-                placeholder="请选择客户（支持搜索）"
-                @change="handleCustomerChange"
-              />
-            </el-form-item>
-
-            <el-form-item label="业务分类" prop="business_category_id" class="form-item-full">
-              <BusinessCategorySelect
-                v-model="form.business_category_id"
-                placeholder="请选择业务分类（可选）"
-              />
-            </el-form-item>
-
-            <el-form-item label="合同标题" prop="title" class="form-item-full">
-              <el-input v-model="form.title" placeholder="请输入合同标题" />
-            </el-form-item>
-
-            <el-form-item label="合同描述" prop="description" class="form-item-full">
-              <el-input
-                v-model="form.description"
-                type="textarea"
-                :rows="4"
-                placeholder="请输入合同描述"
-              />
-            </el-form-item>
+          <el-radio-group v-model="form.contract_type" class="purpose-group">
+            <el-radio-button label="main">
+              主合同
+              <div class="purpose-desc">与客户的主体合作合同（如项目开发、整体服务）</div>
+            </el-radio-button>
+            <el-radio-button label="maintenance">
+              运维合同
+              <div class="purpose-desc">依附于主合同的运维/服务合同</div>
+            </el-radio-button>
+            <el-radio-button label="supplement">
+              补充协议
+              <div class="purpose-desc">对主合同条款的补充或变更</div>
+            </el-radio-button>
+            <el-radio-button label="renewal">
+              续签合同
+              <div class="purpose-desc">对同一客户同一业务的到期续签，需选择被续签的旧合同</div>
+            </el-radio-button>
+            <el-radio-button label="standalone">
+              独立合同
+              <div class="purpose-desc">不依赖其他合同的独立项目</div>
+            </el-radio-button>
+          </el-radio-group>
+          <div class="step-actions">
+            <el-button @click="goBack">取消</el-button>
+            <el-button type="primary" @click="nextStep">下一步</el-button>
           </div>
         </div>
 
-        <!-- 金额与日期 -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <el-icon><Money /></el-icon>
-            金额与日期
-          </h3>
-          <div class="form-grid">
-            <el-form-item label="合同金额" prop="total_amount">
-              <el-input-number
-                v-model="form.total_amount"
-                :min="0"
-                :precision="2"
-                style="width: 100%"
-                placeholder="请输入合同金额"
-              >
-                <template #prefix>
-                  <span class="currency-symbol">¥</span>
-                </template>
-              </el-input-number>
-            </el-form-item>
-
-            <el-form-item label="开始日期" prop="start_date">
-              <el-date-picker
-                v-model="form.start_date"
-                type="date"
-                placeholder="请选择开始日期"
-                style="width: 100%"
-              />
-            </el-form-item>
-
-            <el-form-item label="结束日期" prop="end_date">
-              <el-date-picker
-                v-model="form.end_date"
-                type="date"
-                placeholder="请选择结束日期"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </div>
-        </div>
-
-        <!-- 续签配置 -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <el-icon><Refresh /></el-icon>
-            续签配置
-          </h3>
-          <div class="form-grid">
-            <el-form-item label="是否续签" prop="is_renewable" class="form-item-full">
-              <el-radio-group v-model="form.is_renewable">
-                <el-radio :label="false">否，一次性合同（如开发项目、咨询服务等）</el-radio>
-                <el-radio :label="true">是，需要续签（如运维服务、年度支持等）</el-radio>
-              </el-radio-group>
-            </el-form-item>
-
-            <el-form-item
-              v-if="form.is_renewable"
-              label="续签提醒"
-              prop="renewal_reminder_days"
-              class="form-item-full"
-            >
-              <el-select
-                v-model="form.renewal_reminder_days"
-                placeholder="请选择提醒时间"
-                style="width: 100%"
-              >
-                <el-option label="提前5天提醒（紧急项目）" value="5" />
-                <el-option label="提前30天提醒（常规服务）" value="30" />
-                <el-option label="提前60天提醒（重要客户）" value="60" />
-              </el-select>
-              <div class="form-tip">
-                <el-icon><InfoFilled /></el-icon>
-                系统将在合同到期前按选定天数发送续签提醒
-              </div>
-            </el-form-item>
-
-            <el-form-item label="关联旧合同" class="form-item-full">
-              <el-select
-                v-model="previousContractId"
-                filterable
-                clearable
-                placeholder="可选：关联已到期或已完成的旧合同"
-                style="width: 100%"
-                :loading="oldContractsLoading"
-              >
-                <el-option
-                  v-for="c in oldContracts"
-                  :key="c.id"
-                  :label="`${c.contract_number} - ${c.title}`"
-                  :value="c.id"
+        <!-- Edit 模式或 Step 2: 填写信息 -->
+        <template v-if="isEdit || step === 1">
+          <div class="form-section">
+            <h3 class="section-title">
+              <el-icon><Document /></el-icon>
+              基本信息
+            </h3>
+            <div class="form-grid">
+              <el-form-item label="客户" prop="customer_id" class="form-item-full">
+                <CustomerSelect
+                  v-model="form.customer_id"
+                  placeholder="请选择客户（支持搜索）"
+                  @change="handleCustomerChange"
                 />
-              </el-select>
-              <div class="form-tip">
-                <el-icon><InfoFilled /></el-icon>
-                关联旧合同后可追溯合同历史，支持选择本公司未被关联的其他合同
-              </div>
-            </el-form-item>
-          </div>
-        </div>
+              </el-form-item>
 
-        <!-- 合同条款与备注 -->
-        <div class="form-section">
+              <el-form-item label="业务分类" prop="business_category_id" class="form-item-full">
+                <BusinessCategorySelect
+                  v-model="form.business_category_id"
+                  placeholder="请选择业务分类（可选）"
+                />
+              </el-form-item>
+
+              <el-form-item label="合同标题" prop="title" class="form-item-full">
+                <el-input v-model="form.title" placeholder="请输入合同标题" />
+              </el-form-item>
+
+              <el-form-item label="合同描述" prop="description" class="form-item-full">
+                <el-input
+                  v-model="form.description"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="请输入合同描述"
+                />
+              </el-form-item>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">
+              <el-icon><Money /></el-icon>
+              金额与日期
+            </h3>
+            <div class="form-grid">
+              <el-form-item label="合同金额" prop="total_amount">
+                <el-input-number
+                  v-model="form.total_amount"
+                  :min="0"
+                  :precision="2"
+                  style="width: 100%"
+                  placeholder="请输入合同金额"
+                >
+                  <template #prefix>
+                    <span class="currency-symbol">¥</span>
+                  </template>
+                </el-input-number>
+              </el-form-item>
+
+              <el-form-item label="开始日期" prop="start_date">
+                <el-date-picker
+                  v-model="form.start_date"
+                  type="date"
+                  placeholder="请选择开始日期"
+                  style="width: 100%"
+                />
+              </el-form-item>
+
+              <el-form-item label="结束日期" prop="end_date">
+                <el-date-picker
+                  v-model="form.end_date"
+                  type="date"
+                  placeholder="请选择结束日期"
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </div>
+          </div>
+
+          <!-- 续签来源（仅续签类型显示） -->
+          <div
+            v-if="form.contract_type === 'renewal'"
+            class="form-section"
+          >
+            <h3 class="section-title">
+              <el-icon><Link /></el-icon>
+              续签来源
+            </h3>
+            <div class="form-grid">
+              <el-form-item
+                label="被续签的旧合同"
+                prop="previous_contract_id"
+                :rules="[{ required: true, message: '请选择需要续签的旧合同', trigger: 'change' }]"
+                class="form-item-full"
+              >
+                <el-select
+                  v-model="previousContractId"
+                  filterable
+                  clearable
+                  placeholder="请选择同一客户下已到期或已完成的旧合同"
+                  style="width: 100%"
+                  :loading="oldContractsLoading"
+                >
+                  <el-option
+                    v-for="c in oldContracts"
+                    :key="c.id"
+                    :label="`${c.contract_number} - ${c.title}`"
+                    :value="c.id"
+                  />
+                </el-select>
+                <div class="form-tip">
+                  <el-icon><InfoFilled /></el-icon>
+                  续签合同将继承旧合同的客户与业务脉络，便于追溯合同历史
+                </div>
+              </el-form-item>
+            </div>
+          </div>
+
+          <!-- 续签配置（仅续签类型或主合同显示） -->
+          <div
+            v-if="form.contract_type === 'renewal' || form.contract_type === 'main' || form.contract_type === 'standalone' || isEdit"
+            class="form-section"
+          >
+            <h3 class="section-title">
+              <el-icon><Refresh /></el-icon>
+              续签配置
+            </h3>
+            <div class="form-grid">
+              <el-form-item label="是否续签" prop="is_renewable" class="form-item-full">
+                <el-radio-group v-model="form.is_renewable">
+                  <el-radio :label="false">否，一次性合同（如开发项目、咨询服务等）</el-radio>
+                  <el-radio :label="true">是，需要续签（如运维服务、年度支持等）</el-radio>
+                </el-radio-group>
+              </el-form-item>
+
+              <el-form-item
+                v-if="form.is_renewable"
+                label="续签提醒"
+                prop="renewal_reminder_days"
+                class="form-item-full"
+              >
+                <el-select
+                  v-model="form.renewal_reminder_days"
+                  placeholder="请选择提醒时间"
+                  style="width: 100%"
+                >
+                  <el-option label="提前5天提醒（紧急项目）" value="5" />
+                  <el-option label="提前30天提醒（常规服务）" value="30" />
+                  <el-option label="提前60天提醒（重要客户）" value="60" />
+                </el-select>
+                <div class="form-tip">
+                  <el-icon><InfoFilled /></el-icon>
+                  系统将在合同到期前按选定天数发送续签提醒
+                </div>
+              </el-form-item>
+
+              <!-- 编辑模式下保留旧合同关联入口 -->
+              <el-form-item v-if="isEdit" label="关联旧合同" class="form-item-full">
+                <el-select
+                  v-model="previousContractId"
+                  filterable
+                  clearable
+                  placeholder="可选：关联已到期或已完成的旧合同"
+                  style="width: 100%"
+                  :loading="oldContractsLoading"
+                >
+                  <el-option
+                    v-for="c in oldContracts"
+                    :key="c.id"
+                    :label="`${c.contract_number} - ${c.title}`"
+                    :value="c.id"
+                  />
+                </el-select>
+                <div class="form-tip">
+                  <el-icon><InfoFilled /></el-icon>
+                  关联旧合同后可追溯合同历史，支持选择本公司未被关联的其他合同
+                </div>
+              </el-form-item>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">
+              <el-icon><Memo /></el-icon>
+              合同条款与备注
+            </h3>
+            <div class="form-grid">
+              <el-form-item label="合同条款" prop="terms" class="form-item-full">
+                <el-input
+                  v-model="form.terms"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="请输入合同条款"
+                />
+              </el-form-item>
+
+              <el-form-item label="备注" prop="notes" class="form-item-full">
+                <el-input
+                  v-model="form.notes"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="请输入备注信息"
+                />
+              </el-form-item>
+            </div>
+          </div>
+
+          <div class="step-actions">
+            <el-button @click="goBack">取消</el-button>
+            <el-button v-if="!isEdit" @click="prevStep">上一步</el-button>
+            <el-button v-if="!isEdit" type="primary" @click="nextStep">下一步</el-button>
+            <el-button v-else type="primary" :loading="submitting" @click="handleSubmit">
+              {{ submitting ? '保存中...' : '保存' }}
+            </el-button>
+          </div>
+        </template>
+
+        <!-- Step 3: 确认提交 -->
+        <div v-if="!isEdit && step === 2" class="form-section">
           <h3 class="section-title">
             <el-icon><Memo /></el-icon>
-            合同条款与备注
+            确认合同信息
           </h3>
-          <div class="form-grid">
-            <el-form-item label="合同条款" prop="terms" class="form-item-full">
-              <el-input
-                v-model="form.terms"
-                type="textarea"
-                :rows="6"
-                placeholder="请输入合同条款"
-              />
-            </el-form-item>
-
-            <el-form-item label="备注" prop="notes" class="form-item-full">
-              <el-input
-                v-model="form.notes"
-                type="textarea"
-                :rows="4"
-                placeholder="请输入备注信息"
-              />
-            </el-form-item>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="合同用途">{{ contractTypeText }}</el-descriptions-item>
+            <el-descriptions-item label="客户">{{ customerDisplayName }}</el-descriptions-item>
+            <el-descriptions-item label="业务分类">{{ businessCategoryName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="合同标题">{{ form.title || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="合同金额">¥{{ formatCurrency(safeNumber(form.total_amount)) }}</el-descriptions-item>
+            <el-descriptions-item label="合同期限">
+              {{ formatDisplayDate(form.start_date as any) }} ~ {{ formatDisplayDate(form.end_date as any) }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="form.contract_type === 'renewal'" label="被续签旧合同">
+              {{ renewalOldContractTitle }}
+            </el-descriptions-item>
+            <el-descriptions-item label="是否续签">{{ form.is_renewable ? '是' : '否' }}</el-descriptions-item>
+            <el-descriptions-item v-if="form.is_renewable" label="续签提醒">
+              提前 {{ form.renewal_reminder_days || '30' }} 天
+            </el-descriptions-item>
+            <el-descriptions-item v-if="form.description" label="合同描述" :span="2">{{ form.description }}</el-descriptions-item>
+            <el-descriptions-item v-if="form.terms" label="合同条款" :span="2">{{ form.terms }}</el-descriptions-item>
+            <el-descriptions-item v-if="form.notes" label="备注" :span="2">{{ form.notes }}</el-descriptions-item>
+          </el-descriptions>
+          <div class="step-actions">
+            <el-button @click="goBack">取消</el-button>
+            <el-button @click="prevStep">上一步</el-button>
+            <el-button type="primary" :loading="submitting" @click="handleSubmit">
+              {{ submitting ? '保存中...' : '确认并保存' }}
+            </el-button>
           </div>
-        </div>
-
-        <div class="form-actions">
-          <el-button @click="goBack">取消</el-button>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit">
-            {{ submitting ? '保存中...' : '保存' }}
-          </el-button>
         </div>
       </el-form>
 
@@ -194,7 +320,6 @@
           <h3 class="text-lg font-semibold">关联发票及收款情况</h3>
         </el-divider>
 
-        <!-- 汇总统计 -->
         <div class="stats-container">
           <div class="stat-card stat-card-blue">
             <div class="stat-label">发票总数</div>
@@ -218,7 +343,6 @@
           </div>
         </div>
 
-        <!-- 发票列表 -->
         <el-table :data="contractData?.invoices || []" border style="width: 100%">
           <el-table-column prop="invoice_number" label="发票编号" width="150">
             <template #default="scope">
@@ -282,7 +406,6 @@
         </el-table>
       </div>
 
-      <!-- 无发票时的提示 -->
       <div v-else-if="isEdit && contractData && (!contractData.invoices || contractData.invoices.length === 0)" class="mt-8">
         <el-divider content-position="left">
           <h3 class="text-lg font-semibold">关联发票及收款情况</h3>
@@ -292,13 +415,11 @@
         </div>
       </div>
 
-      <!-- 合同附件（仅编辑模式显示） -->
       <div v-if="isEdit && contractData" class="mt-8">
         <el-divider content-position="left">
           <h3 class="text-lg font-semibold">合同附件</h3>
         </el-divider>
 
-        <!-- 文件上传 -->
         <div class="mb-4">
           <FileUpload
             :upload-url="`/contracts/${contractId}/attachments`"
@@ -307,7 +428,6 @@
           />
         </div>
 
-        <!-- 附件列表 -->
         <AttachmentList
           :attachments="attachments"
           :loading="attachmentsLoading"
@@ -321,14 +441,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { InfoFilled, Document, Money, Refresh, Memo } from '@element-plus/icons-vue'
+import { InfoFilled, Document, Money, Refresh, Memo, Link } from '@element-plus/icons-vue'
 import { contractApi } from '@/api'
 import { attachmentApi } from '@/api/attachment'
 import { useKitStore } from '@/stores/kit'
-import type { CreateContractDto, UpdateContractDto, Customer } from '@/api/types'
+import type { CreateContractDto, UpdateContractDto, Customer, Contract } from '@/api/types'
 import type { Attachment } from '@/api/attachment'
 import CustomerSelect from '@/components/CustomerSelect.vue'
 import FileUpload from '@/components/FileUpload.vue'
@@ -338,35 +458,31 @@ const router = useRouter()
 const route = useRoute()
 const kitStore = useKitStore()
 
-// 表单引用
 const formRef = ref<FormInstance>()
 
-// 状态
 const loading = ref(false)
 const submitting = ref(false)
 const contractData = ref<any>(null)
 const attachments = ref<Attachment[]>([])
 const attachmentsLoading = ref(false)
 
-// 关联旧合同相关状态
+const step = ref(0)
+
 const previousContractId = ref<number | null>(null)
 const oldContracts = ref<Array<{ id: number; contract_number: string; title: string }>>([])
 const oldContractsLoading = ref(false)
 
-// 计算属性
+const selectedCustomer = ref<Customer | null>(null)
+
 const isEdit = computed(() => !!route.params.id)
 const contractId = computed(() => Number(route.params.id))
 
-// 安全转换为数字
 const safeNumber = (value: any): number => {
-  if (value === null || value === undefined || value === '') {
-    return 0
-  }
+  if (value === null || value === undefined || value === '') return 0
   const num = Number(value)
   return isNaN(num) ? 0 : num
 }
 
-// 发票统计信息
 const invoiceStats = computed(() => {
   if (!contractData.value?.invoices || !Array.isArray(contractData.value.invoices)) {
     return {
@@ -377,27 +493,16 @@ const invoiceStats = computed(() => {
       uninvoicedAmount: contractData.value ? safeNumber(contractData.value.total_amount) : 0
     }
   }
-
   const invoices = contractData.value.invoices
   const contractAmount = safeNumber(contractData.value.total_amount)
   const totalCount = invoices.length
   const totalAmount = invoices.reduce((sum: number, invoice: any) => sum + safeNumber(invoice.total_amount), 0)
-  const paidAmount = invoices.reduce((sum: number, invoice: any) => {
-    return sum + getInvoicePaidAmount(invoice)
-  }, 0)
+  const paidAmount = invoices.reduce((sum: number, invoice: any) => sum + getInvoicePaidAmount(invoice), 0)
   const unpaidAmount = totalAmount - paidAmount
   const uninvoicedAmount = contractAmount - totalAmount
-
-  return {
-    totalCount,
-    totalAmount,
-    paidAmount,
-    unpaidAmount,
-    uninvoicedAmount
-  }
+  return { totalCount, totalAmount, paidAmount, unpaidAmount, uninvoicedAmount }
 })
 
-// 表单数据
 const form = reactive<CreateContractDto>({
   customer_id: 0,
   title: '',
@@ -410,154 +515,128 @@ const form = reactive<CreateContractDto>({
   terms: '',
   notes: '',
   business_category_id: undefined,
+  contract_type: 'main',
 })
 
-// 验证规则
 const rules: FormRules = {
-  customer_id: [
-    { required: true, message: '请选择客户', trigger: 'change' }
-  ],
-  title: [
-    { required: true, message: '请输入合同标题', trigger: 'blur' }
-  ],
-  total_amount: [
-    { required: true, message: '请输入合同金额', trigger: 'blur' }
-  ],
-  start_date: [
-    { required: true, message: '请选择开始日期', trigger: 'change' }
-  ],
-  end_date: [
-    { required: true, message: '请选择结束日期', trigger: 'change' }
-  ]
+  customer_id: [{ required: true, message: '请选择客户', trigger: 'change' }],
+  title: [{ required: true, message: '请输入合同标题', trigger: 'blur' }],
+  total_amount: [{ required: true, message: '请输入合同金额', trigger: 'blur' }],
+  start_date: [{ required: true, message: '请选择开始日期', trigger: 'change' }],
+  end_date: [{ required: true, message: '请选择结束日期', trigger: 'change' }],
 }
 
-// 处理客户选择变化
-const handleCustomerChange = (customerId: number | null, customer: Customer | null) => {
-  form.customer_id = customerId || 0
+const contractTypeText = computed(() => {
+  const map: Record<string, string> = {
+    main: '主合同',
+    maintenance: '运维合同',
+    supplement: '补充协议',
+    renewal: '续签合同',
+    standalone: '独立合同',
+  }
+  return map[form.contract_type || 'main'] || '主合同'
+})
+
+const renewalOldContractTitle = computed(() => {
+  const found = oldContracts.value.find(c => c.id === previousContractId.value)
+  return found ? `${found.contract_number} - ${found.title}` : '-'
+})
+
+const customerDisplayName = computed(() => {
+  if (selectedCustomer.value?.name) return selectedCustomer.value.name
+  if (contractData.value?.customer?.name) return contractData.value.customer.name
+  return form.customer_id ? `客户 #${form.customer_id}` : '-'
+})
+
+const businessCategoryName = computed(() => {
+  return contractData.value?.businessCategory?.name || (form.business_category_id ? `分类 #${form.business_category_id}` : '')
+})
+
+const handleCustomerChange = (_customerId: number | null, customer: Customer | null) => {
+  form.customer_id = _customerId || 0
+  selectedCustomer.value = customer
   previousContractId.value = null
   oldContracts.value = []
-  if (customerId) {
+  if (_customerId) {
     fetchOldContracts()
   }
-  console.log('Selected customer:', customer)
 }
 
-// 格式化货币
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN').format(amount)
-}
+const formatCurrency = (amount: number) => new Intl.NumberFormat('zh-CN').format(amount)
 
-// 格式化显示日期
 const formatDisplayDate = (dateString: string) => {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString('zh-CN')
 }
 
-// 获取发票状态类型
 const getInvoiceStatusType = (status: string) => {
-  const statusMap = {
-    draft: 'info',
-    sent: 'warning',
-    paid: 'success',
-    overdue: 'danger',
-    cancelled: 'primary'
-  }
-  return statusMap[status] || 'info'
+  const map: Record<string, string> = { draft: 'info', sent: 'warning', paid: 'success', overdue: 'danger', cancelled: 'primary' }
+  return map[status] || 'info'
 }
 
-// 获取发票状态文本
 const getInvoiceStatusText = (status: string) => {
-  const statusMap = {
-    draft: '草稿',
-    sent: '已开票',
-    paid: '已付款',
-    overdue: '逾期',
-    cancelled: '已取消'
-  }
-  return statusMap[status] || status
+  const map: Record<string, string> = { draft: '草稿', sent: '已开票', paid: '已付款', overdue: '逾期', cancelled: '已取消' }
+  return map[status] || status
 }
 
-// 获取收款状态类型
 const getPaymentStatusType = (status: string) => {
-  const statusMap = {
-    pending: 'warning',
-    completed: 'success',
-    failed: 'danger'
-  }
-  return statusMap[status] || 'info'
+  const map: Record<string, string> = { pending: 'warning', completed: 'success', failed: 'danger' }
+  return map[status] || 'info'
 }
 
-// 获取收款状态文本
 const getPaymentStatusText = (status: string) => {
-  const statusMap = {
-    pending: '待处理',
-    completed: '已完成',
-    failed: '失败'
-  }
-  return statusMap[status] || status
+  const map: Record<string, string> = { pending: '待处理', completed: '已完成', failed: '失败' }
+  return map[status] || status
 }
 
-// 获取支付方式文本
 const getPaymentMethodText = (method: string) => {
-  const methodMap = {
-    cash: '现金',
-    bank_transfer: '银行转账',
-    check: '支票',
-    credit_card: '信用卡',
-    other: '其他'
-  }
-  return methodMap[method] || method
+  const map: Record<string, string> = { cash: '现金', bank_transfer: '银行转账', check: '支票', credit_card: '信用卡', other: '其他' }
+  return map[method] || method
 }
 
-// 计算发票已收款金额
 const getInvoicePaidAmount = (invoice: any) => {
-  if (!invoice.payments || !Array.isArray(invoice.payments) || invoice.payments.length === 0) {
-    return 0
-  }
+  if (!invoice.payments || !Array.isArray(invoice.payments) || invoice.payments.length === 0) return 0
   return invoice.payments
-    .filter((payment: any) => payment.status === 'completed')
-    .reduce((sum: number, payment: any) => sum + safeNumber(payment.amount), 0)
+    .filter((p: any) => p.status === 'completed')
+    .reduce((sum: number, p: any) => sum + safeNumber(p.amount), 0)
 }
 
-// 解析日期字符串为 Date 对象，处理时区问题
 const parseDate = (dateStr: string): Date | null => {
   if (!dateStr) return null
-
-  // 如果是 YYYY-MM-DD HH:mm:ss 格式，直接创建 Date 对象
-  // 如果是 ISO 格式，需要转换为本地时间
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return null
-
   return date
 }
 
-// 获取合同详情（编辑模式）
+const formatDate = (date: Date | string | null): string => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const fetchContract = async () => {
   if (!isEdit.value) return
-
   try {
     loading.value = true
     const response = await contractApi.getContractById(contractId.value, {
       viewAll: kitStore.viewAllKits,
     })
-
     if (response.success && response.data) {
       const contract = response.data
-
-      // 保存完整的合同数据用于显示发票信息
       contractData.value = contract
-
-      // 处理日期字段，确保正确显示
+      selectedCustomer.value = contract.customer || null
       Object.assign(form, {
         ...contract,
         start_date: parseDate(contract.start_date),
         end_date: parseDate(contract.end_date),
-        // 确保续签字段正确加载
         is_renewable: contract.is_renewable || false,
-        renewal_reminder_days: contract.renewal_reminder_days || '30'
+        renewal_reminder_days: contract.renewal_reminder_days || '30',
+        contract_type: contract.contract_type || 'main',
       })
-
-      // 编辑模式下加载关联旧合同
       if (contract.previous_contract_id) {
         previousContractId.value = contract.previous_contract_id
       }
@@ -570,13 +649,11 @@ const fetchContract = async () => {
   }
 }
 
-// 加载可关联的旧合同列表
 const fetchOldContracts = async () => {
   if (!form.customer_id) {
     oldContracts.value = []
     return
   }
-
   try {
     oldContractsLoading.value = true
     const response = await contractApi.getPreviousContractOptions({
@@ -585,12 +662,11 @@ const fetchOldContracts = async () => {
       viewAll: kitStore.viewAllKits,
     })
     if (response.success && response.data) {
-      oldContracts.value = response.data
-        .map((c: any) => ({
-          id: c.id,
-          contract_number: c.contract_number,
-          title: c.title,
-        }))
+      oldContracts.value = (response.data as Contract[]).map((c) => ({
+        id: c.id,
+        contract_number: c.contract_number,
+        title: c.title,
+      }))
     }
   } catch (error) {
     console.error('Failed to fetch old contracts:', error)
@@ -599,35 +675,62 @@ const fetchOldContracts = async () => {
   }
 }
 
-// 格式化日期为 yyyy-MM-dd 格式
-const formatDate = (date: Date | string | null): string => {
-  if (!date) return ''
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return ''
+watch(
+  () => form.contract_type,
+  (type) => {
+    if (type !== 'renewal') {
+      if (!isEdit.value) previousContractId.value = null
+    }
+  }
+)
 
-  // 获取本地时间的年月日，格式化为 yyyy-MM-dd
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-// 提交表单
-const handleSubmit = async () => {
-  if (!formRef.value) return
-
+const validateStep = async (s: number): Promise<boolean> => {
+  if (!formRef.value) return true
+  if (s === 0) {
+    if (!form.contract_type) {
+      ElMessage.warning('请选择合同用途')
+      return false
+    }
+    return true
+  }
   try {
     await formRef.value.validate()
-    submitting.value = true
+    return true
+  } catch {
+    return false
+  }
+}
 
-    // 格式化日期字段
+const nextStep = async () => {
+  const ok = await validateStep(step.value)
+  if (!ok) return
+  step.value++
+}
+
+const prevStep = () => {
+  if (step.value > 0) step.value--
+}
+
+const handleSubmit = async () => {
+  if (!isEdit.value && step.value < 2) {
+    const ok = await validateStep(step.value)
+    if (!ok) return
+    step.value++
+    return
+  }
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+  try {
+    submitting.value = true
     const submitData: any = {
       ...form,
       start_date: formatDate(form.start_date),
-      end_date: formatDate(form.end_date)
+      end_date: formatDate(form.end_date),
     }
-
     submitData.previous_contract_id = previousContractId.value || null
 
     let response
@@ -644,35 +747,26 @@ const handleSubmit = async () => {
     if (response.success) {
       ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       router.push('/contracts')
+    } else {
+      ElMessage.error(response.message || '保存失败，输入已保留，请修改后重试')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to submit form:', error)
+    ElMessage.error(error?.message || '保存失败，输入已保留，请修改后重试')
   } finally {
     submitting.value = false
   }
 }
 
-// 跳转到发票查看页面
-const goToViewInvoice = (invoiceId: number) => {
-  router.push(`/invoices/${invoiceId}`)
-}
+const goToViewInvoice = (invoiceId: number) => router.push(`/invoices/${invoiceId}`)
+const goBack = () => router.go(-1)
 
-// 返回上一页
-const goBack = () => {
-  router.go(-1)
-}
-
-// 获取附件列表
 const fetchAttachments = async () => {
   if (!isEdit.value) return
-
   try {
     attachmentsLoading.value = true
     const response = await attachmentApi.getContractAttachments(contractId.value)
-
-    if (response.success && response.data) {
-      attachments.value = response.data
-    }
+    if (response.success && response.data) attachments.value = response.data
   } catch (error) {
     console.error('Failed to fetch attachments:', error)
     ElMessage.error('获取附件列表失败')
@@ -681,30 +775,21 @@ const fetchAttachments = async () => {
   }
 }
 
-// 处理附件上传成功
 const handleAttachmentUpload = (attachment: Attachment) => {
   attachments.value.unshift(attachment)
   ElMessage.success('附件上传成功')
 }
 
-// 处理上传错误
 const handleUploadError = (error: any) => {
   console.error('Upload error:', error)
   ElMessage.error('附件上传失败')
 }
 
-// 删除附件
 const handleDeleteAttachment = async (attachmentId: number) => {
   try {
-    const response = await attachmentApi.deleteContractAttachment(
-      contractId.value,
-      attachmentId
-    )
-
+    const response = await attachmentApi.deleteContractAttachment(contractId.value, attachmentId)
     if (response.success) {
-      attachments.value = attachments.value.filter(
-        item => item.attachment_id !== attachmentId
-      )
+      attachments.value = attachments.value.filter(item => item.attachment_id !== attachmentId)
       ElMessage.success('附件删除成功')
     } else {
       ElMessage.error(response.message || '删除失败')
@@ -715,9 +800,7 @@ const handleDeleteAttachment = async (attachmentId: number) => {
   }
 }
 
-// 组件挂载时获取数据
 onMounted(async () => {
-  // 如果是编辑模式，获取合同详情
   if (isEdit.value) {
     await fetchContract()
     await fetchOldContracts()
@@ -731,310 +814,166 @@ onMounted(async () => {
 <style scoped>
 /* 表单容器 */
 .contract-form-container {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.06);
+  padding: 28px 32px 36px;
 }
 
-/* 表单头部 */
 .form-header {
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #f5f7fa;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #ebeef5;
+  padding-bottom: 16px;
 }
 
 .form-title {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 600;
   color: #303133;
-  margin-bottom: 8px;
+  margin: 0 0 8px 0;
 }
 
 .form-description {
-  font-size: 0.875rem;
+  font-size: 14px;
   color: #909399;
-  line-height: 1.5;
+  margin: 0;
 }
 
-/* 表单分组 */
+.wizard-steps {
+  margin-bottom: 28px;
+}
+
 .form-section {
-  background: #f5f7fa;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  transition: all 0.3s ease;
-}
-
-.form-section:hover {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  margin-bottom: 28px;
+  padding: 20px 24px;
+  background: #fafafa;
+  border-radius: 6px;
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1.125rem;
+  font-size: 16px;
   font-weight: 600;
   color: #303133;
-  margin-bottom: 20px;
+  margin: 0 0 18px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.section-title .el-icon {
-  font-size: 20px;
-  color: #409eff;
-}
-
-/* 表单网格布局 */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 24px;
 }
 
 .form-item-full {
   grid-column: 1 / -1;
 }
 
-/* Element Plus 表单项样式增强 */
-:deep(.el-form-item__label) {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 8px;
-  line-height: 1.5;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.1) inset;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 8px 12px;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2) inset;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px #409eff inset;
-  background: white;
-}
-
-:deep(.el-input__inner) {
-  font-size: 0.875rem;
-  color: #303133;
-}
-
-:deep(.el-input__prefix) {
+.form-tip {
+  font-size: 12px;
   color: #909399;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-:deep(.el-textarea__inner) {
-  border-radius: 8px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 0.875rem;
-  padding: 12px;
+.currency-symbol {
+  color: #909399;
+  font-size: 14px;
 }
 
-:deep(.el-textarea__inner:hover) {
-  border-color: rgba(15, 23, 42, 0.2);
+.purpose-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-:deep(.el-textarea__inner:focus) {
-  border-color: #409eff;
-  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
-}
-
-:deep(.el-select) {
+.purpose-group .el-radio-button {
   width: 100%;
 }
 
-:deep(.el-date-editor) {
+.purpose-group :deep(.el-radio-button__inner) {
   width: 100%;
+  text-align: left;
+  border-radius: 6px !important;
+  border: 1px solid #dcdfe6 !important;
+  box-shadow: none !important;
+  padding: 14px 18px;
 }
 
-/* 表单操作按钮 */
+.purpose-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: #ecf5ff;
+  border-color: #409eff !important;
+  color: #409eff;
+}
+
+.purpose-desc {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  font-weight: normal;
+}
+
+.step-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #ebeef5;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding-top: 24px;
   margin-top: 24px;
-  border-top: 2px solid #f5f7fa;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
 }
 
-.form-actions .el-button {
-  min-width: 120px;
-  height: 44px;
-  font-weight: 600;
-  border-radius: 8px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.form-actions .el-button--primary {
-  background: #409eff;
-  border-color: #409eff;
-}
-
-.form-actions .el-button--primary:hover {
-  background: #66b1ff;
-  border-color: #66b1ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-
-/* 货币符号样式 */
-.currency-symbol {
-  font-weight: 600;
-  color: #909399;
-  font-size: 0.875rem;
-}
-
-/* 续签配置样式 */
-.form-tip {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background-color: #f0f9ff;
-  border-left: 3px solid #409eff;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #606266;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.form-tip .el-icon {
-  color: #409eff;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .contract-form-container {
-    padding: 20px;
-    border-radius: 12px;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    flex-direction: column-reverse;
-  }
-
-  .form-actions .el-button {
-    width: 100%;
-  }
-
-  .form-section {
-    padding: 16px;
-  }
-}
-
-/* 加载状态 */
-.form-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-/* 错误提示增强 */
-:deep(.el-form-item__error) {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding-top: 4px;
-}
-
-/* 统计卡片样式 */
 .stats-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .stat-card {
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #e4e7ed;
-  transition: all 0.3s ease;
+  padding: 16px;
+  border-radius: 6px;
+  text-align: center;
+  color: #fff;
 }
 
-.stat-card:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.stat-card-blue {
-  background-color: #ecf5ff;
-  border-color: #b3d8ff;
-}
-
-.stat-card-green {
-  background-color: #f0f9ff;
-  border-color: #95de64;
-}
-
-.stat-card-purple {
-  background-color: #f4f1ff;
-  border-color: #c7b3ff;
-}
-
-.stat-card-orange {
-  background-color: #fff7e6;
-  border-color: #ffd591;
-}
-
-.stat-card-red {
-  background-color: #fff2f0;
-  border-color: #ffb3b3;
-}
+.stat-card-blue { background: #409eff; }
+.stat-card-green { background: #67c23a; }
+.stat-card-purple { background: #9b59b6; }
+.stat-card-orange { background: #e6a23c; }
+.stat-card-red { background: #f56c6c; }
 
 .stat-label {
-  font-size: 14px;
-  color: #606266;
-  margin-bottom: 8px;
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 6px;
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 1.2;
+  font-size: 20px;
+  font-weight: 600;
 }
 
-.stat-card-blue .stat-value {
-  color: #409eff;
-}
-
-.stat-card-green .stat-value {
-  color: #67c23a;
-}
-
-.stat-card-purple .stat-value {
-  color: #722ed1;
-}
-
-.stat-card-orange .stat-value {
-  color: #e6a23c;
-}
-
-.stat-card-red .stat-value {
-  color: #f56c6c;
-}
-
-/* 收款记录样式 */
 .payment-item {
-  margin-bottom: 8px;
-  padding: 12px;
-  background-color: #f5f7fa;
-  border-radius: 6px;
-  border: 1px solid #e4e7ed;
+  padding: 8px 0;
+  border-bottom: 1px dashed #ebeef5;
+}
+
+.payment-item:last-child {
+  border-bottom: none;
 }
 
 .payment-header {
@@ -1045,64 +984,56 @@ onMounted(async () => {
 
 .payment-amount {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .amount-text {
   font-weight: 600;
-  font-size: 16px;
   color: #303133;
 }
 
 .date-text {
   font-size: 12px;
   color: #909399;
-  margin-top: 2px;
 }
 
 .payment-tags {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 6px;
 }
 
 .reference-number {
   font-size: 12px;
   color: #909399;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .payment-summary {
-  font-size: 14px;
+  font-size: 12px;
   color: #606266;
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #e4e7ed;
+  margin-top: 6px;
 }
 
-/* 发票编号链接样式 */
 .invoice-link {
   font-weight: 500;
-  cursor: pointer;
 }
 
-.invoice-link:hover {
-  text-decoration: underline;
-}
-
-/* 动画效果 */
 .animate-fade-in {
   animation: fadeIn 0.3s ease-in;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+
+.mt-8 { margin-top: 32px; }
+.mb-4 { margin-bottom: 16px; }
+.py-8 { padding-top: 32px; padding-bottom: 32px; }
+.text-center { text-align: center; }
+.text-lg { font-size: 18px; }
+.text-sm { font-size: 13px; }
+.font-semibold { font-weight: 600; }
+.text-gray-500 { color: #909399; }
 </style>

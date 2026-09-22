@@ -86,6 +86,14 @@ export class Contract {
   @Column({ type: 'int', nullable: true, comment: '关联的旧合同ID（续签新合同）' })
   previous_contract_id: number | null;
 
+  @Column({
+    type: 'enum',
+    enum: ['main', 'maintenance', 'renewal', 'supplement', 'standalone'],
+    default: 'standalone',
+    comment: '合同类型：main-主合同，maintenance-运维合同，renewal-续签合同，supplement-补充协议，standalone-独立合同',
+  })
+  contract_type: string;
+
   @Column({ type: 'int', nullable: true, comment: '业务分类ID' })
   business_category_id: number | null;
 
@@ -127,6 +135,7 @@ export class Contract {
 
   @OneToMany(() => Contract, c => c.previousContract)
   successorContracts: Contract[];
+
 
   @ManyToOne(() => BusinessCategory, { nullable: true })
   @JoinColumn({ name: 'business_category_id' })
