@@ -163,7 +163,11 @@ export class CustomerService {
 
     const customer = await this.customerRepository.findOne({
       where: whereCondition,
-      relations: ['contracts', 'contracts.invoices', 'contracts.invoices.payments'],
+      relations: [
+        'contracts',
+        'contracts.invoices',
+        'contracts.invoices.payments',
+      ],
     });
 
     if (!customer) return null;
@@ -202,7 +206,9 @@ export class CustomerService {
       whereCondition.kit_id = kitId;
     }
 
-    const customer = await this.customerRepository.findOne({ where: whereCondition });
+    const customer = await this.customerRepository.findOne({
+      where: whereCondition,
+    });
 
     if (!customer) {
       return null;
@@ -249,7 +255,10 @@ export class CustomerService {
   /**
    * 根据状态获取客户列表
    */
-  async getCustomersByStatus(status: string, kitId?: number): Promise<Customer[]> {
+  async getCustomersByStatus(
+    status: string,
+    kitId?: number
+  ): Promise<Customer[]> {
     const whereCondition: any = { status };
     if (kitId) {
       whereCondition.kit_id = kitId;
