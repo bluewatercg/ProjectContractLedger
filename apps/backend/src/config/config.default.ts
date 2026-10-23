@@ -1,4 +1,7 @@
 // import { MidwayConfig } from '@midwayjs/core';
+import { resolve } from 'path';
+
+const logDir = process.env.LOG_DIR || resolve(process.cwd(), 'logs');
 
 export default {
   // use for cookie sign key, should change to your own and keep security
@@ -163,7 +166,7 @@ export default {
     default: {
       level: process.env.LOG_LEVEL || 'info',
       consoleLevel: process.env.CONSOLE_LOG_LEVEL || 'info',
-      dir: process.env.LOG_DIR || '/app/logs',
+      dir: logDir,
       fileLogName: 'app.log',
       errorLogName: 'error.log',
       format: (info: any) => {
@@ -178,7 +181,7 @@ export default {
       coreLogger: {
         level: process.env.LOG_LEVEL || 'info',
         consoleLevel: process.env.CONSOLE_LOG_LEVEL || 'info',
-        dir: process.env.LOG_DIR || '/app/logs',
+        dir: logDir,
         fileLogName: 'core.log',
         errorLogName: 'core-error.log',
         maxFiles: '30d',
@@ -187,7 +190,7 @@ export default {
       appLogger: {
         level: process.env.LOG_LEVEL || 'info',
         consoleLevel: process.env.CONSOLE_LOG_LEVEL || 'info',
-        dir: process.env.LOG_DIR || '/app/logs',
+        dir: logDir,
         fileLogName: 'app.log',
         errorLogName: 'app-error.log',
         maxFiles: '30d',
