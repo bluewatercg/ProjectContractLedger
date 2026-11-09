@@ -66,7 +66,7 @@ yarn install
 数据库: procontractledger
 ```
 
-**无需本地安装 MySQL！**
+数据库密码从未提交的 `apps/backend/.env` 中读取 `DB_PASSWORD`。启动前请在该文件配置连接信息，不要把密码提交到仓库。
 
 ### 4. 启动服务
 

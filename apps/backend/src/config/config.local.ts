@@ -9,7 +9,7 @@ export default {
         host: 'mysql.sqlpub.com',
         port: 3306,
         username: 'millerchen',
-        password: 'c3TyBrus2OmLeeIu',
+        password: process.env.DB_PASSWORD || '',
         database: 'procontractledger',
         synchronize: false, // 暂时禁用，需要先运行迁移脚本
         logging: true,

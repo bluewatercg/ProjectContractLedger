@@ -121,7 +121,7 @@ yarn dev
 主机: mysql.sqlpub.com
 端口: 3306
 用户: millerchen
-密码: c3TyBrus2OmLeeIu
+**数据库密码**通过未提交的 `apps/backend/.env` 中的 `DB_PASSWORD` 配置；不要把密码写入测试文档或命令历史。
 数据库: procontractledger
 
 -- 查询验证
