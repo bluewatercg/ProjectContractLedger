@@ -37,9 +37,7 @@ echo 前端地址: http://localhost:8000
 echo 后端地址: http://localhost:8010
 echo 健康检查: http://localhost:8010/health
 echo.
-echo 默认登录账号:
-echo   用户名: admin
-echo   密码: admin123
+echo 首次初始化管理员账户前，请在 apps\backend\.env 设置 INITIAL_ADMIN_PASSWORD
 echo.
 echo 测试新功能:
 echo   1. 客户管理 - 新建客户时选择套账

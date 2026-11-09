@@ -34,7 +34,8 @@ services:
       - REDIS_DB=${REDIS_DB:-13}
 
       # JWT配置
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env}
+      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD:-}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
 
       # 应用配置

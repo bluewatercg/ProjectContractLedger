@@ -273,7 +273,7 @@ show_deployment_instructions() {
     echo "   # 测试登录API"
     echo "   curl -X POST http://192.168.1.115:8000/api/v1/auth/login \\"
     echo "     -H \"Content-Type: application/json\" \\"
-    echo "     -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
+    echo "     -d '{\"username\":\"\$ADMIN_USERNAME\",\"password\":\"\$ADMIN_PASSWORD\"}'"
     echo ""
     echo "4. 或使用部署脚本:"
     echo "   ./scripts/deploy-production.sh"

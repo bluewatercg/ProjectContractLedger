@@ -6,10 +6,10 @@ services:
     image: mysql:8.0
     container_name: contract-ledger-mysql-prod
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
       MYSQL_DATABASE: ${DB_DATABASE:-contract_ledger}
       MYSQL_USER: ${DB_USERNAME:-contract_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-contract_pass}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
@@ -34,9 +34,10 @@ services:
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USERNAME=${DB_USERNAME:-contract_user}
-      - DB_PASSWORD=${DB_PASSWORD:-contract_pass}
+      - DB_PASSWORD=${DB_PASSWORD:?Set DB_PASSWORD in .env}
       - DB_DATABASE=${DB_DATABASE:-contract_ledger}
-      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key}
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env}
+      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD:-}
       - TYPEORM_SYNCHRONIZE=${TYPEORM_SYNCHRONIZE:-false}
       - TYPEORM_MIGRATIONS_RUN=${TYPEORM_MIGRATIONS_RUN:-true}
       - BACKEND_PORT=8080

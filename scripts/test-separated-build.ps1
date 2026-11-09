@@ -87,7 +87,7 @@ function Test-BackendBuild {
             -e DB_PASSWORD=test `
             -e DB_DATABASE=test `
             -e REDIS_HOST=localhost `
-            -e JWT_SECRET=test-secret `
+            -e JWT_SECRET=$([guid]::NewGuid().ToString()) `
             test-backend:latest
         
         if ($LASTEXITCODE -ne 0) {

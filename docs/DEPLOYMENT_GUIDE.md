@@ -79,7 +79,8 @@ REDIS_PORT=6379
 REDIS_PASSWORD=your-redis-password
 
 # JWT配置
-JWT_SECRET=your-super-secret-key
+JWT_SECRET=
+# Generate with: openssl rand -base64 48
 JWT_EXPIRES_IN=7d
 
 # 应用配置

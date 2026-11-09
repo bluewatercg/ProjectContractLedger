@@ -36,6 +36,6 @@ echo.
 echo Services are starting...
 echo Frontend: http://localhost:8000
 echo Backend:  http://localhost:8080
-echo Login:    admin / admin123
+echo Initial admin setup: set INITIAL_ADMIN_PASSWORD in apps\backend\.env
 echo.
 pause

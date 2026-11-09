@@ -40,7 +40,7 @@ docker-compose ps
 export GITHUB_REPOSITORY=your-username/your-repo
 export IMAGE_TAG=latest
 export DB_PASSWORD=your-secure-password
-export JWT_SECRET=your-jwt-secret
+export JWT_SECRET="$(openssl rand -base64 48)"
 
 # 2. 运行启动脚本
 ./start-prod.sh

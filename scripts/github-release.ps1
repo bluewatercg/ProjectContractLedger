@@ -305,7 +305,7 @@ function Show-DeploymentInstructions {
     Write-Host "   # 测试登录API" -ForegroundColor Gray
     Write-Host "   curl -X POST http://192.168.1.115:8000/api/v1/auth/login \" -ForegroundColor Cyan
     Write-Host "     -H `"Content-Type: application/json`" \" -ForegroundColor Cyan
-    Write-Host "     -d '{`"username`":`"admin`",`"password`":`"admin123`"}'" -ForegroundColor Cyan
+    Write-Host "     Set ADMIN_USERNAME and ADMIN_PASSWORD in your shell before sending the request." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "4. 或使用部署脚本:" -ForegroundColor White
     Write-Host "   .\scripts\deploy-production.ps1" -ForegroundColor Cyan

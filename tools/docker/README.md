@@ -59,7 +59,7 @@ mkdir -p data/uploads data/logs
 export GITHUB_REPOSITORY=your-username/your-repo
 export IMAGE_TAG=latest
 export DB_PASSWORD=your-secure-password
-export JWT_SECRET=your-jwt-secret
+export JWT_SECRET="$(openssl rand -base64 48)"
 
 # 启动服务
 docker-compose -f docker-compose.prod.yml up -d

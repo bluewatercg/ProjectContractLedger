@@ -80,7 +80,10 @@ REDIS_PASSWORD=
 REDIS_DB=0
 
 # JWT配置
-JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
+JWT_SECRET=
+# Generate a random value with: openssl rand -base64 48
+INITIAL_ADMIN_PASSWORD=
+
 
 # 服务配置
 PORT=8080

@@ -105,7 +105,7 @@ docker run -d \
   -e DB_USERNAME=your-db-user \
   -e DB_PASSWORD=your-db-pass \
   -e DB_DATABASE=contract_ledger \
-  -e JWT_SECRET=your-jwt-secret \
+  -e JWT_SECRET="$JWT_SECRET" \
   ghcr.io/your-username/your-repo:latest
 
 # 仅运行前端端口（推荐）
@@ -133,7 +133,8 @@ DB_PORT=3306
 DB_USERNAME=your-db-username
 DB_PASSWORD=your-db-password
 DB_DATABASE=contract_ledger
-JWT_SECRET=your-jwt-secret-key
+JWT_SECRET=
+# Generate with: openssl rand -base64 48
 ```
 
 #### 前端环境变量

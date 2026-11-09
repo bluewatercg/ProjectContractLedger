@@ -72,7 +72,7 @@ test_backend_build() {
         -e DB_PASSWORD=test \
         -e DB_DATABASE=test \
         -e REDIS_HOST=localhost \
-        -e JWT_SECRET=test-secret \
+        -e JWT_SECRET="$(openssl rand -hex 32)" \
         test-backend:latest || {
         log_error "后端容器启动失败"
         cd ../..

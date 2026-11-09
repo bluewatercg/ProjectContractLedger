@@ -86,7 +86,10 @@ docker-compose -f docker-compose.separated.yml --profile proxy up -d
 # 数据库配置（必填）
 DB_USERNAME=your_db_username
 DB_PASSWORD=your_db_password
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=
+# Generate with: openssl rand -base64 48
+INITIAL_ADMIN_PASSWORD=
+
 
 # 服务器IP配置（根据实际环境调整）
 BACKEND_HOST=192.168.1.115

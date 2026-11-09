@@ -42,8 +42,6 @@ echo Database Info:
 echo Host: mysql.sqlpub.com:3306
 echo Database: procontractledger
 echo.
-echo Default Login Account:
-echo Username: admin
-echo Password: admin123
+echo Initial admin setup: set INITIAL_ADMIN_PASSWORD in apps\backend\.env
 echo.
 pause

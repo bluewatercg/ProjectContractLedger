@@ -46,12 +46,18 @@ function request(method, path, data, token) {
 async function run() {
     console.log('--- Starting Verification ---');
 
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const testUserPassword = process.env.TEST_USER_PASSWORD;
+    if (!adminPassword || !testUserPassword) {
+        throw new Error('Set ADMIN_PASSWORD and TEST_USER_PASSWORD before running verification');
+    }
+
     // 1. Login
     console.log('1. Logging in as admin...');
     try {
         const loginRes = await request('POST', '/api/v1/auth/login', {
             username: 'admin',
-            password: 'admin123'
+            password: adminPassword
         });
 
         if (loginRes.statusCode !== 200 || !loginRes.body.success) {
@@ -68,7 +74,7 @@ async function run() {
         const newUser = {
             username: `testuser_${now}`,
             email: `test_${now}@example.com`,
-            password: 'password123',
+            password: testUserPassword,
             role: 'user',
             status: 'active'
         };

@@ -54,12 +54,7 @@ yarn dev
 - **后端API**: http://localhost:8010
 - **健康检查**: http://localhost:8010/health
 
-## 🔑 登录信息
-
-```
-用户名: admin
-密码: admin123
-```
+首次管理员账户：空数据库首次启动前，请通过本地环境文件设置至少 12 位的 `INITIAL_ADMIN_PASSWORD`。系统不提供默认密码。
 
 ## 🧪 测试步骤
 
@@ -118,12 +113,8 @@ yarn dev
 ### 方法 2: 通过数据库验证
 ```sql
 -- 连接数据库
-主机: mysql.sqlpub.com
-端口: 3306
-用户: millerchen
-**数据库密码**通过未提交的 `apps/backend/.env` 中的 `DB_PASSWORD` 配置；不要把密码写入测试文档或命令历史。
-数据库: procontractledger
-
+-- 使用 `apps/backend/.env` 中的数据库连接配置；通过 MySQL 客户端交互输入密码。
+--
 -- 查询验证
 SELECT
     c.id as customer_id,

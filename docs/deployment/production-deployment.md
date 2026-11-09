@@ -89,7 +89,8 @@ REDIS_PASSWORD=12345678
 REDIS_DB=13
 
 # JWT配置
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=
+# Generate with: openssl rand -base64 48
 
 # 前端API配置（重要：修复登录404问题）
 FRONTEND_API_BASE_URL=/api/v1

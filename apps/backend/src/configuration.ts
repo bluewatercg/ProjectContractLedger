@@ -1,4 +1,4 @@
-import { Configuration, App, Inject } from '@midwayjs/core';
+import { Configuration, App, Inject, Config } from '@midwayjs/core';
 import * as koa from '@midwayjs/koa';
 import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
@@ -35,9 +35,23 @@ export class MainConfiguration {
   @Inject()
   wecomService: WecomService;
 
+  @Config('jwt.secret')
+  jwtSecret: string;
+
   async onReady() {
+    if (!this.jwtSecret || this.jwtSecret.length < 32) {
+      throw new Error(
+        'JWT_SECRET must be configured with at least 32 characters'
+      );
+    }
+
     // add middleware (CORS -> Report -> Auth -> Kit)
-    this.app.useMiddleware([CorsMiddleware, ReportMiddleware, AuthMiddleware, KitMiddleware]);
+    this.app.useMiddleware([
+      CorsMiddleware,
+      ReportMiddleware,
+      AuthMiddleware,
+      KitMiddleware,
+    ]);
 
     // add filter
     this.app.useFilter([NotFoundFilter, DefaultErrorFilter]);

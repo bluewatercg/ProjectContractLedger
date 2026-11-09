@@ -21,10 +21,7 @@ yarn start-ps
 - **后端API**: http://localhost:8080
 - **API文档**: http://localhost:8080/api-docs
 
-### 3. 默认登录
-
-- **用户名**: admin
-- **密码**: admin123
+首次启动管理员账户：用户名 `admin`；请在 `apps/backend/.env` 设置至少 12 位的 `INITIAL_ADMIN_PASSWORD`。系统不提供默认密码。
 
 ## 🎯 核心功能演示
 

@@ -22,12 +22,7 @@ start-local-test.bat
 - **后端API**: http://localhost:8010
 - **健康检查**: http://localhost:8010/health
 
-## 默认登录账号
-
-```
-用户名: admin
-密码: admin123
-```
+首次管理员账户：空数据库首次启动前，请在 `apps/backend/.env` 设置至少 12 位的 `INITIAL_ADMIN_PASSWORD`。系统不提供默认密码。
 
 ## 测试新功能
 
@@ -85,12 +80,8 @@ start-local-test.bat
 
 ```sql
 -- 连接信息
-主机: mysql.sqlpub.com
-端口: 3306
-用户: millerchen
-**数据库密码**通过未提交的 `apps/backend/.env` 中的 `DB_PASSWORD` 配置；不要把密码写入测试文档或命令历史。
-数据库: procontractledger
-
+-- 使用 `apps/backend/.env` 中的数据库连接配置；通过 MySQL 客户端交互输入密码。
+--
 -- 查询客户
 SELECT id, name, kit_id FROM customers WHERE id = 1;
 
@@ -143,7 +134,7 @@ taskkill /PID <PID> /F
 
 1. 检查后端服务是否启动成功
 2. 访问 http://localhost:8010/health 检查后端健康状态
-3. 确认使用正确的账号密码：admin / admin123
+3. 使用已初始化的管理员账号和密码登录。
 
 ### Q: 看不到套账选择器？
 
@@ -178,10 +169,10 @@ taskkill /PID <PID> /F
 # 测试健康检查
 curl http://localhost:8010/health
 
-# 测试登录
+rem Set ADMIN_PASSWORD in the current command shell before sending this request.
 curl -X POST http://localhost:8010/api/v1/auth/login ^
   -H "Content-Type: application/json" ^
-  -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
+  -d "{\"username\":\"admin\",\"password\":\"%ADMIN_PASSWORD%\"}"
 ```
 
 ## 相关文档

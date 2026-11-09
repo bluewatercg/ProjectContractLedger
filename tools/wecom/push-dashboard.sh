@@ -17,14 +17,18 @@ fi
 WECOM_URL="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${WECOM_KEY}"
 TOKEN="${API_TOKEN:-}"
 
-# 如果没有 token，先登录
 if [ -z "$TOKEN" ]; then
-  LOGIN_RESP=$(curl -s -X POST "${API_BASE}/api/v1/auth/login" \
+  if [ -z "${LOGIN_USERNAME:-}" ] || [ -z "${LOGIN_PASSWORD:-}" ]; then
+    echo "ERROR: Set API_TOKEN or LOGIN_USERNAME and LOGIN_PASSWORD"
+    exit 1
+  fi
+  LOGIN_PAYLOAD=$(python3 -c 'import json, os; print(json.dumps({"username": os.environ["LOGIN_USERNAME"], "password": os.environ["LOGIN_PASSWORD"]}))')
+  LOGIN_RESP=$(printf '%s' "$LOGIN_PAYLOAD" | curl -s -X POST "${API_BASE}/api/v1/auth/login" \
     -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":"admin123"}')
+    --data-binary @-)
   TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
   if [ -z "$TOKEN" ]; then
-    echo "Login failed: $LOGIN_RESP"
+    echo "Login failed"
     exit 1
   fi
 fi

@@ -45,8 +45,7 @@ export default {
 
   // JWT 配置
   jwt: {
-    secret:
-      process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
+    secret: process.env.JWT_SECRET || '',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
   // Redis 配置（如果需要的话）

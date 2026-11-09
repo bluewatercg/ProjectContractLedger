@@ -89,7 +89,7 @@ REDIS_PASSWORD=your-redis-password
 REDIS_DB=0
 
 # JWT配置
-JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
+Set `JWT_SECRET` through a protected secret store. Use a random value of at least 32 characters.
 
 # 其他配置
 NODE_ENV=production

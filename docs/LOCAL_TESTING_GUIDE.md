@@ -106,9 +106,7 @@ yarn dev
 
 ### 6. 登录测试
 
-**默认管理员账号：**
-- 用户名: `admin`
-- 密码: `admin123`
+- 首次启动空数据库前，在 `apps/backend/.env` 设置至少 12 位的 `INITIAL_ADMIN_PASSWORD`。系统不提供默认管理员密码。
 
 ## 测试新功能
 
@@ -260,10 +258,10 @@ VITE_API_BASE_URL=http://localhost:8010/api/v1
    # 使用 curl 测试
    curl http://localhost:8010/health
 
-   # 测试登录
+   # Set ADMIN_PASSWORD in the current shell before sending the request.
    curl -X POST http://localhost:8010/api/v1/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"username":"admin","password":"admin123"}'
+     -d '{"username":"admin","password":"'"$ADMIN_PASSWORD"'"}'
    ```
 
 ### 前端调试

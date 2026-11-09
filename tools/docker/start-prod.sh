@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# 生产环境启动脚本
+set -e
 
 echo "=== 合同管理系统 - 生产环境启动 ==="
 
@@ -33,10 +32,8 @@ if [ -z "$IMAGE_TAG" ]; then
     export IMAGE_TAG="latest"
 fi
 
-if [ -z "$JWT_SECRET" ]; then
-    echo "警告: JWT_SECRET 环境变量未设置，请设置安全的密钥"
-    export JWT_SECRET="your-jwt-secret-key-change-this"
-fi
+# Compose reads .env and fails if required secrets are missing.
+docker-compose -f docker-compose.prod.yml config > /dev/null
 
 # 拉取最新镜像
 echo "拉取最新镜像..."

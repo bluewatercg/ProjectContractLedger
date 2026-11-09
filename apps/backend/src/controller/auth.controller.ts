@@ -41,7 +41,7 @@ export class AuthController {
           properties: {
             token: {
               type: 'string',
-              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+              example: 'header.payload.signature',
             },
             user: { type: 'object' },
           },

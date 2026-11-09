@@ -61,7 +61,9 @@ REDIS_HOST=192.168.1.160
 REDIS_PASSWORD=your_password
 
 # JWT密钥
-JWT_SECRET=your_secret_key
+JWT_SECRET=
+# Generate with: openssl rand -base64 48
+INITIAL_ADMIN_PASSWORD=
 ```
 
 ### 3. 部署服务

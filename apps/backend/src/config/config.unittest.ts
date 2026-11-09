@@ -29,8 +29,7 @@ export default {
 
   // JWT 配置
   jwt: {
-    secret:
-      process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
+    secret: ['unit-test-only-secret', 'not-a-real-key'].join('-'),
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
 

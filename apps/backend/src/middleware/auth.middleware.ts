@@ -1,14 +1,14 @@
-import { Middleware, IMiddleware } from '@midwayjs/core';
+import { Middleware, IMiddleware, Config } from '@midwayjs/core';
 import { NextFunction, Context } from '@midwayjs/koa';
 import * as jwt from 'jsonwebtoken';
 
 @Middleware()
 export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
+  @Config('jwt.secret')
+  jwtSecret: string;
+
   resolve() {
     return async (ctx: Context, next: NextFunction) => {
-      console.log('[AuthMiddleware] START - Path:', ctx.path);
-
-      // 跳过不需要认证的路由
       const skipPaths = [
         '/api/v1/auth/login',
         '/api/v1/auth/register',
@@ -26,25 +26,22 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
       ];
 
       const path = ctx.path;
-      const matchedSkipPath = skipPaths.find(skipPath => path.startsWith(skipPath));
+      const matchedSkipPath = skipPaths.find(skipPath =>
+        path.startsWith(skipPath)
+      );
       if (matchedSkipPath) {
-        console.log('[AuthMiddleware] SKIP - Path in skipPaths, matched:', matchedSkipPath);
         await next();
         return;
       }
 
       // 特殊处理：精确匹配根路径
       if (path === '/') {
-        console.log('[AuthMiddleware] SKIP - Root path');
         await next();
         return;
       }
 
-      console.log('[AuthMiddleware] CHECKING - Path requires auth');
-
       // 获取token
       const authorization = ctx.headers.authorization;
-      console.log('[AuthMiddleware] Path:', path, 'Authorization:', authorization ? 'present' : 'missing');
       if (!authorization) {
         ctx.status = 401;
         ctx.body = {
@@ -68,15 +65,10 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
 
       try {
         // 验证token
-        const decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET || 'your-secret-key'
-        );
-        console.log('[AuthMiddleware] Token verified, user:', decoded);
+        const decoded = jwt.verify(token, this.jwtSecret);
         ctx.state.user = decoded;
         await next();
-      } catch (error) {
-        console.error('[AuthMiddleware] Token verification failed:', error.message);
+      } catch {
         ctx.status = 401;
         ctx.body = {
           success: false,

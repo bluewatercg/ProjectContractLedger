@@ -19,7 +19,7 @@ export default {
     },
   },
   jwt: {
-    secret: 'local-development-secret-key',
+    secret: process.env.JWT_SECRET || '',
     expiresIn: '24h',
   },
 };

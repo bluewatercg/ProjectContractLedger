@@ -88,9 +88,7 @@ Write-Host "数据库信息:" -ForegroundColor Cyan
 Write-Host "主机: mysql.sqlpub.com:3306" -ForegroundColor White
 Write-Host "数据库: procontractledger" -ForegroundColor White
 Write-Host ""
-Write-Host "默认登录账户:" -ForegroundColor Cyan
-Write-Host "用户名: admin" -ForegroundColor White
-Write-Host "密码: admin123" -ForegroundColor White
+Write-Host "首次初始化管理员账户前，请在 apps\backend\.env 设置 INITIAL_ADMIN_PASSWORD" -ForegroundColor White
 Write-Host ""
 Write-Host "按任意键退出..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

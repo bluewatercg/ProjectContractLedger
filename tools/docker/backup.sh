@@ -7,6 +7,12 @@ echo "=== 合同管理系统 - 数据备份 ==="
 # 进入脚本所在目录
 cd "$(dirname "$0")"
 
+if [ -f .env ]; then
+    set -a
+    . ./.env
+    set +a
+fi
+
 # 设置备份目录
 BACKUP_DIR="./backups"
 DATE=$(date +%Y%m%d_%H%M%S)
@@ -37,10 +43,13 @@ fi
 # 3. 备份数据库
 echo "备份数据库..."
 if docker-compose ps mysql | grep -q "Up"; then
-    # 从环境变量或默认值获取数据库配置
     DB_NAME=${DB_DATABASE:-contract_ledger}
     DB_USER=${DB_USERNAME:-contract_user}
-    DB_PASS=${DB_PASSWORD:-contract_pass}
+    if [ -z "${DB_PASSWORD:-}" ]; then
+        echo "错误: 请在 .env 或环境变量中设置 DB_PASSWORD"
+        exit 1
+    fi
+    DB_PASS=$DB_PASSWORD
     
     # 备份数据库
     docker-compose exec -T mysql mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$BACKUP_DIR/database_$DATE.sql"

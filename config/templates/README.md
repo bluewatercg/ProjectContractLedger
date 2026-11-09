@@ -64,7 +64,7 @@ REDIS_DB=13                    # Redis数据库编号
 
 ### JWT配置
 ```bash
-JWT_SECRET=your_jwt_secret     # JWT密钥
+JWT_SECRET=                    # Generate with: openssl rand -base64 48
 JWT_EXPIRES_IN=7d              # JWT过期时间
 ```
 

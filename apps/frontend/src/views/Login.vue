@@ -52,26 +52,10 @@
           </el-button>
         </el-form-item>
 
-        <el-form-item>
-          <el-button
-            size="large"
-            class="demo-button"
-            @click="fillDemoAccount"
-          >
-            使用演示账户
-          </el-button>
-        </el-form-item>
       </el-form>
       
       <div class="login-footer">
         <p>还没有账户？<a href="#" @click="showRegister = true">立即注册</a></p>
-        <div class="demo-info">
-          <el-divider>演示账户</el-divider>
-          <p class="demo-text">
-            <strong>用户名:</strong> admin<br>
-            <strong>密码:</strong> admin123
-          </p>
-        </div>
       </div>
     </div>
     
@@ -204,13 +188,6 @@ const registerRules: FormRules = {
   phone: [
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
   ]
-}
-
-// 填充演示账户
-const fillDemoAccount = () => {
-  loginForm.username = 'admin'
-  loginForm.password = 'admin123'
-  ElMessage.info('已填充演示账户信息')
 }
 
 // 处理登录
@@ -496,26 +473,6 @@ onMounted(() => {
   transform: translateY(0);
 }
 
-.demo-button {
-  width: 100%;
-  height: 44px;
-  margin-top: 12px;
-  background-color: #F8FAFC;
-  border: 2px solid #E2E8F0;
-  color: #475569;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.demo-button:hover {
-  background-color: #F1F5F9;
-  border-color: #CBD5E1;
-  color: #0F172A;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
-}
-
 .remember-me {
   display: flex;
   justify-content: space-between;
@@ -549,38 +506,6 @@ onMounted(() => {
 .login-footer a:hover {
   color: #764ba2;
   text-decoration: underline;
-}
-
-.demo-info {
-  margin-top: 24px;
-  padding: 20px;
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
-  border-radius: 12px;
-  border: 2px solid #E2E8F0;
-  transition: all 0.3s ease;
-}
-
-.demo-info:hover {
-  border-color: #CBD5E1;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-
-.demo-info :deep(.el-divider__text) {
-  font-weight: 600;
-  color: #475569;
-  font-size: 0.875rem;
-}
-
-.demo-text {
-  font-size: 0.875rem;
-  color: #64748B;
-  margin: 0;
-  line-height: 1.8;
-}
-
-.demo-text strong {
-  color: #0F172A;
-  font-weight: 600;
 }
 
 /* 响应式设计 */

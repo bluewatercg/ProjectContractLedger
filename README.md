@@ -191,9 +191,8 @@ yarn start-sh
 - 后端API: http://localhost:8080
 - API文档: http://localhost:8080/api-docs
 
-### 6. 默认登录
-- **用户名**: admin
-- **密码**: admin123
+### 6. 首次管理员账户
+管理员用户名为 `admin`。空数据库首次启动前，在 `apps/backend/.env` 中设置至少 12 位的 `INITIAL_ADMIN_PASSWORD`；系统不会创建默认密码。
 
 ## 🎯 业务流程
 
@@ -414,7 +413,8 @@ REDIS_PORT=6379
 REDIS_PASSWORD=your-redis-password
 
 # JWT配置
-JWT_SECRET=your-super-secret-key
+JWT_SECRET=
+# Generate with: openssl rand -base64 48
 JWT_EXPIRES_IN=7d
 
 # 文件存储配置

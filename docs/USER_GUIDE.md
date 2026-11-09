@@ -35,9 +35,7 @@ cd apps/frontend && yarn dev
 - **后端API**: http://localhost:8080
 - **API文档**: http://localhost:8080/api-docs
 
-### 默认账户
-- **用户名**: admin
-- **密码**: admin123
+首次启动空数据库时，设置 `INITIAL_ADMIN_PASSWORD` 创建管理员账户。系统不提供默认密码。
 
 ## 🏗️ 生产部署
 

@@ -1,4 +1,4 @@
-import { Provide, Inject } from '@midwayjs/core';
+import { Provide, Inject, Config } from '@midwayjs/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -15,10 +15,18 @@ export class AuthService {
   @Inject()
   kitService: KitService;
 
+  @Config('jwt.secret')
+  jwtSecret: string;
+
   /**
    * 用户登录
    */
-  async login(loginDto: LoginDto): Promise<{ token: string; user: UserInfo; kits: any[]; defaultKit: any | null }> {
+  async login(loginDto: LoginDto): Promise<{
+    token: string;
+    user: UserInfo;
+    kits: any[];
+    defaultKit: any | null;
+  }> {
     const { username, password } = loginDto;
 
     // 查找用户
@@ -42,7 +50,6 @@ export class AuthService {
     }
 
     // 生成JWT token
-    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
     const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
 
     const token = jwt.sign(
@@ -51,7 +58,7 @@ export class AuthService {
         username: user.username,
         role: user.role,
       },
-      jwtSecret,
+      this.jwtSecret,
       { expiresIn } as jwt.SignOptions
     );
 
@@ -121,8 +128,8 @@ export class AuthService {
    */
   async verifyToken(token: string): Promise<any> {
     try {
-      return jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    } catch (error) {
+      return jwt.verify(token, this.jwtSecret);
+    } catch {
       throw new Error('无效的token');
     }
   }
