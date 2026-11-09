@@ -85,12 +85,12 @@ export const subscriptionApi = {
     }).then(res => res.data)
   },
 
-  previewAttachment(attachmentId: number): Promise<any> {
-    return apiClient.get(`/subscriptions/attachments/${attachmentId}/preview`).then(res => res.data)
-  },
-
-  publicPreviewAttachment(attachmentId: number): Promise<any> {
-    return apiClient.get(`/subscriptions/attachments/public-preview/${attachmentId}`).then(res => res.data)
+  previewAttachment(attachmentId: number): Promise<Blob> {
+    return apiClient
+      .get(`/subscriptions/attachments/${attachmentId}/preview`, {
+        responseType: 'blob',
+      })
+      .then(res => res.data)
   },
 
   deleteRenewalAttachment(attachmentId: number): Promise<ApiResponse> {

@@ -6,13 +6,7 @@ import { KitService } from '../service/kit.service';
 export class KitMiddleware implements IMiddleware<Context, NextFunction> {
   resolve() {
     return async (ctx: Context, next: NextFunction) => {
-      const skipPaths = [
-        '/api/v1/auth',
-        '/api/v1/kits',
-        '/api/v1/wecom',
-        '/health',
-        '/swagger',
-      ];
+      const skipPaths = ['/api/v1/auth', '/api/v1/kits', '/health', '/swagger'];
       if (skipPaths.some(path => ctx.path.startsWith(path))) {
         await next();
         return;
@@ -22,30 +16,46 @@ export class KitMiddleware implements IMiddleware<Context, NextFunction> {
       const kitIdHeader = ctx.get('X-Kit-Id');
 
       if (kitIdHeader) {
-        const kitId = parseInt(kitIdHeader, 10);
-        if (!isNaN(kitId)) {
-          const user = ctx.state?.user;
-          if (!user?.id) {
-            ctx.status = 401;
-            ctx.body = {
-              success: false,
-              message: '请先登录',
-            };
-            return;
-          }
-
-          const hasAccess = await kitService.checkUserKitAccess(user.id, kitId);
-          if (!hasAccess) {
-            ctx.status = 403;
-            ctx.body = {
-              success: false,
-              message: '您没有访问该套装的权限',
-            };
-            return;
-          }
-
-          ctx.state.kitId = kitId;
+        if (!/^\d+$/.test(kitIdHeader)) {
+          ctx.status = 400;
+          ctx.body = {
+            success: false,
+            message: 'X-Kit-Id 必须是正整数',
+          };
+          return;
         }
+
+        const kitId = Number(kitIdHeader);
+        if (!Number.isSafeInteger(kitId) || kitId <= 0) {
+          ctx.status = 400;
+          ctx.body = {
+            success: false,
+            message: 'X-Kit-Id 必须是正整数',
+          };
+          return;
+        }
+
+        const user = ctx.state?.user;
+        if (!user?.id) {
+          ctx.status = 401;
+          ctx.body = {
+            success: false,
+            message: '请先登录',
+          };
+          return;
+        }
+
+        const hasAccess = await kitService.checkUserKitAccess(user.id, kitId);
+        if (!hasAccess) {
+          ctx.status = 403;
+          ctx.body = {
+            success: false,
+            message: '您没有访问该套装的权限',
+          };
+          return;
+        }
+
+        ctx.state.kitId = kitId;
       }
 
       if (!ctx.state.kitId && ctx.state?.user?.id) {

@@ -86,6 +86,17 @@ export class ContractAttachmentService {
     });
   }
 
+  async getAttachmentWithKit(
+    attachmentId: number
+  ): Promise<{ attachment: ContractAttachment; kitId: number } | null> {
+    const attachment = await this.contractAttachmentRepository.findOne({
+      where: { attachment_id: attachmentId },
+      relations: ['contract'],
+    });
+    if (!attachment?.contract) return null;
+    return { attachment, kitId: attachment.contract.kit_id };
+  }
+
   /**
    * 删除附件
    */

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Query, Inject } from '@midwayjs/decorator';
+import { Controller, Get, Post, Inject } from '@midwayjs/decorator';
+import { Context } from '@midwayjs/koa';
 import { WecomService } from '../service/wecom.service';
 import { ApiResponse } from '../interface';
 
@@ -7,12 +8,24 @@ export class WecomController {
   @Inject()
   wecomService: WecomService;
 
+  @Inject()
+  ctx: Context;
+
   /**
    * 手动触发企业微信推送
    */
   @Post('/push')
-  async triggerPush(@Query('kitId') kitId?: number): Promise<ApiResponse> {
+  async triggerPush(): Promise<ApiResponse> {
     try {
+      const kitId = this.ctx.state?.kitId;
+      if (!kitId) {
+        return {
+          success: false,
+          message: '请选择套装',
+          code: 400,
+        };
+      }
+
       const result = await this.wecomService.triggerPush(kitId);
       return {
         success: result.success,

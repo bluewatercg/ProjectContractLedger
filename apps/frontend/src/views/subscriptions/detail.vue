@@ -764,15 +764,36 @@ const uploadRenewalAttachment = async (recordId: number, attachmentType: 'contra
   }
 }
 
-const previewAttachment = (attachment: SubscriptionRenewalAttachment) => {
-  window.open(`/api/v1/subscriptions/attachments/${attachment.attachment_id}/preview`, '_blank')
+const previewAttachment = async (attachment: SubscriptionRenewalAttachment) => {
+  const previewWindow = window.open('about:blank', '_blank')
+  if (!previewWindow) {
+    ElMessage.error('浏览器拦截了预览窗口')
+    return
+  }
+
+  try {
+    const blob = await subscriptionApi.previewAttachment(attachment.attachment_id)
+    const url = URL.createObjectURL(blob)
+    previewWindow.location.href = url
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000)
+  } catch (error) {
+    previewWindow.close()
+    ElMessage.error(error instanceof Error ? error.message : '预览附件失败')
+  }
 }
 
-const downloadAttachment = (attachment: SubscriptionRenewalAttachment) => {
-  const link = document.createElement('a')
-  link.href = `/api/v1/subscriptions/attachments/${attachment.attachment_id}/preview`
-  link.download = attachment.file_name
-  link.click()
+const downloadAttachment = async (attachment: SubscriptionRenewalAttachment) => {
+  try {
+    const blob = await subscriptionApi.previewAttachment(attachment.attachment_id)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = attachment.file_name
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '下载附件失败')
+  }
 }
 
 const deleteAttachment = async (attachment: SubscriptionRenewalAttachment) => {

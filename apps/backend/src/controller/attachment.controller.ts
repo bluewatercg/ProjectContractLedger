@@ -12,6 +12,7 @@ import { Context } from '@midwayjs/koa';
 import { UploadFileInfo } from '@midwayjs/upload';
 import { ContractAttachmentService } from '../service/contract-attachment.service';
 import { InvoiceAttachmentService } from '../service/invoice-attachment.service';
+import { KitService } from '../service/kit.service';
 import { InvoiceService } from '../service/invoice.service';
 import { ContractService } from '../service/contract.service';
 import { ApiResponse } from '../interface';
@@ -36,6 +37,9 @@ export class AttachmentController {
   contractService: ContractService;
 
   @Inject()
+  kitService: KitService;
+
+  @Inject()
   ctx: Context;
 
   @Config('jwt')
@@ -43,6 +47,64 @@ export class AttachmentController {
 
   @Config('upload')
   uploadConfig: { uploadDir: string };
+
+  private async findAuthorizedAttachment(
+    attachmentId: number,
+    type?: 'contract' | 'invoice'
+  ): Promise<{
+    attachment: ContractAttachment | InvoiceAttachment;
+    type: 'contract' | 'invoice';
+    kitId: number;
+  } | null> {
+    const userId = this.ctx.state?.user?.id;
+    if (!userId) {
+      this.ctx.status = 401;
+      this.ctx.body = { success: false, message: '未授权访问', code: 401 };
+      return null;
+    }
+
+    if (type && type !== 'contract' && type !== 'invoice') {
+      this.ctx.status = 400;
+      this.ctx.body = { success: false, message: '附件类型无效' };
+      return null;
+    }
+
+    const types: Array<'contract' | 'invoice'> = type
+      ? [type]
+      : ['contract', 'invoice'];
+    for (const attachmentType of types) {
+      const result =
+        attachmentType === 'contract'
+          ? await this.contractAttachmentService.getAttachmentWithKit(
+              attachmentId
+            )
+          : await this.invoiceAttachmentService.getAttachmentWithKit(
+              attachmentId
+            );
+
+      if (
+        result &&
+        (await this.kitService.checkUserKitAccess(userId, result.kitId))
+      ) {
+        return { ...result, type: attachmentType };
+      }
+    }
+
+    this.ctx.status = 404;
+    this.ctx.body = { success: false, message: '附件不存在' };
+    return null;
+  }
+
+  private isSafeUploadPath(filePath: string): boolean {
+    const uploadDir = path.resolve(
+      this.uploadConfig?.uploadDir || '/app/uploads'
+    );
+    const normalizedPath = path.resolve(filePath);
+    return (
+      normalizedPath === uploadDir ||
+      normalizedPath.startsWith(`${uploadDir}${path.sep}`)
+    );
+  }
 
   /**
    * 上传合同附件
@@ -450,134 +512,36 @@ export class AttachmentController {
     }
   }
 
-  /**
-   * 下载附件文件
-   */
   @Get('/attachments/:attachmentId/download')
   async downloadAttachment(
     @Param('attachmentId') attachmentId: number,
-    @Query('token') token?: string,
     @Query('type') type?: 'contract' | 'invoice'
   ) {
     try {
-      // 验证token（支持查询参数和Authorization头）
-      let authToken = token;
-      if (!authToken) {
-        const authHeader = this.ctx.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          authToken = authHeader.substring(7);
-        }
-      }
-
-      if (!authToken) {
-        this.ctx.status = 401;
-        this.ctx.body = { success: false, message: '未授权访问' };
-        return;
-      }
-
-      // 这里可以添加token验证逻辑
-      // 暂时跳过详细验证，实际项目中应该验证token有效性
-
-      // 根据type参数精确查找附件
-      let fileName = '';
-      let filePath = '';
-
-      if (type === 'contract') {
-        // 明确指定查找合同附件
-        const attachment =
-          await this.contractAttachmentService.getAttachmentById(attachmentId);
-        if (attachment) {
-          fileName = attachment.file_name;
-          filePath = attachment.file_path;
-        }
-      } else if (type === 'invoice') {
-        // 明确指定查找发票附件
-        const attachment =
-          await this.invoiceAttachmentService.getAttachmentById(attachmentId);
-        if (attachment) {
-          fileName = attachment.file_name;
-          filePath = attachment.file_path;
-        }
-      } else {
-        // 如果没有指定类型，则按原来的逻辑查找（为了向后兼容）
-        const contractAttachment =
-          await this.contractAttachmentService.getAttachmentById(attachmentId);
-        if (contractAttachment) {
-          fileName = contractAttachment.file_name;
-          filePath = contractAttachment.file_path;
-        } else {
-          const invoiceAttachment =
-            await this.invoiceAttachmentService.getAttachmentById(attachmentId);
-          if (invoiceAttachment) {
-            fileName = invoiceAttachment.file_name;
-            filePath = invoiceAttachment.file_path;
-          }
-        }
-      }
-
-      if (!fileName || !filePath) {
-        this.ctx.status = 404;
-        this.ctx.body = { success: false, message: '附件不存在' };
-        return;
-      }
-
-      // 添加详细的调试信息
-      console.log('文件下载/预览调试信息:', {
+      const authorized = await this.findAuthorizedAttachment(
         attachmentId,
-        fileName,
-        filePath,
-        fileExists: fs.existsSync(filePath),
-        isPreview: !!token,
-        uploadDir: process.env.UPLOAD_DIR || '/app/uploads',
-      });
+        type
+      );
+      if (!authorized) return;
 
-      // 检查文件是否存在
+      const { file_name: fileName, file_path: filePath } =
+        authorized.attachment;
+      if (!this.isSafeUploadPath(filePath)) {
+        this.ctx.status = 403;
+        this.ctx.body = { success: false, message: '文件访问被拒绝' };
+        return;
+      }
       if (!fs.existsSync(filePath)) {
-        console.error('文件不存在:', {
-          filePath,
-          dirExists: fs.existsSync(path.dirname(filePath)),
-          dirContents: fs.existsSync(path.dirname(filePath))
-            ? fs.readdirSync(path.dirname(filePath))
-            : '目录不存在',
-        });
-
         this.ctx.status = 404;
         this.ctx.body = { success: false, message: '文件不存在' };
         return;
       }
 
-      // 根据文件类型设置Content-Type
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'application/octet-stream';
-      let disposition = 'attachment';
-
-      // 如果是预览请求（通过token参数判断），设置为inline
-      if (token) {
-        disposition = 'inline';
-        switch (ext) {
-          case '.pdf':
-            contentType = 'application/pdf';
-            break;
-          case '.jpg':
-          case '.jpeg':
-            contentType = 'image/jpeg';
-            break;
-          case '.png':
-            contentType = 'image/png';
-            break;
-          default:
-            contentType = 'application/octet-stream';
-        }
-      }
-
-      // 设置响应头
-      this.ctx.set('Content-Type', contentType);
+      this.ctx.set('Content-Type', 'application/octet-stream');
       this.ctx.set(
         'Content-Disposition',
-        `${disposition}; filename="${encodeURIComponent(fileName)}"`
+        `attachment; filename="${encodeURIComponent(fileName)}"`
       );
-
-      // 返回文件流
       this.ctx.body = fs.createReadStream(filePath);
     } catch (error) {
       this.ctx.status = 500;
@@ -596,36 +560,16 @@ export class AttachmentController {
     @Param('attachmentId') attachmentId: number
   ): Promise<ApiResponse> {
     try {
-      // 同时查找合同附件和发票附件
-      const [contractAttachment, invoiceAttachment] = await Promise.all([
-        this.contractAttachmentService.getAttachmentById(attachmentId),
-        this.invoiceAttachmentService.getAttachmentById(attachmentId),
-      ]);
-
-      let selectedType: string;
-
-      if (contractAttachment && invoiceAttachment) {
-        // 如果两种类型都找到了相同ID的附件，这是数据异常
-        console.warn('发现ID冲突的附件', {
-          attachmentId,
-          contractAttachment: contractAttachment.file_name,
-          invoiceAttachment: invoiceAttachment.file_name,
-        });
-        // 优先使用合同附件
-        selectedType = 'contract';
-      } else if (contractAttachment) {
-        selectedType = 'contract';
-      } else if (invoiceAttachment) {
-        selectedType = 'invoice';
-      } else {
-        return { success: false, message: '附件不存在', code: 404 };
+      const authorized = await this.findAuthorizedAttachment(attachmentId);
+      if (!authorized) {
+        return {
+          success: false,
+          message: '附件不存在或无权访问',
+          code: this.ctx.status === 401 ? 401 : 404,
+        };
       }
 
-      // 构建公开预览 URL
-      const previewUrl = `/api/v1/attachments/public-preview?attachmentId=${attachmentId}&type=${selectedType}`;
-
-      console.log('Generated preview URL:', previewUrl);
-
+      const previewUrl = `/api/v1/attachments/public-preview?attachmentId=${attachmentId}&type=${authorized.type}`;
       return {
         success: true,
         data: { preview_url: previewUrl },
@@ -640,8 +584,7 @@ export class AttachmentController {
   }
 
   /**
-   * 获取PDF附件的Base64编码数据（新的预览方案）
-   * 临时移除认证，仅用于测试
+   * 获取PDF附件的Base64编码数据
    */
   @Get('/attachments/:attachmentId/base64')
   async getAttachmentBase64(
@@ -649,95 +592,27 @@ export class AttachmentController {
     @Query('type') type?: 'contract' | 'invoice'
   ): Promise<ApiResponse> {
     try {
-      console.log('PDF Base64预览请求 - 无认证模式', {
+      const authorized = await this.findAuthorizedAttachment(
         attachmentId,
-        type,
-        timestamp: new Date().toISOString(),
-      });
-
-      // 验证附件ID的有效性
-      if (!attachmentId || attachmentId <= 0) {
+        type
+      );
+      if (!authorized) {
         return {
           success: false,
-          message: '无效的附件ID',
-          code: 400,
+          message: '附件不存在或无权访问',
+          code: this.ctx.status === 401 ? 401 : 404,
         };
       }
 
-      let attachment: ContractAttachment | InvoiceAttachment | null = null;
-      let attachmentType = '';
-
-      if (type === 'contract') {
-        // 明确指定查找合同附件
-        attachment = await this.contractAttachmentService.getAttachmentById(
-          attachmentId
-        );
-        attachmentType = 'contract';
-      } else if (type === 'invoice') {
-        // 明确指定查找发票附件
-        attachment = await this.invoiceAttachmentService.getAttachmentById(
-          attachmentId
-        );
-        attachmentType = 'invoice';
-      } else {
-        // 如果没有指定类型，则按原来的逻辑查找（为了向后兼容）
-        attachment = await this.contractAttachmentService.getAttachmentById(
-          attachmentId
-        );
-        if (attachment) {
-          attachmentType = 'contract';
-        } else {
-          attachment = await this.invoiceAttachmentService.getAttachmentById(
-            attachmentId
-          );
-          attachmentType = 'invoice';
-        }
+      const filePath = authorized.attachment.file_path;
+      const fileName = authorized.attachment.file_name;
+      if (!this.isSafeUploadPath(filePath)) {
+        return { success: false, message: '文件访问被拒绝', code: 403 };
       }
-
-      if (!attachment) {
-        return {
-          success: false,
-          message: '附件不存在',
-          code: 404,
-        };
-      }
-
-      // 验证文件路径的安全性
-      const filePath = attachment.file_path;
-      const fileName = attachment.file_name;
-
-      // 确保文件路径在允许的上传目录内，防止路径遍历攻击
-      const uploadDir = this.uploadConfig?.uploadDir || '/app/uploads';
-      const normalizedFilePath = path.resolve(filePath);
-      const normalizedUploadDir = path.resolve(uploadDir);
-
-      if (!normalizedFilePath.startsWith(normalizedUploadDir)) {
-        console.error('安全警告：检测到潜在的路径遍历攻击', {
-          filePath,
-          normalizedFilePath,
-          uploadDir: normalizedUploadDir,
-        });
-        return {
-          success: false,
-          message: '文件访问被拒绝',
-          code: 403,
-        };
-      }
-
-      // 检查文件是否存在
       if (!fs.existsSync(filePath)) {
-        console.error('文件不存在', {
-          filePath,
-          attachmentId,
-        });
-        return {
-          success: false,
-          message: '文件不存在',
-          code: 404,
-        };
+        return { success: false, message: '文件不存在', code: 404 };
       }
 
-      // 验证文件类型
       const ext = path.extname(fileName).toLowerCase();
       if (ext !== '.pdf') {
         return {
@@ -765,7 +640,7 @@ export class AttachmentController {
       // 记录访问日志
       console.log('PDF Base64预览成功', {
         attachmentId,
-        attachmentType,
+        attachmentType: authorized.type,
         fileName,
         fileSize: fileStats.size,
         timestamp: new Date().toISOString(),
@@ -796,73 +671,56 @@ export class AttachmentController {
   }
 
   /**
-   * 提供公开的附件预览文件流
+   * 提供已授权用户的附件预览文件流
    */
   @Get('/attachments/public-preview')
   async servePublicAttachment(
     @Query('attachmentId') attachmentId: number,
     @Query('type') type: 'contract' | 'invoice'
   ) {
-    if (!attachmentId || !type) {
-      this.ctx.status = 401;
-      this.ctx.body = { success: false, message: '缺少访问令牌' };
+    if (!attachmentId || !type || !['contract', 'invoice'].includes(type)) {
+      this.ctx.status = 400;
+      this.ctx.body = { success: false, message: '附件参数无效' };
       return;
     }
 
     try {
-      let attachment;
-      // 根据类型精确查找附件
-      if (type === 'contract') {
-        attachment = await this.contractAttachmentService.getAttachmentById(
-          attachmentId
-        );
-      } else {
-        attachment = await this.invoiceAttachmentService.getAttachmentById(
-          attachmentId
-        );
-      }
+      const authorized = await this.findAuthorizedAttachment(
+        attachmentId,
+        type
+      );
+      if (!authorized) return;
 
-      if (!attachment || !attachment.file_path || !attachment.file_name) {
-        this.ctx.status = 404;
-        this.ctx.body = { success: false, message: '附件不存在或数据不完整' };
+      const { file_path: filePath, file_name: fileName } =
+        authorized.attachment;
+      if (!this.isSafeUploadPath(filePath)) {
+        this.ctx.status = 403;
+        this.ctx.body = { success: false, message: '文件访问被拒绝' };
         return;
       }
-
-      const filePath = attachment.file_path;
-      const fileName = attachment.file_name;
-
-      // 检查文件是否存在
       if (!fs.existsSync(filePath)) {
         this.ctx.status = 404;
         this.ctx.body = { success: false, message: '文件不存在' };
         return;
       }
 
-      // 设置响应头以内联方式打开
+      const contentTypes: Record<string, string> = {
+        '.pdf': 'application/pdf',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+      };
       const ext = path.extname(fileName).toLowerCase();
-      let contentType = 'application/octet-stream';
-      switch (ext) {
-        case '.pdf':
-          contentType = 'application/pdf';
-          break;
-        case '.jpg':
-        case '.jpeg':
-          contentType = 'image/jpeg';
-          break;
-        case '.png':
-          contentType = 'image/png';
-          break;
-      }
-
-      this.ctx.set('Content-Type', contentType);
+      this.ctx.set(
+        'Content-Type',
+        contentTypes[ext] || 'application/octet-stream'
+      );
       this.ctx.set(
         'Content-Disposition',
         `inline; filename="${encodeURIComponent(fileName)}"`
       );
-
-      // 返回文件流
       this.ctx.body = fs.createReadStream(filePath);
-    } catch (error) {
+    } catch {
       this.ctx.status = 500;
       this.ctx.body = { success: false, message: '预览文件失败' };
     }

@@ -128,7 +128,7 @@ export class AuthService {
    */
   async verifyToken(token: string): Promise<any> {
     try {
-      return jwt.verify(token, this.jwtSecret);
+      return jwt.verify(token, this.jwtSecret, { algorithms: ['HS256'] });
     } catch {
       throw new Error('无效的token');
     }

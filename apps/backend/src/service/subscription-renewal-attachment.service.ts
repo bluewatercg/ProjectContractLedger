@@ -134,6 +134,14 @@ export class SubscriptionRenewalAttachmentService {
     return await this.attachmentRepository.findOne({ where });
   }
 
+  async getAttachmentWithKit(attachmentId: number): Promise<{
+    attachment: SubscriptionRenewalAttachment;
+    kitId: number;
+  } | null> {
+    const attachment = await this.getAttachmentById(attachmentId);
+    return attachment ? { attachment, kitId: attachment.kit_id } : null;
+  }
+
   async deleteAttachment(attachmentId: number, kitId: number): Promise<boolean> {
     const attachment = await this.getAttachmentById(attachmentId, kitId);
     if (!attachment) {

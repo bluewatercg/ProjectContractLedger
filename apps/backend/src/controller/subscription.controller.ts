@@ -4,6 +4,7 @@ import { UploadFileInfo } from '@midwayjs/upload';
 import { SubscriptionService } from '../service/subscription.service';
 import { SubscriptionRenewalRecordService } from '../service/subscription-renewal-record.service';
 import { SubscriptionRenewalAttachmentService } from '../service/subscription-renewal-attachment.service';
+import { KitService } from '../service/kit.service';
 import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,
@@ -28,6 +29,9 @@ export class SubscriptionController {
 
   @Inject()
   subscriptionRenewalAttachmentService: SubscriptionRenewalAttachmentService;
+
+  @Inject()
+  kitService: KitService;
 
   @Config('upload')
   uploadConfig: { uploadDir: string };
@@ -238,17 +242,53 @@ export class SubscriptionController {
   }
 
   @Get('/attachments/:attachmentId/preview')
-  async previewRenewalAttachment(@Param('attachmentId') attachmentId: number): Promise<void> {
-    const attachment = await this.subscriptionRenewalAttachmentService.getAttachmentById(Number(attachmentId), this.getKitId());
-    if (!attachment || !fs.existsSync(attachment.file_path)) {
+  async previewRenewalAttachment(
+    @Param('attachmentId') attachmentId: number
+  ): Promise<void> {
+    const userId = this.ctx.state?.user?.id;
+    if (!userId) {
+      this.ctx.status = 401;
+      this.ctx.body = '未授权访问';
+      return;
+    }
+
+    const result =
+      await this.subscriptionRenewalAttachmentService.getAttachmentWithKit(
+        Number(attachmentId)
+      );
+    if (
+      !result ||
+      !(await this.kitService.checkUserKitAccess(userId, result.kitId))
+    ) {
       this.ctx.status = 404;
       this.ctx.body = '附件不存在';
       return;
     }
 
-    this.ctx.set('Content-Type', this.getContentType(attachment.file_type || attachment.file_name));
-    this.ctx.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(attachment.file_name)}`);
-    this.ctx.body = fs.createReadStream(attachment.file_path);
+    const { attachment } = result;
+    const uploadDir = path.resolve(
+      this.uploadConfig?.uploadDir || '/app/uploads'
+    );
+    const filePath = path.resolve(attachment.file_path);
+    if (
+      (filePath !== uploadDir &&
+        !filePath.startsWith(`${uploadDir}${path.sep}`)) ||
+      !fs.existsSync(filePath)
+    ) {
+      this.ctx.status = 404;
+      this.ctx.body = '附件不存在';
+      return;
+    }
+
+    this.ctx.set(
+      'Content-Type',
+      this.getContentType(attachment.file_type || attachment.file_name)
+    );
+    this.ctx.set(
+      'Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(attachment.file_name)}`
+    );
+    this.ctx.body = fs.createReadStream(filePath);
   }
 
   @Del('/attachments/:attachmentId')

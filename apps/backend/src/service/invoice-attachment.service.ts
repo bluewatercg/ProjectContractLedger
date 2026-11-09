@@ -85,6 +85,17 @@ export class InvoiceAttachmentService {
     });
   }
 
+  async getAttachmentWithKit(
+    attachmentId: number
+  ): Promise<{ attachment: InvoiceAttachment; kitId: number } | null> {
+    const attachment = await this.invoiceAttachmentRepository.findOne({
+      where: { attachment_id: attachmentId },
+      relations: ['invoice'],
+    });
+    if (!attachment?.invoice) return null;
+    return { attachment, kitId: attachment.invoice.kit_id };
+  }
+
   /**
    * 删除附件
    */
