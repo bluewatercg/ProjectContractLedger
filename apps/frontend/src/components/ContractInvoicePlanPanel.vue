@@ -198,7 +198,18 @@
           <el-table-column label="其他计划已分摊" width="130" align="right">
             <template #default="scope">¥{{ formatCurrency(scope.row.allocated_elsewhere) }}</template>
           </el-table-column>
-          <el-table-column label="计入本期" width="170">
+          <el-table-column label="计入本期" width="180">
+            <template #header>
+              <div class="col-header">
+                <span>计入本期金额</span>
+                <el-tooltip
+                  placement="top"
+                  content="这张发票有多少钱算作本期的开票额。一张发票可以拆到多期，各期金额之和不能超过发票总额；填 0 表示这张票不计入本期。"
+                >
+                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                </el-tooltip>
+              </div>
+            </template>
             <template #default="scope">
               <el-input-number
                 v-model="scope.row.allocated_amount"
@@ -213,6 +224,17 @@
             </template>
           </el-table-column>
           <el-table-column label="剩余可分摊" width="120" align="right">
+            <template #header>
+              <div class="col-header">
+                <span>剩余可分摊</span>
+                <el-tooltip
+                  placement="top"
+                  content="这张发票还没有分配给任何期的金额，即发票总额减去所有期已计入之和。"
+                >
+                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                </el-tooltip>
+              </div>
+            </template>
             <template #default="scope">
               ¥{{ formatCurrency(scope.row.remaining - (scope.row.allocated_amount || 0)) }}
             </template>
@@ -220,7 +242,8 @@
         </el-table>
 
         <div class="dialog-tip">
-          只展示本合同下未作废的发票；填 0 或留空表示不计入本期。
+          填写示例：一张 ¥10,000 的发票若分两期各计一半，就在两期的弹窗里各填 ¥5,000。
+          这里只影响「本期已开票金额」的统计，不改变发票本身金额，也不影响收款。
         </div>
       </div>
 
@@ -237,6 +260,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { QuestionFilled } from '@element-plus/icons-vue'
 import { contractApi } from '@/api'
 import type {
   ContractInvoicePlan,
@@ -660,5 +684,18 @@ const overAmount = (row: PlanFormItem) =>
   margin-top: 12px;
   font-size: 12px;
   color: #909399;
+  line-height: 1.6;
+}
+
+.col-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.help-icon {
+  color: #909399;
+  cursor: help;
+  font-size: 13px;
 }
 </style>

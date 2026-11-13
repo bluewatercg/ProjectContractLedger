@@ -661,8 +661,25 @@ export class ContractService {
       ? await this.getContractRelations(contract.id, kitId)
       : [];
 
+    // 开票计划统一按预计开票日期排序：未填日期的排最后，同日按 id 稳定排序
+    // 关系加载不保证顺序，这里显式排序，避免关联发票后列表顺序跳动
+    const invoicePlans = [...(contract.invoice_plans || [])].sort((a, b) => {
+      const dateA = a.planned_invoice_date;
+      const dateB = b.planned_invoice_date;
+      if (dateA && dateB) {
+        const diff = String(dateA).localeCompare(String(dateB));
+        if (diff !== 0) return diff;
+      } else if (dateA) {
+        return -1;
+      } else if (dateB) {
+        return 1;
+      }
+      return a.id - b.id;
+    });
+
     return {
       ...this.formatContractResponse(contract),
+      invoice_plans: invoicePlans,
       contractTimeline,
       relations,
     };

@@ -21,19 +21,25 @@ export class ContractInvoicePlanService {
 
   /**
    * 根据合同查询所有开票计划
+   * 按预计开票日期升序；未填写日期的排在最后，同日按 id 保证顺序稳定
    */
   async getPlansByContract(
     contractId: number,
     kitId?: number
   ): Promise<ContractInvoicePlan[]> {
-    const where: any = { contract_id: contractId };
+    const qb = this.planRepository
+      .createQueryBuilder('plan')
+      .where('plan.contract_id = :contractId', { contractId });
+
     if (kitId) {
-      where.kit_id = kitId;
+      qb.andWhere('plan.kit_id = :kitId', { kitId });
     }
-    return this.planRepository.find({
-      where,
-      order: { id: 'ASC' },
-    });
+
+    return qb
+      .orderBy('plan.planned_invoice_date IS NULL', 'ASC')
+      .addOrderBy('plan.planned_invoice_date', 'ASC')
+      .addOrderBy('plan.id', 'ASC')
+      .getMany();
   }
 
   /**
