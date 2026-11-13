@@ -13,7 +13,6 @@ import {
   PaginationResult,
 } from '../interface';
 import { DateUtil } from '../utils/date.util';
-import { ContractInvoicePlan } from '../entity/contract-invoice-plan.entity';
 
 @Provide()
 export class InvoiceService {
@@ -37,6 +36,9 @@ export class InvoiceService {
 
   @Inject()
   contractInvoicePlanService: any; // 合同开票计划服务
+
+  @Inject()
+  invoicePlanAllocationService: any; // 发票-计划分摊服务
 
   /**
    * 格式化发票数据，处理日期字段
@@ -64,7 +66,7 @@ export class InvoiceService {
     if (!kitId) throw new Error('请选择当前套账');
     const allowedFields = [
       'contract_id',
-      'plan_id',
+      'plan_allocations',
       'amount',
       'tax_rate',
       'issue_date',
@@ -88,22 +90,6 @@ export class InvoiceService {
         createInvoiceDto.contract_id
       );
 
-      // 如果传入了 plan_id，先校验计划归属合同
-      if (createInvoiceDto.plan_id) {
-        const plan = await manager.findOne(ContractInvoicePlan, {
-          where: { id: createInvoiceDto.plan_id },
-        });
-        if (!plan) {
-          throw new Error('关联的开票计划不存在');
-        }
-        if (plan.contract_id !== createInvoiceDto.contract_id) {
-          throw new Error('开票计划所属合同与发票合同不一致');
-        }
-        if (plan.kit_id !== kitId) {
-          throw new Error('开票计划所属套账与当前套账不一致');
-        }
-      }
-
       // 生成发票编号
       const invoiceNumber = await this.generateInvoiceNumber();
 
@@ -112,8 +98,10 @@ export class InvoiceService {
       const tax_amount = amount * (tax_rate / 100);
       const total_amount = amount + tax_amount;
 
+      const { plan_allocations, ...invoiceFields } = createInvoiceDto;
+
       const invoice = this.invoiceRepository.create({
-        ...createInvoiceDto,
+        ...invoiceFields,
         invoice_number: invoiceNumber,
         kit_id: kitId,
         tax_amount,
@@ -124,12 +112,14 @@ export class InvoiceService {
         status: 'draft',
       });
 
-      const savedInvoice = await manager.save(invoice);
+      const savedInvoice = await manager.save(Invoice, invoice);
 
-      // 如果有关联计划，重算计划金额和状态
-      if (savedInvoice.plan_id) {
-        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
-          savedInvoice.plan_id,
+      // 写入开票计划分摊并重算相关计划
+      if (plan_allocations && plan_allocations.length) {
+        await this.invoicePlanAllocationService.replaceInvoiceAllocations(
+          savedInvoice,
+          kitId,
+          plan_allocations,
           manager
         );
       }
@@ -261,7 +251,7 @@ export class InvoiceService {
     if (!kitId) throw new Error('请选择当前套账');
     const allowedFields = [
       'contract_id',
-      'plan_id',
+      'plan_allocations',
       'amount',
       'tax_rate',
       'issue_date',
@@ -305,8 +295,6 @@ export class InvoiceService {
         if (!contract) throw new Error('合同不存在或不属于当前套账');
       }
 
-      const oldPlanId = invoice.plan_id;
-
       // 处理日期字段
       const updateData = { ...updateInvoiceDto } as any;
       if (updateData.issue_date) {
@@ -332,44 +320,30 @@ export class InvoiceService {
         updateData.total_amount = total_amount;
       }
 
-      // 如果更新了 plan_id，简单校验计划归属合同
-      if (updateData.plan_id) {
-        const plan = await manager.findOne(ContractInvoicePlan, {
-          where: { id: updateData.plan_id },
-        });
-        if (!plan) {
-          throw new Error('关联的开票计划不存在');
-        }
-        const contractId = updateData.contract_id ?? invoice.contract_id;
-        if (plan.contract_id !== contractId) {
-          throw new Error('开票计划所属合同与发票合同不一致');
-        }
-        if (plan.kit_id && kitId && plan.kit_id !== kitId) {
-          throw new Error('开票计划所属套账与当前套账不一致');
-        }
-      }
-
       Object.assign(invoice, updateData);
       const savedInvoice = await manager.save(invoice);
+
+      // 分摊：若提交了 plan_allocations 则整体替换，否则仅因金额变化重算
+      if (Array.isArray(updateData.plan_allocations)) {
+        await this.invoicePlanAllocationService.replaceInvoiceAllocations(
+          savedInvoice,
+          kitId,
+          updateData.plan_allocations,
+          manager
+        );
+      } else if (
+        updateData.amount !== undefined ||
+        updateData.tax_rate !== undefined
+      ) {
+        await this.invoicePlanAllocationService.recalcPlansForInvoice(
+          savedInvoice.id,
+          manager
+        );
+      }
 
       // 清除相关缓存
       if (this.statisticsService?.invalidateInvoiceCache) {
         this.statisticsService.invalidateInvoiceCache();
-      }
-
-      // 计划联动：旧计划 & 新计划都重算
-      const newPlanId = savedInvoice.plan_id;
-      if (oldPlanId && oldPlanId !== newPlanId) {
-        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
-          oldPlanId,
-          manager
-        );
-      }
-      if (newPlanId) {
-        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
-          newPlanId,
-          manager
-        );
       }
 
       // 格式化返回数据，处理日期字段
@@ -414,12 +388,11 @@ export class InvoiceService {
       invoice.voided_by = userId;
       invoice.voided_at = new Date();
       await manager.save(Invoice, invoice);
-      if (invoice.plan_id) {
-        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
-          invoice.plan_id,
-          manager
-        );
-      }
+      // 作废后重算该发票涉及的全部计划
+      await this.invoicePlanAllocationService.recalcPlansForInvoice(
+        invoice.id,
+        manager
+      );
       return invoice;
     });
     if (result) this.statisticsService?.invalidateInvoiceCache();
@@ -437,7 +410,7 @@ export class InvoiceService {
         whereCondition.kit_id = kitId;
       }
 
-      // 先获取发票以获得 contract_id 和 plan_id
+      // 先获取发票以获得 contract_id
       const invoice = await manager.findOne(Invoice, {
         where: whereCondition,
         lock: { mode: 'pessimistic_write' },
@@ -449,7 +422,13 @@ export class InvoiceService {
       if (invoice.status === 'cancelled')
         throw new Error('已作废发票不可删除，请保留审计记录');
 
-      const planId = invoice.plan_id;
+      // 记录涉及的计划，删除后需重算
+      const affectedPlanIds =
+        await this.invoicePlanAllocationService.getPlanIdsForInvoice(
+          invoice.id,
+          manager
+        );
+
       const result = await manager.delete(Invoice, whereCondition);
 
       // 清除相关缓存
@@ -460,12 +439,9 @@ export class InvoiceService {
         this.statisticsService.invalidateInvoiceCache();
       }
 
-      // 删除后重算关联计划
-      if (result.affected > 0 && planId) {
-        await this.contractInvoicePlanService.recalcPlanAmountAndStatus(
-          planId,
-          manager
-        );
+      // 删除后重算受影响的开票计划（分摊记录随发票级联删除）
+      for (const planId of affectedPlanIds) {
+        await this.invoicePlanAllocationService.recalcPlan(planId, manager);
       }
 
       // 自动更新合同状态：无发票且无附件 -> draft（草稿）

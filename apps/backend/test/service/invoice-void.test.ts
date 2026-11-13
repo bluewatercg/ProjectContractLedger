@@ -53,6 +53,11 @@ function setup(
   service.contractInvoicePlanService = {
     recalcPlanAmountAndStatus: async () => undefined,
   };
+  service.invoicePlanAllocationService = {
+    recalcPlansForInvoice: async () => undefined,
+    getPlanIdsForInvoice: async () => [],
+    recalcPlan: async () => undefined,
+  };
   service.statisticsService = { invalidateInvoiceCache: () => undefined };
   return { service, invoice };
 }

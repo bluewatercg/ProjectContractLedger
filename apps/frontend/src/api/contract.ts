@@ -7,7 +7,10 @@ import type {
   CreateContractDto,
   UpdateContractDto,
   ContractInvoicePlan,
-  ConfirmNonRenewalDto
+  ConfirmNonRenewalDto,
+  PlanAllocationDetail,
+  PlanSideAllocationItem,
+  AllocatableInvoice
 } from './types'
 
 export const contractApi = {
@@ -76,6 +79,58 @@ export const contractApi = {
     params?: { viewAll?: boolean }
   ): Promise<ApiResponse<void>> {
     return apiClient.delete(`/contracts/${contractId}/invoice-plans/${planId}`, { params }).then(res => res.data)
+  },
+
+  /**
+   * 获取某期开票计划已分摊的发票明细
+   */
+  getPlanAllocations(
+    contractId: number,
+    planId: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<PlanAllocationDetail[]>> {
+    return apiClient
+      .get(`/contracts/${contractId}/invoice-plans/${planId}/allocations`, { params })
+      .then(res => res.data)
+  },
+
+  /**
+   * 覆盖式保存某期计划的发票分摊
+   */
+  savePlanAllocations(
+    contractId: number,
+    planId: number,
+    items: PlanSideAllocationItem[]
+  ): Promise<ApiResponse<PlanAllocationDetail[]>> {
+    return apiClient
+      .put(`/contracts/${contractId}/invoice-plans/${planId}/allocations`, { items })
+      .then(res => res.data)
+  },
+
+  /**
+   * 解除某期计划与某张发票的关联
+   */
+  removePlanAllocation(
+    contractId: number,
+    planId: number,
+    invoiceId: number
+  ): Promise<ApiResponse<void>> {
+    return apiClient
+      .delete(`/contracts/${contractId}/invoice-plans/${planId}/allocations/${invoiceId}`)
+      .then(res => res.data)
+  },
+
+  /**
+   * 获取本合同下可分摊的发票及剩余额度
+   */
+  getAllocatableInvoices(
+    contractId: number,
+    planId: number,
+    params?: { viewAll?: boolean }
+  ): Promise<ApiResponse<AllocatableInvoice[]>> {
+    return apiClient
+      .get(`/contracts/${contractId}/invoice-plans/${planId}/allocatable-invoices`, { params })
+      .then(res => res.data)
   },
 
   /**

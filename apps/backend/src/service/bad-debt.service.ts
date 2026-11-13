@@ -3,7 +3,6 @@ import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Invoice } from '../entity/invoice.entity';
 import { Contract } from '../entity/contract.entity';
-import { ContractInvoicePlan } from '../entity/contract-invoice-plan.entity';
 import { MarkBadDebtDto } from '../interface';
 
 @Provide()
@@ -14,9 +13,6 @@ export class BadDebtService {
   @InjectEntityModel(Contract)
   contractRepository: Repository<Contract>;
 
-  @InjectEntityModel(ContractInvoicePlan)
-  planRepository: Repository<ContractInvoicePlan>;
-
   @InjectDataSource()
   dataSource: DataSource;
 
@@ -25,6 +21,9 @@ export class BadDebtService {
 
   @Inject()
   contractInvoicePlanService: any;
+
+  @Inject()
+  invoicePlanAllocationService: any;
 
   @Inject()
   statisticsService: any;
@@ -41,7 +40,7 @@ export class BadDebtService {
     return await this.dataSource.transaction(async manager => {
       const invoice = await manager.findOne(Invoice, {
         where: { id: invoiceId, kit_id: kitId },
-        relations: ['payments', 'contract', 'plan'],
+        relations: ['payments', 'contract'],
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -81,10 +80,11 @@ export class BadDebtService {
 
       await manager.save(Invoice, invoice);
 
-      // 级联：重新计算关联的开票计划状态
-      if (invoice.plan_id) {
-        await this.recalcPlanStatus(invoice.plan_id, manager);
-      }
+      // 级联：重新计算该发票涉及的全部开票计划
+      await this.invoicePlanAllocationService.recalcPlansForInvoice(
+        invoice.id,
+        manager
+      );
 
       // 级联：重新计算合同财务统计（通过 contractService）
       if (this.statisticsService?.invalidateContractCache) {
@@ -111,7 +111,6 @@ export class BadDebtService {
     return await this.dataSource.transaction(async manager => {
       const invoice = await manager.findOne(Invoice, {
         where: { id: invoiceId, kit_id: kitId },
-        relations: ['plan'],
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -136,10 +135,11 @@ export class BadDebtService {
 
       await manager.save(Invoice, invoice);
 
-      // 级联：重新计算开票计划状态
-      if (invoice.plan_id) {
-        await this.recalcPlanStatus(invoice.plan_id, manager);
-      }
+      // 级联：重新计算该发票涉及的全部开票计划
+      await this.invoicePlanAllocationService.recalcPlansForInvoice(
+        invoice.id,
+        manager
+      );
 
       if (this.statisticsService?.invalidateContractCache) {
         this.statisticsService.invalidateContractCache();
@@ -251,51 +251,5 @@ export class BadDebtService {
         a.month.localeCompare(b.month)
       ),
     };
-  }
-
-  /**
-   * 重新计算开票计划状态（考虑坏账）
-   */
-  private async recalcPlanStatus(planId: number, manager: any): Promise<void> {
-    const plan = await manager.findOne(ContractInvoicePlan, {
-      where: { id: planId },
-      relations: ['invoices'],
-      lock: { mode: 'pessimistic_write' },
-    });
-
-    if (!plan || !plan.invoices || plan.invoices.length === 0) return;
-
-    const nonCancelledInvoices = plan.invoices.filter(
-      (inv: any) => inv.status !== 'cancelled'
-    );
-
-    if (nonCancelledInvoices.length === 0) {
-      plan.status = 'pending';
-    } else {
-      const allBadDebt = nonCancelledInvoices.every(
-        (inv: any) => inv.status === 'bad_debt'
-      );
-
-      if (allBadDebt) {
-        plan.status = 'bad_debt';
-      } else {
-        // 使用原有逻辑重新计算
-        const actual = nonCancelledInvoices.reduce(
-          (sum: number, inv: any) => sum + Number(inv.total_amount || 0),
-          0
-        );
-        plan.actual_invoiced_amount = actual;
-
-        if (actual <= 0) {
-          plan.status = 'pending';
-        } else if (actual < Number(plan.planned_amount || 0)) {
-          plan.status = 'partial_invoiced';
-        } else {
-          plan.status = 'invoiced';
-        }
-      }
-    }
-
-    await manager.save(ContractInvoicePlan, plan);
   }
 }

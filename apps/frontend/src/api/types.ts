@@ -93,6 +93,38 @@ export interface UpdateCustomerDto extends Partial<CreateCustomerDto> {
 }
 
 // 合同相关类型
+export interface InvoicePlanAllocationItem {
+  plan_id: number
+  allocated_amount: number
+}
+
+export interface PlanSideAllocationItem {
+  invoice_id: number
+  allocated_amount: number
+}
+
+export interface PlanAllocationDetail {
+  id: number
+  invoice_id: number
+  allocated_amount: number
+  invoice_number: string
+  total_amount: number
+  issue_date?: string | null
+  status: string
+}
+
+export interface AllocatableInvoice {
+  id: number
+  invoice_number: string
+  total_amount: number
+  issue_date?: string | null
+  status: string
+  allocated_total: number
+  allocated_this_plan: number
+  allocated_elsewhere: number
+  remaining: number
+}
+
 export interface ContractInvoicePlan {
   id: number
   kit_id: number
@@ -216,7 +248,7 @@ export interface Invoice {
   id: number
   invoice_number: string
   contract_id: number
-  plan_id?: number | null
+  plan_allocations?: PlanAllocationDetail[]
   amount: number
   tax_rate: number
   tax_amount: number
@@ -241,7 +273,7 @@ export interface Invoice {
 
 export interface CreateInvoiceDto {
   contract_id: number
-  plan_id?: number
+  plan_allocations?: InvoicePlanAllocationItem[]
   amount: number
   tax_rate?: number
   issue_date: string

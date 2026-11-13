@@ -105,27 +105,55 @@
 
             <el-form-item
               v-if="contractInvoicePlans.length > 0"
-              label="对应开票计划"
-              prop="plan_id"
+              label="开票计划分摊"
               class="form-item-full"
             >
-              <el-select
-                v-model="form.plan_id"
-                placeholder="可选，选择对应的开票期数"
-                style="width: 100%"
-                clearable
-              >
-                <el-option
-                  v-for="plan in contractInvoicePlans"
-                  :key="plan.id"
-                  :label="`${plan.phase_name}（计划 ¥${formatPlanAmount(
-                    plan.planned_amount
-                  )}，已开 ¥${formatPlanAmount(
-                    plan.actual_invoiced_amount || 0
-                  )}）`"
-                  :value="plan.id"
-                />
-              </el-select>
+              <div class="plan-allocation-box">
+                <div class="plan-allocation-tip">
+                  可把本张发票拆分到多个开票期，未填写的期不计入。
+                </div>
+                <el-table :data="planAllocationRows" border size="small">
+                  <el-table-column label="期数" width="90">
+                    <template #default="scope">
+                      <el-switch
+                        v-model="scope.row.enabled"
+                        size="small"
+                        @change="onPlanAllocationToggle(scope.row)"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="期数名称" min-width="200">
+                    <template #default="scope">
+                      <span>{{ scope.row.phase_name }}</span>
+                      <span class="plan-meta">
+                        计划 ¥{{ formatPlanAmount(scope.row.planned_amount) }}，已开
+                        ¥{{ formatPlanAmount(scope.row.allocated_this_plan || 0) }}
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="计入本期" width="170">
+                    <template #default="scope">
+                      <el-input-number
+                        v-model="scope.row.allocated_amount"
+                        :min="0"
+                        :precision="2"
+                        size="small"
+                        :disabled="!scope.row.enabled"
+                        style="width: 100%"
+                        @change="onPlanAllocationAmountChange"
+                      />
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <div class="plan-allocation-summary">
+                  已分摊：
+                  <span :class="allocationExceedsInvoice ? 'text-danger' : 'text-primary'">
+                    ¥{{ formatPlanAmount(allocationTotal) }}
+                  </span>
+                  / 发票总额 ¥{{ formatPlanAmount(totalAmount) }}，未分摊
+                  ¥{{ formatPlanAmount(Math.max(0, totalAmount - allocationTotal)) }}
+                </div>
+              </div>
             </el-form-item>
           </div>
         </div>
@@ -268,7 +296,7 @@ const invoiceId = computed(() => Number(route.params.id));
 // 表单数据
 const form = reactive<UpdateInvoiceDto>({
   contract_id: 0,
-  plan_id: undefined,
+  plan_allocations: [],
   amount: 0,
   tax_rate: 0,
   issue_date: "",
@@ -276,6 +304,66 @@ const form = reactive<UpdateInvoiceDto>({
   description: "",
   notes: "",
 });
+
+// 开票计划分摊行
+interface PlanAllocationRow {
+  plan_id: number;
+  phase_name: string;
+  planned_amount: number;
+  allocated_this_plan: number;
+  enabled: boolean;
+  allocated_amount: number;
+}
+
+const planAllocationRows = ref<PlanAllocationRow[]>([]);
+
+const allocationTotal = computed(() =>
+  planAllocationRows.value
+    .filter(row => row.enabled)
+    .reduce((sum, row) => sum + (Number(row.allocated_amount) || 0), 0)
+);
+
+const allocationExceedsInvoice = computed(
+  () => allocationTotal.value > totalAmount.value + 0.01
+);
+
+const onPlanAllocationToggle = (row: PlanAllocationRow) => {
+  if (row.enabled && !(Number(row.allocated_amount) > 0)) {
+    // 勾选后默认带出「发票未分摊额」与「该期剩余」的较小值
+    const remainingInvoice = Math.max(0, totalAmount.value - allocationTotal.value);
+    row.allocated_amount = Number(
+      Math.min(remainingInvoice || totalAmount.value, row.planned_amount || remainingInvoice)
+        .toFixed(2)
+    );
+  }
+  if (!row.enabled) {
+    row.allocated_amount = 0;
+  }
+};
+
+const onPlanAllocationAmountChange = () => {
+  // 触发 computed 重算
+};
+
+const buildAllocationRows = (
+  plans: ContractInvoicePlan[],
+  existing?: Array<{ plan_id: number; allocated_amount: number }>
+) => {
+  const existingMap = new Map(
+    (existing || []).map(item => [item.plan_id, Number(item.allocated_amount) || 0])
+  );
+  planAllocationRows.value = (plans || []).map(plan => {
+    const amount = existingMap.get(plan.id) || 0;
+    return {
+      plan_id: plan.id,
+      phase_name: plan.phase_name,
+      planned_amount: Number(plan.planned_amount || 0),
+      allocated_this_plan: Number(plan.actual_invoiced_amount || 0),
+      enabled: amount > 0,
+      allocated_amount: amount,
+    };
+  });
+};
 
 // 计算税额和总额
 const taxAmount = computed(() => {
@@ -323,8 +411,8 @@ const handleContractChange = async (
   contract: Contract | null
 ) => {
   form.contract_id = contractId || 0;
-  form.plan_id = undefined;
   contractInvoicePlans.value = [];
+  planAllocationRows.value = [];
 
   // 如果选择了合同，自动设置客户
   if (contract && contract.customer) {
@@ -339,6 +427,7 @@ const handleContractChange = async (
       });
       if (res.success && res.data && Array.isArray(res.data.invoice_plans)) {
         contractInvoicePlans.value = res.data.invoice_plans;
+        buildAllocationRows(res.data.invoice_plans);
       }
     } catch (error) {
       console.error("Failed to fetch contract invoice plans:", error);
@@ -402,7 +491,7 @@ const fetchInvoice = async () => {
 
       // 仅取 DTO 允许字段，防止伪造 id/kit_id/void/bad_debt
       form.contract_id = invoiceData.contract_id || 0;
-      form.plan_id = invoiceData.plan_id ?? undefined;
+      buildAllocationRows(contractInvoicePlans.value, invoiceData.plan_allocations || []);
       form.amount = Number(invoiceData.amount || 0);
       form.tax_rate = Number(invoiceData.tax_rate || 0);
       form.issue_date = parseDate(invoiceData.issue_date) || "";
@@ -429,11 +518,28 @@ const handleSubmit = async () => {
 
   try {
     await formRef.value.validate();
+
+    if (allocationExceedsInvoice.value) {
+      ElMessage.warning(
+        `计划分摊合计 ¥${formatPlanAmount(allocationTotal.value)} 超过发票总额 ¥${formatPlanAmount(totalAmount.value)}`
+      );
+      return;
+    }
+
     submitting.value = true;
+
+    // 计划分摊：仅提交启用且金额大于 0 的行
+    const plan_allocations = planAllocationRows.value
+      .filter(row => row.enabled && Number(row.allocated_amount) > 0)
+      .map(row => ({
+        plan_id: row.plan_id,
+        allocated_amount: Number(Number(row.allocated_amount).toFixed(2)),
+      }));
 
     // 格式化日期字段
     const submitData = {
       ...form,
+      plan_allocations,
       issue_date: formatDate(form.issue_date),
       due_date: formatDate(form.due_date),
     };
@@ -543,6 +649,7 @@ onMounted(async () => {
           }
           if (Array.isArray(contract.invoice_plans)) {
             contractInvoicePlans.value = contract.invoice_plans;
+            buildAllocationRows(contract.invoice_plans);
           }
         }
       } catch (error) {
@@ -556,6 +663,37 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.plan-allocation-box {
+  width: 100%;
+}
+
+.plan-allocation-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.plan-meta {
+  display: block;
+  font-size: 12px;
+  color: #909399;
+}
+
+.plan-allocation-summary {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.text-primary {
+  color: #409eff;
+  font-weight: 600;
+}
+
+.text-danger {
+  color: #f56c6c;
+  font-weight: 600;
+}
 /* 表单容器 */
 .invoice-form-container {
   max-width: 1200px;

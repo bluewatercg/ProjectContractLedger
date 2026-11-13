@@ -609,6 +609,26 @@ export class MarkBadDebtDto {
 }
 
 /**
+ * 发票侧：一张发票拆分到某个开票计划的金额
+ */
+export class InvoicePlanAllocationItemDto {
+  @ApiProperty({
+    description: '开票计划ID',
+    example: 1,
+    type: 'integer',
+  })
+  plan_id: number;
+
+  @ApiProperty({
+    description: '该发票计入此计划的金额',
+    example: 10000.0,
+    type: 'number',
+    format: 'decimal',
+  })
+  allocated_amount: number;
+}
+
+/**
  * 发票相关接口
  */
 export class CreateInvoiceDto {
@@ -620,11 +640,10 @@ export class CreateInvoiceDto {
   contract_id: number;
 
   @ApiPropertyOptional({
-    description: '关联的合同开票计划ID',
-    example: 1,
-    type: 'integer',
+    description: '开票计划分摊列表，一张发票可拆分到多个计划',
+    type: [InvoicePlanAllocationItemDto],
   })
-  plan_id?: number;
+  plan_allocations?: InvoicePlanAllocationItemDto[];
 
   @ApiProperty({
     description: '不含税金额',
@@ -685,11 +704,10 @@ export class UpdateInvoiceDto {
   contract_id?: number;
 
   @ApiPropertyOptional({
-    description: '关联的合同开票计划ID',
-    example: 1,
-    type: 'integer',
+    description: '开票计划分摊列表，一张发票可拆分到多个计划',
+    type: [InvoicePlanAllocationItemDto],
   })
-  plan_id?: number;
+  plan_allocations?: InvoicePlanAllocationItemDto[];
 
   @ApiPropertyOptional({
     description: '不含税金额',

@@ -93,3 +93,30 @@ export class BatchSaveContractInvoicePlanDto {
   })
   plans: CreateContractInvoicePlanDto[];
 }
+
+/**
+ * 计划侧：为某期关联一张发票并指定计入金额
+ */
+export class PlanSideAllocationItemDto {
+  @ApiProperty({ description: '发票ID', example: 1, type: 'integer' })
+  invoice_id: number;
+
+  @ApiProperty({
+    description: '该发票计入本计划的金额',
+    example: 10000.0,
+    type: 'number',
+    format: 'decimal',
+  })
+  allocated_amount: number;
+}
+
+/**
+ * 计划侧：批量设置某期关联的发票
+ */
+export class ReplacePlanAllocationsDto {
+  @ApiProperty({
+    description: '该计划下发票分摊列表，未列出的既有分摊将被解绑',
+    type: [PlanSideAllocationItemDto],
+  })
+  items: PlanSideAllocationItemDto[];
+}

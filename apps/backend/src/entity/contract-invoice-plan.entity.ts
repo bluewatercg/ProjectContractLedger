@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Kit } from './kit.entity';
 import { Contract } from './contract.entity';
-import { Invoice } from './invoice.entity';
+import { InvoicePlanAllocation } from './invoice-plan-allocation.entity';
 
 export type ContractInvoicePlanStatus =
   | 'pending'
@@ -94,6 +94,6 @@ export class ContractInvoicePlan {
   @JoinColumn({ name: 'contract_id' })
   contract: Contract;
 
-  @OneToMany(() => Invoice, invoice => invoice.plan)
-  invoices: Invoice[];
+  @OneToMany(() => InvoicePlanAllocation, allocation => allocation.plan)
+  allocations: InvoicePlanAllocation[];
 }

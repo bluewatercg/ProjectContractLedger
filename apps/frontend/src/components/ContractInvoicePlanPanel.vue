@@ -107,10 +107,34 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="已分摊 / 计划" width="180">
         <template #default="scope">
+          <div class="allocated-cell">
+            <span :class="isOverAllocated(scope.row) ? 'text-danger' : ''">
+              ¥{{ formatCurrency(scope.row.actual_invoiced_amount) }}
+            </span>
+            <span class="allocated-sep">/</span>
+            <span class="text-muted">¥{{ formatCurrency(scope.row.planned_amount) }}</span>
+            <span v-if="isOverAllocated(scope.row)" class="over-tag">
+              +¥{{ formatCurrency(overAmount(scope.row)) }}
+            </span>
+          </div>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="操作" width="190" fixed="right">
+        <template #default="scope">
+          <el-button
+            v-if="scope.row.id"
+            type="primary"
+            size="small"
+            text
+            @click="openAllocationDialog(scope.row)"
+          >
+            关联发票
+          </el-button>
           <el-popconfirm
-            title="确认删除该期开票计划？若已关联发票会删除失败。"
+            title="确认删除该期开票计划？若已分摊发票会删除失败。"
             @confirm="handleDeleteRow(scope.$index, scope.row)"
           >
             <template #reference>
@@ -142,6 +166,71 @@
         <el-button type="primary" :loading="saving" @click="handleSave">保存计划</el-button>
       </div>
     </div>
+
+    <!-- 关联发票弹窗 -->
+    <el-dialog
+      v-model="allocationDialogVisible"
+      :title="`关联发票 · ${activePlanLabel}`"
+      width="820px"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="allocationLoading">
+        <div class="dialog-summary">
+          计划金额：¥{{ formatCurrency(activePlanPlanned) }}
+          ，已分摊：
+          <span :class="allocatedMismatch ? 'text-danger' : 'text-primary'">
+            ¥{{ formatCurrency(allocatedSum) }}
+          </span>
+          <span class="text-muted">（超出计划不阻止，状态将置为已开票）</span>
+        </div>
+
+        <el-table :data="allocationRows" border size="small" max-height="420">
+          <el-table-column label="发票号" min-width="150">
+            <template #default="scope">
+              <span :class="scope.row.status === 'cancelled' ? 'text-muted' : ''">
+                {{ scope.row.invoice_number }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="发票总额" width="120" align="right">
+            <template #default="scope">¥{{ formatCurrency(scope.row.total_amount) }}</template>
+          </el-table-column>
+          <el-table-column label="其他计划已分摊" width="130" align="right">
+            <template #default="scope">¥{{ formatCurrency(scope.row.allocated_elsewhere) }}</template>
+          </el-table-column>
+          <el-table-column label="计入本期" width="170">
+            <template #default="scope">
+              <el-input-number
+                v-model="scope.row.allocated_amount"
+                :min="0"
+                :max="scope.row.total_amount - scope.row.allocated_elsewhere"
+                :precision="2"
+                size="small"
+                :disabled="scope.row.status === 'cancelled'"
+                style="width: 100%"
+                @change="onAllocationAmountChange"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="剩余可分摊" width="120" align="right">
+            <template #default="scope">
+              ¥{{ formatCurrency(scope.row.remaining - (scope.row.allocated_amount || 0)) }}
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="dialog-tip">
+          只展示本合同下未作废的发票；填 0 或留空表示不计入本期。
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="allocationDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="allocationSaving" @click="handleSaveAllocations">
+          保存关联
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -149,7 +238,12 @@
 import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { contractApi } from '@/api'
-import type { ContractInvoicePlan } from '@/api/types'
+import type {
+  ContractInvoicePlan,
+  PlanAllocationDetail,
+  AllocatableInvoice,
+  PlanSideAllocationItem
+} from '@/api/types'
 import { useKitStore } from '@/stores/kit'
 
 interface PlanFormItem {
@@ -160,6 +254,7 @@ interface PlanFormItem {
   planned_amount: number
   planned_invoice_date?: string | null
   remind_days_before?: number | null
+  actual_invoiced_amount?: number
   status?: ContractInvoicePlan['status']
   editMode?: 'ratio' | 'amount' | null
 }
@@ -256,6 +351,7 @@ const resetFromProps = () => {
     planned_amount: Number(p.planned_amount || 0),
     planned_invoice_date: p.planned_invoice_date || null,
     remind_days_before: p.remind_days_before ?? 0,
+    actual_invoiced_amount: Number(p.actual_invoiced_amount || 0),
     status: p.status,
     editMode: null,
   }))
@@ -356,6 +452,121 @@ const handleSave = async () => {
     saving.value = false
   }
 }
+
+// ---------------------------------------------------------------- 关联发票弹窗
+
+const allocationDialogVisible = ref(false)
+const allocationLoading = ref(false)
+const allocationSaving = ref(false)
+const activePlan = ref<PlanFormItem | null>(null)
+const allocationRows = ref<
+  Array<AllocatableInvoice & { allocated_amount: number }>
+>([])
+
+const activePlanLabel = computed(() => activePlan.value?.phase_name || '')
+const activePlanPlanned = computed(() =>
+  Number(activePlan.value?.planned_amount || 0)
+)
+
+const allocatedSum = computed(() =>
+  allocationRows.value.reduce(
+    (sum, row) => sum + (Number(row.allocated_amount) || 0),
+    0
+  )
+)
+
+const allocatedMismatch = computed(
+  () => allocatedSum.value > activePlanPlanned.value + 0.01
+)
+
+const onAllocationAmountChange = () => {
+  // 仅用于触发 computed 重算，实际校验在保存时进行
+}
+
+const openAllocationDialog = async (row: PlanFormItem) => {
+  if (!row.id) {
+    ElMessage.warning('请先保存该期计划后再关联发票')
+    return
+  }
+  activePlan.value = row
+  allocationDialogVisible.value = true
+  allocationLoading.value = true
+  allocationRows.value = []
+  try {
+    const res = await contractApi.getAllocatableInvoices(
+      props.contractId,
+      row.id,
+      { viewAll: kitStore.viewAllKits }
+    )
+    if (!res.success) {
+      ElMessage.error(res.message || '获取可分摊发票失败')
+      return
+    }
+    allocationRows.value = (res.data || []).map(invoice => ({
+      ...invoice,
+      allocated_amount: Number(invoice.allocated_this_plan || 0)
+    }))
+  } catch (error: any) {
+    console.error('load allocatable invoices error', error)
+    ElMessage.error(error?.message || '获取可分摊发票失败')
+  } finally {
+    allocationLoading.value = false
+  }
+}
+
+const handleSaveAllocations = async () => {
+  const planId = activePlan.value?.id
+  if (!planId) return
+
+  for (const row of allocationRows.value) {
+    const amount = Number(row.allocated_amount) || 0
+    if (amount < 0) {
+      ElMessage.warning(`发票 ${row.invoice_number} 的分摊金额不能为负`)
+      return
+    }
+    if (amount > row.remaining + 0.01) {
+      ElMessage.warning(
+        `发票 ${row.invoice_number} 超出可分摊额度 ¥${formatCurrency(row.remaining)}`
+      )
+      return
+    }
+  }
+
+  const items: PlanSideAllocationItem[] = allocationRows.value
+    .filter(row => Number(row.allocated_amount) > 0)
+    .map(row => ({
+      invoice_id: row.id,
+      allocated_amount: Number(Number(row.allocated_amount).toFixed(2))
+    }))
+
+  try {
+    allocationSaving.value = true
+    const res = await contractApi.savePlanAllocations(
+      props.contractId,
+      planId,
+      items
+    )
+    if (!res.success) {
+      ElMessage.error(res.message || '保存失败')
+      return
+    }
+    ElMessage.success('发票关联已保存')
+    allocationDialogVisible.value = false
+    emit('updated')
+  } catch (error: any) {
+    console.error('save plan allocations error', error)
+    ElMessage.error(error?.message || '保存失败')
+  } finally {
+    allocationSaving.value = false
+  }
+}
+
+const isOverAllocated = (row: PlanFormItem) =>
+  Number(row.actual_invoiced_amount || 0) >
+  Number(row.planned_amount || 0) + 0.01
+
+const overAmount = (row: PlanFormItem) =>
+  Number(row.actual_invoiced_amount || 0) - Number(row.planned_amount || 0)
 </script>
 
 <style scoped>
@@ -420,5 +631,34 @@ const handleSave = async () => {
 
 .mb-3 {
   margin-bottom: 12px;
+}
+
+.allocated-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.allocated-sep {
+  color: #c0c4cc;
+}
+
+.over-tag {
+  color: #f56c6c;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.dialog-summary {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 12px;
+}
+
+.dialog-tip {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #909399;
 }
 </style>

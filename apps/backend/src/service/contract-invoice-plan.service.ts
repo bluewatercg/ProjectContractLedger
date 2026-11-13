@@ -2,7 +2,7 @@ import { Provide, Inject } from '@midwayjs/core';
 import { InjectEntityModel, InjectDataSource } from '@midwayjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ContractInvoicePlan } from '../entity/contract-invoice-plan.entity';
-import { Invoice } from '../entity/invoice.entity';
+import { InvoicePlanAllocation } from '../entity/invoice-plan-allocation.entity';
 import { CreateContractInvoicePlanDto } from '../interface.contract-invoice-plan';
 
 @Provide()
@@ -10,14 +10,14 @@ export class ContractInvoicePlanService {
   @InjectEntityModel(ContractInvoicePlan)
   planRepository: Repository<ContractInvoicePlan>;
 
-  @InjectEntityModel(Invoice)
-  invoiceRepository: Repository<Invoice>;
-
   @InjectDataSource()
   dataSource: DataSource;
 
   @Inject()
   statisticsService: any; // 如需后续做报表缓存，可复用统计服务
+
+  @Inject()
+  invoicePlanAllocationService: any;
 
   /**
    * 根据合同查询所有开票计划
@@ -49,7 +49,7 @@ export class ContractInvoicePlanService {
   ): Promise<void> {
     await this.dataSource.transaction(async manager => {
       const planRepo = manager.getRepository(ContractInvoicePlan);
-      const invoiceRepo = manager.getRepository(Invoice);
+      const allocationRepo = manager.getRepository(InvoicePlanAllocation);
 
       const existingPlans = await planRepo.find({
         where: { contract_id: contractId, kit_id: kitId },
@@ -103,10 +103,12 @@ export class ContractInvoicePlanService {
       // delete removed ones (if not bound to invoices)
       for (const old of existingPlans) {
         if (!incomingIds.has(old.id)) {
-          const count = await invoiceRepo.count({ where: { plan_id: old.id } });
+          const count = await allocationRepo.count({
+            where: { plan_id: old.id },
+          });
           if (count > 0) {
             throw new Error(
-              `计划 ID ${old.id} 已关联发票，无法删除，请先取消关联发票后再删除计划。`
+              `计划「${old.phase_name}」已分摊发票，无法删除，请先解除分摊后再删除计划。`
             );
           }
           await planRepo.delete(old.id);
@@ -123,7 +125,7 @@ export class ContractInvoicePlanService {
   async deletePlan(planId: number, kitId?: number): Promise<boolean> {
     return await this.dataSource.transaction(async manager => {
       const planRepo = manager.getRepository(ContractInvoicePlan);
-      const invoiceRepo = manager.getRepository(Invoice);
+      const allocationRepo = manager.getRepository(InvoicePlanAllocation);
 
       const where: any = { id: planId };
       if (kitId) {
@@ -135,9 +137,9 @@ export class ContractInvoicePlanService {
         return false;
       }
 
-      const count = await invoiceRepo.count({ where: { plan_id: plan.id } });
+      const count = await allocationRepo.count({ where: { plan_id: plan.id } });
       if (count > 0) {
-        throw new Error('该开票计划已关联发票，无法删除');
+        throw new Error('该开票计划已分摊发票，无法删除，请先解除分摊');
       }
 
       const result = await planRepo.delete(plan.id);
@@ -147,60 +149,13 @@ export class ContractInvoicePlanService {
 
   /**
    * 重新计算计划的实际开票金额和状态
-   * - 汇总该计划下未取消发票的 total_amount
-   * - 根据 planned_amount 对比设置 status
-   *
-   * 并发安全：有 manager 时锁定 plan 行和发票集合，避免旧快照覆盖
+   * 委托给 InvoicePlanAllocationService，保证与发票侧共用同一套口径
    */
   async recalcPlanAmountAndStatus(
     planId: number,
     manager?: EntityManager
   ): Promise<void> {
-    const execute = async (mgr: EntityManager) => {
-      const planRepo = mgr.getRepository(ContractInvoicePlan);
-      const invoiceRepo = mgr.getRepository(Invoice);
-
-      // 锁定 plan 行，防止并发修改
-      const plan = await planRepo
-        .createQueryBuilder('plan')
-        .where('plan.id = :id', { id: planId })
-        .setLock('pessimistic_write')
-        .getOne();
-
-      if (!plan) {
-        return;
-      }
-
-      // 锁定发票集合，确保读到最新提交
-      const invoices = await invoiceRepo
-        .createQueryBuilder('invoice')
-        .where('invoice.plan_id = :planId', { planId })
-        .setLock('pessimistic_write')
-        .getMany();
-
-      const actual = invoices
-        .filter(inv => inv.status !== 'cancelled')
-        .reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
-
-      plan.actual_invoiced_amount = actual;
-
-      if (actual <= 0) {
-        plan.status = 'pending';
-      } else if (actual < Number(plan.planned_amount || 0)) {
-        plan.status = 'partial_invoiced';
-      } else {
-        plan.status = 'invoiced';
-      }
-
-      await planRepo.save(plan);
-    };
-
-    // 有 manager 时直接使用（已在事务中），无 manager 时开启事务
-    if (manager) {
-      await execute(manager);
-    } else {
-      await this.dataSource.transaction(execute);
-    }
+    await this.invoicePlanAllocationService.recalcPlan(planId, manager);
   }
 
   /**
