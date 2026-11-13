@@ -17,7 +17,10 @@ export default {
         synchronize: false,
         logging: process.env.LOG_LEVEL === 'debug',
         entities: ['**/entity/*.entity{.ts,.js}'],
-        timezone: '+08:00',
+        // 与 config.default.ts 保持一致：JS Date 按 UTC 解析，
+        // 会话时区由 MySqlAppDataSource 锁定为 +08:00
+        timezone: 'Z',
+        sessionTimeZone: '+08:00',
         // 生产环境连接池配置
         extra: {
           connectionLimit: parseInt(process.env.DB_POOL_SIZE || '20'),

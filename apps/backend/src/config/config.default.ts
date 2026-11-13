@@ -1,7 +1,11 @@
 // import { MidwayConfig } from '@midwayjs/core';
 import { resolve } from 'path';
+import { MySqlAppDataSource } from '../datasource/mysql-app-datasource';
 
 const logDir = process.env.LOG_DIR || resolve(process.cwd(), 'logs');
+
+// 应用统一时区：会话时区与时间解析都以东八区为准
+const APP_TIME_ZONE = '+08:00';
 
 export default {
   // use for cookie sign key, should change to your own and keep security
@@ -22,6 +26,7 @@ export default {
     dataSource: {
       default: {
         type: 'mysql',
+        customDataSourceClass: MySqlAppDataSource,
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '3306'),
         username: process.env.DB_USERNAME || 'root',
@@ -31,7 +36,10 @@ export default {
         migrationsRun: false,
         logging: process.env.NODE_ENV === 'local',
         entities: ['**/entity/*.entity{.ts,.js}'],
-        timezone: '+08:00',
+        // mysql2 的 timezone 只影响 JS Date 解析，此处置 Z 避免偏移被二次叠加；
+        // 会话时区由 customDataSourceClass 显式锁定为 APP_TIME_ZONE
+        timezone: 'Z',
+        sessionTimeZone: APP_TIME_ZONE,
         // 连接池配置
         extra: {
           connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10'),

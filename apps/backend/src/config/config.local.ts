@@ -14,7 +14,10 @@ export default {
         synchronize: false, // 暂时禁用，需要先运行迁移脚本
         logging: true,
         entities: ['**/entity/*.entity{.ts,.js}'],
-        timezone: '+08:00',
+        // 与 config.default.ts 保持一致：JS Date 按 UTC 解析，
+        // 会话时区由 MySqlAppDataSource 锁定为 +08:00
+        timezone: 'Z',
+        sessionTimeZone: '+08:00',
       },
     },
   },
