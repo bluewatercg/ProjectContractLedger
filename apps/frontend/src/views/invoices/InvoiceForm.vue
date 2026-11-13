@@ -218,17 +218,34 @@
 
         <div class="form-actions">
           <el-button @click="goBack">取消</el-button>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit">
+          <el-button
+            v-if="createdInvoiceId"
+            type="primary"
+            @click="router.push('/invoices')"
+          >
+            完成
+          </el-button>
+          <el-button v-else type="primary" :loading="submitting" @click="handleSubmit">
             {{ submitting ? "保存中..." : "保存" }}
           </el-button>
         </div>
       </el-form>
 
-      <!-- 发票附件（仅编辑模式显示） -->
+      <!-- 发票附件（编辑模式 / 新建保存后显示） -->
       <div v-if="isEdit" class="mt-8">
         <el-divider content-position="left">
           <h3 class="text-lg font-semibold">发票附件</h3>
         </el-divider>
+
+        <el-alert
+          v-if="createdInvoiceId"
+          type="success"
+          :closable="false"
+          show-icon
+          class="mb-4"
+          title="发票已创建，请上传发票文件"
+          description="上传完成后点击上方「完成」返回发票列表。"
+        />
 
         <!-- 文件上传 -->
         <div class="mb-4">
@@ -288,10 +305,16 @@ const attachments = ref<Attachment[]>([]);
 const attachmentsLoading = ref(false);
 const contractInvoicePlans = ref<ContractInvoicePlan[]>([]);
 const isVoided = ref(false);
+// 新建保存后停留在本页继续上传附件，记录新发票 ID
+const createdInvoiceId = ref(0);
 
 // 计算属性
-const isEdit = computed(() => !!route.params.id);
-const invoiceId = computed(() => Number(route.params.id));
+const isEdit = computed(
+  () => !!route.params.id || !!createdInvoiceId.value
+);
+const invoiceId = computed(
+  () => Number(route.params.id) || createdInvoiceId.value
+);
 
 // 表单数据
 const form = reactive<UpdateInvoiceDto>({
@@ -556,8 +579,23 @@ const handleSubmit = async () => {
     }
 
     if (response.success) {
-      ElMessage.success(isEdit.value ? "更新成功" : "创建成功");
-      router.push("/invoices");
+      if (isEdit.value) {
+        ElMessage.success("更新成功");
+        router.push("/invoices");
+        return;
+      }
+
+      // 新建成功：停留在本页，直接进入可上传附件状态，
+      // 避免「保存 → 回列表 → 再点编辑 → 才能传附件」的往返
+      const newId = Number((response.data as any)?.id || 0);
+      if (newId) {
+        createdInvoiceId.value = newId;
+        await fetchAttachments();
+        ElMessage.success("发票已创建，可继续上传附件");
+      } else {
+        ElMessage.success("创建成功");
+        router.push("/invoices");
+      }
     }
   } catch (error) {
     console.error("Failed to submit form:", error);
@@ -650,6 +688,30 @@ onMounted(async () => {
           if (Array.isArray(contract.invoice_plans)) {
             contractInvoicePlans.value = contract.invoice_plans;
             buildAllocationRows(contract.invoice_plans);
+          }
+
+          // 从开票计划行「开票」进入：预填该期分摊与开票日期
+          const planId = Number(route.query.planId || 0);
+          if (planId) {
+            const amountParam = Number(route.query.amount || 0);
+            const issueDateParam = String(route.query.issueDate || "");
+
+            if (amountParam > 0) {
+              form.amount = amountParam;
+            }
+            if (issueDateParam) {
+              form.issue_date = parseDate(issueDateParam) || "";
+            }
+
+            const target = planAllocationRows.value.find(
+              item => item.plan_id === planId
+            );
+            if (target) {
+              target.enabled = true;
+              target.allocated_amount = Number(
+                (amountParam || target.planned_amount || 0).toFixed(2)
+              );
+            }
           }
         }
       } catch (error) {

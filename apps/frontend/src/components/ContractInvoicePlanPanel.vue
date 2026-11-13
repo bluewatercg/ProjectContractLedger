@@ -17,8 +17,9 @@
       <template #default>
         <div>
           <div>1）计划金额之和建议与合同金额一致，用于对齐合同收支；</div>
-          <div>2）计划保存后，发票可选择关联对应期数，系统会自动统计每期的开票完成情况；</div>
-          <div>3）提醒天数用于后续的开票提醒列表（本次仅存字段，不做提醒功能）。</div>
+          <div>2）需要开某期的票时，直接点该行「开票」，合同、客户与该期金额会自动带入，保存后即可上传发票附件；</div>
+          <div>3）已有发票想并入某一期，点该行「关联发票」，填写该票计入本期的金额；</div>
+          <div>4）提醒天数用于后续的开票提醒列表。</div>
         </div>
       </template>
     </el-alert>
@@ -122,8 +123,17 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="190" fixed="right">
+      <el-table-column label="操作" width="250" fixed="right">
         <template #default="scope">
+          <el-button
+            v-if="scope.row.id"
+            type="success"
+            size="small"
+            text
+            @click="createInvoiceForPlan(scope.row)"
+          >
+            开票
+          </el-button>
           <el-button
             v-if="scope.row.id"
             type="primary"
@@ -259,6 +269,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { contractApi } from '@/api'
@@ -294,6 +305,7 @@ const emit = defineEmits<{
 }>()
 
 const kitStore = useKitStore()
+const router = useRouter()
 
 const saving = ref(false)
 const editablePlans = ref<PlanFormItem[]>([])
@@ -505,6 +517,30 @@ const allocatedMismatch = computed(
 
 const onAllocationAmountChange = () => {
   // 仅用于触发 computed 重算，实际校验在保存时进行
+}
+
+/**
+ * 从某一期直接开票：把合同与该期信息带过去，
+ * 发票表单会预填客户、合同、计划分摊金额与开票日期，只需上传附件即可完成
+ */
+const createInvoiceForPlan = (row: PlanFormItem) => {
+  if (!row.id) {
+    ElMessage.warning('请先保存该期计划后再开票')
+    return
+  }
+  const remaining = Math.max(
+    0,
+    Number(row.planned_amount || 0) - Number(row.actual_invoiced_amount || 0)
+  )
+  router.push({
+    path: '/invoices/create',
+    query: {
+      contractId: String(props.contractId),
+      planId: String(row.id),
+      amount: remaining > 0 ? remaining.toFixed(2) : undefined,
+      issueDate: row.planned_invoice_date || undefined
+    }
+  })
 }
 
 const openAllocationDialog = async (row: PlanFormItem) => {
